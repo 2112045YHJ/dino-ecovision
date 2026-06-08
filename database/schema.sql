@@ -306,7 +306,7 @@ CREATE TABLE IF NOT EXISTS user_ranking_scores (
     estimated_reduction_kg  DECIMAL(12,3) DEFAULT 0.000,
     updated_at              TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     UNIQUE KEY uk_user_season (user_id, season_id),
-    INDEX idx_region_season_score (region_id, season_id, ranking_point),
+    INDEX idx_region_season_score (region_id, season_id, ranking_point DESC),
     CONSTRAINT fk_urs_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     CONSTRAINT fk_urs_season FOREIGN KEY (season_id) REFERENCES ranking_seasons(id) ON DELETE CASCADE,
     CONSTRAINT fk_urs_region FOREIGN KEY (region_id) REFERENCES regions(id) ON DELETE SET NULL
