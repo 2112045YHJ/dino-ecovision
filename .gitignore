@@ -1,0 +1,47 @@
+# ==========================================
+# OS & IDE Templates
+# ==========================================
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.metadata/
+backend/.metadata/
+
+
+# ==========================================
+# Backend (Spring Boot / Java / Gradle)
+# ==========================================
+backend/.gradle/
+backend/build/
+backend/out/
+backend/bin/
+backend/.settings/
+backend/.classpath
+backend/.project
+backend/src/main/resources/application-local.properties
+backend/src/main/resources/application-prod.properties
+
+# ==========================================
+# Frontend (React / Node / Vite)
+# ==========================================
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+frontend/.env.local
+frontend/.env.development.local
+frontend/.env.test.local
+frontend/.env.production.local
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/.pnpm-debug.log*
+
+# Logs
+logs/
+*.log
