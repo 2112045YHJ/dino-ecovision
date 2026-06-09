@@ -28,7 +28,18 @@ public enum ErrorCode {
 	DUPLICATE_EMAIL(HttpStatus.CONFLICT, "이미 가입된 이메일입니다."),
 	LOGIN_FAILED(HttpStatus.UNAUTHORIZED, "이메일 또는 비밀번호가 올바르지 않습니다."),
 	ACCOUNT_INACTIVE(HttpStatus.FORBIDDEN, "비활성화되거나 제재된 계정입니다."),
-	INVALID_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "세션이 만료되었습니다. 다시 로그인해 주세요.");
+	INVALID_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "세션이 만료되었습니다. 다시 로그인해 주세요."),
+	
+	// user 도메인 코드
+	DUPLICATE_NICKNAME(HttpStatus.CONFLICT, "이미 사용 중인 닉네임입니다."),
+	INVALID_REGION_CODE(HttpStatus.BAD_REQUEST, "표준 코드 목록에 없는 지역입니다."),
+	ALREADY_ONBOARDED(HttpStatus.CONFLICT, "이미 온보딩을 완료했습니다."),
+	CHANGE_COOLDOWN(HttpStatus.TOO_MANY_REQUESTS, "변경 쿨다운이 경과하지 않았습니다."),
+	
+	// dino 도메인 코드
+	DINO_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 공룡을 보유하고 있습니다."),
+	INVALID_TEMPLATE(HttpStatus.BAD_REQUEST, "존재하지 않는 공룡 템플릿입니다."),
+	DINO_NOT_FOUND(HttpStatus.NOT_FOUND, "보유한 공룡이 없습니다.");
 	
 	private final HttpStatus status;
 	private final String message;

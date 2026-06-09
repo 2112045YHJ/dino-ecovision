@@ -18,9 +18,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 //	users 테이블 매핑 (DB 설계서 8.2)
-//	users 테이블은 auth/user 두 도메인이 공유하므로 엔티티 소유는 user 도메인에 둔다.
-//	2단계에서 인증에 필요한 컬럼 위주로 매핑. 미매핑 컬럼(today_points_accumulated 등)은
-//	ddl-auto=validate에서 문제되지 않으며, 각 도메인 개발 시 이 엔티티에 추가한다.
+//	닉네임/지역 변경 쿨다운 컬럼 + 온보딩/변경 메서드 추가
+//	온보딩 판정은 닉네임/지역/공룡 보유 여부로 판단
 
 @Entity
 @Table(name = "users")
@@ -47,7 +46,7 @@ public class User {
 	private String avatarUrl;
 
 	@Column(name = "region_id")
-	private Long regionId; // 온보딩 전 null. regions FK — 추후 @ManyToOne Region으로 확장 가능
+	private Long regionId; // 온보딩 전 null
 
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false)
@@ -71,6 +70,12 @@ public class User {
 	@Builder.Default
 	private BigDecimal savedCarbonKg = BigDecimal.ZERO;
 
+	@Column(name = "last_nickname_changed_at")
+	private LocalDateTime lastNicknameChangedAt;
+
+	@Column(name = "last_region_changed_at")
+	private LocalDateTime lastRegionChangedAt;
+	
 	@Column(name = "created_at", insertable = false, updatable = false)
 	private LocalDateTime createdAt;
 
@@ -80,14 +85,42 @@ public class User {
 	@Column(name = "deleted_at")
 	private LocalDateTime deletedAt;
 
-	// 온보딩 미완료 판정.
-	// 2단계 시점에는 닉네임·지역만으로 판정한다. 공룡 보유 여부는 dino 도메인(3단계) 추가 후
-	// 이 메서드에서 함께 검사하도록 확장한다(명세상 온보딩 = 닉네임·지역·공룡).
-	public boolean isOnboardingRequired() {
-		return nickname == null || regionId == null;
+	// ===== 온보딩 미완료 판정 =====
+	
+	// 닉네임, 지역이 모두 설정됐는지
+	public boolean isOnboarded() {
+		return nickname != null && regionId != null;
+	}
+	
+	// 온보인 미완료 여부
+	// 명세상 닉네임 + 지역 + 공룡 보유까지 필요
+	// 공룡 보유 여부(hasDino)는 dino 도메인 조회 결과를 서비스에서 주입
+	public boolean isOnboardingRequired(boolean hasDino) {
+		return nickname == null || regionId == null || !hasDino;
 	}
 
 	public boolean isActive() {
 		return status == UserStatus.ACTIVE && deletedAt == null;
+	}
+	
+	// ===== 변경 동작 =====
+	
+	// 온보딩 등록
+	// 닉네임, 지역 설정 + 쿨다운 기준 시점 시작
+	public void completeOnboarding(String nickname, Long regionId, LocalDateTime now) {
+		this.nickname = nickname;
+		this.regionId = regionId;
+		this.lastNicknameChangedAt = now;
+		this.lastRegionChangedAt = now;
+	}
+	
+	public void changeNickname(String nickname, LocalDateTime now) {
+		this.nickname = nickname;
+		this.lastNicknameChangedAt = now;
+	}
+	
+	public void changeRegion(Long regionId, LocalDateTime now) {
+		this.regionId = regionId;
+		this.lastRegionChangedAt = now;
 	}
 }
