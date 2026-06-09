@@ -1,4 +1,4 @@
-package global.exception;
+package com.ecovision.app.global.exception;
 
 import org.springframework.http.HttpStatus;
 

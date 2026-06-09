@@ -1,4 +1,4 @@
-package global.response;
+package com.ecovision.app.global.response;
 
 import java.util.List;
 
