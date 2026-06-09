@@ -2,8 +2,6 @@ package com.ecovision.app.global.response;
 
 import java.util.List;
 
-import org.springframework.validation.FieldError;
-
 // 공통 에러 객체 { code, message, details }
 // - code: ErrorCode명 문자열 (예: "VALIDATION_FAILED")
 // - message: 사용자에게 보여줄 메시지

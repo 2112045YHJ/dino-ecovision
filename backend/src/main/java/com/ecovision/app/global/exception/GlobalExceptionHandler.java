@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import com.ecovision.app.global.response.ApiResponse;
 import com.ecovision.app.global.response.ErrorResponse;
 
+import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 
 //	전역 예외 처리
@@ -36,6 +37,17 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleMethodArgumentNotValid(MethodArgumentNotValidException e) {
         List<ErrorResponse.FieldError> details = e.getBindingResult().getFieldErrors().stream()
                 .map(this::toFieldError)
+                .toList();
+        ErrorCode code = ErrorCode.VALIDATION_FAILED;
+        return ResponseEntity.status(code.getStatus())
+                .body(ApiResponse.error(code.name(), code.getMessage(), details));
+    }
+    
+    // @Validated 컨트롤러의 @RequestParam/@PathVariable 검증 실패 (예: 닉네임 중복확인 쿼리)
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ApiResponse<Void>> handleConstraintViolation(ConstraintViolationException e) {
+        List<ErrorResponse.FieldError> details = e.getConstraintViolations().stream()
+                .map(v -> new ErrorResponse.FieldError(lastNode(v.getPropertyPath().toString()), v.getMessage()))
                 .toList();
         ErrorCode code = ErrorCode.VALIDATION_FAILED;
         return ResponseEntity.status(code.getStatus())
