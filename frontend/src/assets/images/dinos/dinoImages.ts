@@ -1,22 +1,44 @@
 // src/assets/images/dinos/dinoImages.ts
 
-import dinoEgg from "./dino-egg.png";
-import dinoHatchling from "./dino-hatchling.png";
-import dinoHatchlingHappy from "./dino-hatchling-happy.png";
-import dinoJuvenile from "./dino-juvenile.png";
-import dinoAdult from "./dino-adult.png";
+// 티라노 이미지
+import tyranoEgg from "./tyrano-egg.png";
+import tyranoHatchling from "./tyrano-hatchling.png";
+import tyranoJuvenile from "./tyrano-juvenile.png";
+import tyranoAdult from "./tyrano-adult.png";
 
-import type { DinoStage } from "../../../types/dino";
+// 용각류 이미지
+import sauroEgg from "./sauro-egg.png";
+import sauroHatchling from "./sauro-hatchling.png";
+import sauroJuvenile from "./sauro-juvenile.png";
+import sauroAdult from "./sauro-adult.png";
 
-// 기본 성장 단계별 이미지
-export const dinoImages: Record<DinoStage, string> = {
-  EGG: dinoEgg,
-  HATCHLING: dinoHatchling,
-  JUVENILE: dinoJuvenile,
-  ADULT: dinoAdult,
-};
+// 각룡류 이미지
+import ceratoEgg from "./cerato-egg.png";
+import ceratoHatchling from "./cerato-hatchling.png";
+import ceratoJuvenile from "./cerato-juvenile.png";
+import ceratoAdult from "./cerato-adult.png";
 
-// 감정 상태용 이미지
-export const dinoEmotionImages = {
-  HATCHLING_HAPPY: dinoHatchlingHappy,
+export type DinoType = "TYRANO" | "SAURO" | "CERATO";
+
+export type DinoStage = "EGG" | "HATCHLING" | "JUVENILE" | "ADULT";
+
+export const dinoImagesByType = {
+  TYRANO: {
+    EGG: tyranoEgg,
+    HATCHLING: tyranoHatchling,
+    JUVENILE: tyranoJuvenile,
+    ADULT: tyranoAdult,
+  },
+  SAURO: {
+    EGG: sauroEgg,
+    HATCHLING: sauroHatchling,
+    JUVENILE: sauroJuvenile,
+    ADULT: sauroAdult,
+  },
+  CERATO: {
+    EGG: ceratoEgg,
+    HATCHLING: ceratoHatchling,
+    JUVENILE: ceratoJuvenile,
+    ADULT: ceratoAdult,
+  },
 };

@@ -4,31 +4,63 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { EcoQuizModal } from "../components/quiz/EcoQuizModal";
-import { dinoImages } from "../assets/images/dinos/dinoImages";
+
+import {
+  dinoImagesByType,
+  type DinoStage,
+  type DinoType,
+} from "../assets/images/dinos/dinoImages";
 
 import { mockHomeStatus } from "../mocks/homeMock";
 import { mockMyDino } from "../mocks/dinoMock";
 import { mockTodayQuiz } from "../mocks/quizMock";
 
+interface StoredDino {
+  type: DinoType;
+  name: string;
+  stage: DinoStage;
+  exp: number;
+  maxExp: number;
+  affinity: number;
+}
+
 export function HomePage() {
   // 페이지 이동을 도와주는 함수입니다.
-  // 예: navigate('/missions') → 미션 화면으로 이동
   const navigate = useNavigate();
 
   // 퀴즈 모달이 열려 있는지 저장합니다.
-  // false = 닫힘, true = 열림
   const [isQuizOpen, setIsQuizOpen] = useState(false);
 
   // 지금은 백엔드 API가 없으므로 Mock 데이터를 사용합니다.
   const dino = mockMyDino;
   const homeStatus = mockHomeStatus;
 
+  // 첫 공룡 선택 화면에서 localStorage에 저장한 공룡 정보를 가져옵니다.
+  const savedDinoText = localStorage.getItem("myDino");
+
+  // localStorage에 저장된 문자열을 다시 객체로 바꿉니다.
+  const savedDino = savedDinoText
+    ? (JSON.parse(savedDinoText) as StoredDino)
+    : null;
+
+  // 저장된 공룡이 있으면 저장된 공룡을 사용하고,
+  // 없으면 기존 Mock 공룡을 기본값으로 사용합니다.
+  const homeDino: StoredDino = savedDino ?? {
+    type: "SAURO",
+    name: dino.name,
+    stage: dino.stage as DinoStage,
+    exp: dino.exp,
+    maxExp: dino.requiredExp,
+    affinity: dino.intimacy,
+  };
+
+  // 공룡 종류 + 성장 단계에 맞는 이미지를 고릅니다.
+  const homeDinoImage = dinoImagesByType[homeDino.type][homeDino.stage];
+
   // 오늘의 미션 진행 상황 텍스트입니다.
-  // 예: 1 / 3
   const missionProgressText = `${homeStatus.completedMissionCount} / ${homeStatus.todayMissionCount}`;
 
   // 전력 예비율 바의 너비입니다.
-  // 9.8%는 화면에서 너무 짧게 보일 수 있어서 임시로 5배 해서 보여줍니다.
   const reserveBarWidth = Math.min(homeStatus.powerReserveRate * 5, 100);
 
   return (
@@ -93,25 +125,29 @@ export function HomePage() {
             <div className="mt-4 flex items-center gap-4">
               <div className="flex h-28 w-28 shrink-0 items-center justify-center rounded-3xl bg-[#E8F2EC]">
                 <img
-                  src={dinoImages[dino.stage]}
-                  alt={`${dino.name} 이미지`}
+                  src={homeDinoImage}
+                  alt={`${homeDino.name} 이미지`}
                   className="h-24 object-contain"
                 />
               </div>
 
               <div className="min-w-0">
-                <h2 className="text-xl font-bold">{dino.name}</h2>
+                <h2 className="text-xl font-bold">{homeDino.name}</h2>
 
                 <p className="mt-1 text-sm text-gray-600">
-                  성장 단계: {dino.stage}
+                  공룡 종류: {homeDino.type}
                 </p>
 
                 <p className="mt-1 text-sm text-gray-600">
-                  EXP {dino.exp} / {dino.requiredExp}
+                  성장 단계: {homeDino.stage}
                 </p>
 
                 <p className="mt-1 text-sm text-gray-600">
-                  친밀도 {dino.intimacy}%
+                  EXP {homeDino.exp} / {homeDino.maxExp}
+                </p>
+
+                <p className="mt-1 text-sm text-gray-600">
+                  친밀도 {homeDino.affinity}%
                 </p>
               </div>
             </div>
