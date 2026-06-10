@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS users (
     id                          BIGINT AUTO_INCREMENT PRIMARY KEY,
     email                       VARCHAR(100) NOT NULL UNIQUE   COMMENT '이메일 로그인 ID',
     password                    VARCHAR(255) NOT NULL          COMMENT '암호화 비밀번호',
-    nickname                    VARCHAR(50)  NOT NULL UNIQUE   COMMENT '닉네임',
+    nickname                    VARCHAR(50)  NULL UNIQUE       COMMENT '닉네임',
     avatar_url                  VARCHAR(255),
     region_id                   BIGINT       COMMENT '소속 지역 ID',
     role                        VARCHAR(20)  DEFAULT 'USER'    COMMENT 'USER, ADMIN',
