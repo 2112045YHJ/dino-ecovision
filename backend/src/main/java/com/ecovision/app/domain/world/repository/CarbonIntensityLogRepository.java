@@ -3,7 +3,7 @@ package com.ecovision.app.domain.world.repository;
 import com.ecovision.app.domain.world.entity.CarbonIntensityLog;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.param.Param;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
@@ -19,6 +19,11 @@ public interface CarbonIntensityLogRepository extends JpaRepository<CarbonIntens
      * @return 탄소 기록 1건 (Optional)
      */
     Optional<CarbonIntensityLog> findFirstByMeasuredAtAfterOrderByMeasuredAtDesc(LocalDateTime dateTime);
+
+    /**
+     * 가장 최근에 등록된 탄소집약도 로그 1건을 조회합니다.
+     */
+    Optional<CarbonIntensityLog> findFirstByOrderByMeasuredAtDesc();
 
     /**
      * 최근 1시간 이내에 정상 등록된 전력 데이터 중 가장 최신의 1건을 조회합니다.
