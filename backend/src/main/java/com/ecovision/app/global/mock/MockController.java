@@ -24,9 +24,8 @@ public class MockController {
         return response;
     }
 
-    /**
-     * 1.1 회원가입 MOCK API
-     */
+    /*
+    // 1.1 회원가입 MOCK API (AuthController와 충돌로 임시 주석 처리)
     @PostMapping("/auth/signup")
     public ResponseEntity<?> signup(@RequestBody Map<String, String> body) {
         String email = body.getOrDefault("email", "unknown@ecovision.com");
@@ -41,9 +40,7 @@ public class MockController {
         return ResponseEntity.status(HttpStatus.CREATED).body(buildApiResponse(true, data, null));
     }
 
-    /**
-     * 1.2 로그인 MOCK API
-     */
+    // 1.2 로그인 MOCK API (AuthController와 충돌로 임시 주석 처리)
     @PostMapping("/auth/login")
     public ResponseEntity<?> login(@RequestBody Map<String, String> body) {
         String email = body.getOrDefault("email", "unknown@ecovision.com");
@@ -67,6 +64,7 @@ public class MockController {
 
         return ResponseEntity.ok(buildApiResponse(true, data, null));
     }
+    */
 
     /**
      * 2.1 내 프로필 조회 MOCK API
