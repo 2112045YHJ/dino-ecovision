@@ -87,6 +87,11 @@ public class User {
         return nickname != null && regionId != null;
     }
 
+    // 온보딩 미완료 여부 (dino 정보가 없는 로그인 단계 등에서 사용)
+    public boolean isOnboardingRequired() {
+        return nickname == null || regionId == null;
+    }
+
     // 온보딩 미완료 여부
     // 명세상 닉네임 + 지역 + 공룡 보유까지 필요
     // 공룡 보유 여부(hasDino)는 dino 도메인 조회 결과를 서비스에서 주입

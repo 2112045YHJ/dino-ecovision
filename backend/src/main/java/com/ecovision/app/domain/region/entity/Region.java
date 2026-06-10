@@ -33,4 +33,9 @@ public class Region {
 
     @Column(name = "created_at", insertable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    // 표시명 합성: "부산광역시 해운대구 우동"
+    public String displayName() {
+        return dong == null ? (sido + " " + sigungu) : (sido + " " + sigungu + " " + dong);
+    }
 }
