@@ -48,5 +48,6 @@ public class GuildMember {
 	// 지역 변경 시 소속 길드 재매핑
 	public void changeGuild(Long guildId) {
 		this.guildId = guildId;
+		this.leftAt = null;
 	}
 }
