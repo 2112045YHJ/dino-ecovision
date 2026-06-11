@@ -27,6 +27,6 @@ public final class DinoDto {
 
 	// 내 공룡 상태 (GET /api/me/dino). nextStageExp는 ADULT면 null.
 	public record DinoStatusResponse(
-			Long dinoId, String nickname, String templateName,
+			Long dinoId, String nickname, String templateCode, String templateName,
 			String stage, int exp, Integer nextStageExp, int affinity) {}
 }

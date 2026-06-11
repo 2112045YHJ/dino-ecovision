@@ -60,7 +60,7 @@ public class DinoService {
 		Integer nextStageExp = nextStageExp(dino.getStage().name());
 
 		return new DinoDto.DinoStatusResponse(
-				dino.getId(), dino.getNickname(), template.getDinoName(),
+				dino.getId(), dino.getNickname(), template.getDinoCode(), template.getDinoName(),
 				dino.getStage().name(), dino.getExp(), nextStageExp, dino.getAffinity());
 	}
 
