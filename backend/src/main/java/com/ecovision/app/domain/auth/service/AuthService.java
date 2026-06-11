@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.ecovision.app.domain.auth.dto.AuthDto;
+import com.ecovision.app.domain.dino.repository.UserDinoRepository;
 import com.ecovision.app.domain.user.entity.Role;
 import com.ecovision.app.domain.user.entity.User;
 import com.ecovision.app.domain.user.entity.UserStatus;
@@ -27,6 +28,7 @@ public class AuthService {
 	private final PasswordEncoder passwordEncoder;
 	private final JwtTokenProvider tokenProvider;
 	private final RefreshTokenService refreshTokenService;
+	private final UserDinoRepository userDinoRepository;
 
 	// 회원가입: 이메일 중복 검사 → 비밀번호 해시 → 저장. 닉네임·지역은 온보딩(3단계)에서 설정.
 	@Transactional
@@ -62,8 +64,9 @@ public class AuthService {
 		String refreshToken = tokenProvider.createRefreshToken(user.getId());
 		refreshTokenService.save(user.getId(), refreshToken, tokenProvider.getRefreshValidityMs());
 
+		boolean hasDino = userDinoRepository.existsByUserId(user.getId());
 		AuthDto.LoginResponse body = new AuthDto.LoginResponse(
-				accessToken, user.isOnboardingRequired(), user.getRole().name());
+				accessToken, user.isOnboardingRequired(hasDino), user.getRole().name());
 		return new AuthDto.LoginResult(body, refreshToken);
 	}
 

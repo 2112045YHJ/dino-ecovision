@@ -6,6 +6,8 @@ import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+import com.ecovision.app.domain.region.entity.Region;
+
 @Entity
 @Table(name = "guilds")
 @Getter
@@ -52,4 +54,21 @@ public class Guild {
 
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
+    
+	private Guild(String guildName, String description, Long regionId) {
+		this.guildName = guildName;
+		this.description = description;
+		this.regionId = regionId;
+		this.capacity = 30;
+		this.totalPoint = 0;
+		this.savedCarbonKg = BigDecimal.ZERO;
+	}
+
+	// 지역 정보로 길드 생성 (시드 명명 규칙과 동일)
+	public static Guild createForRegion(Region region) {
+		String name = region.getSigungu() + " " + region.getDong() + " 에코가드";
+		String desc = region.getSido() + " " + region.getSigungu() + " " + region.getDong()
+				+ " 주민들의 친환경 탄소감축 길드";
+		return new Guild(name, desc, region.getId());
+	}
 }

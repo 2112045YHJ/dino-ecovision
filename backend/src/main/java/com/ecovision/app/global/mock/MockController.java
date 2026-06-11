@@ -66,28 +66,28 @@ public class MockController {
     }
     */
 
-    /**
-     * 2.1 내 프로필 조회 MOCK API
-     */
-    @GetMapping("/me")
-    public ResponseEntity<?> getProfile() {
-        log.info("[MOCK PROFILE] Fetching mock profile...");
-
-        Map<String, Object> data = Map.of(
-                "userId", 101,
-                "email", "green@ecovision.com",
-                "nickname", "에코시티즌",
-                "regionCode", "2635051000",
-                "regionName", "부산광역시 해운대구 우동",
-                "totalPoints", 3420,
-                "rankingPoint", 340,
-                "savedCarbonKg", 74.320,
-                "role", "USER",
-                "onboardingRequired", false
-        );
-
-        return ResponseEntity.ok(buildApiResponse(true, data, null));
-    }
+//    /**
+//     * 2.1 내 프로필 조회 MOCK API
+//     */
+//    @GetMapping("/me")
+//    public ResponseEntity<?> getProfile() {
+//        log.info("[MOCK PROFILE] Fetching mock profile...");
+//
+//        Map<String, Object> data = Map.of(
+//                "userId", 101,
+//                "email", "green@ecovision.com",
+//                "nickname", "에코시티즌",
+//                "regionCode", "2635051000",
+//                "regionName", "부산광역시 해운대구 우동",
+//                "totalPoints", 3420,
+//                "rankingPoint", 340,
+//                "savedCarbonKg", 74.320,
+//                "role", "USER",
+//                "onboardingRequired", false
+//        );
+//
+//        return ResponseEntity.ok(buildApiResponse(true, data, null));
+//    }
 
     /**
      * 6.1 활성 던전 조회 MOCK API
