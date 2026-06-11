@@ -51,17 +51,28 @@ public class UserService {
 	@Transactional
 	public UserDto.ProfileResponse onboarding(Long userId, UserDto.OnboardingRequest request) {
 		User user = getUser(userId);
-		
+
 		// 전체 온보딩 완료(닉네임, 지역, 공룡)된 사용자만 중복 차단
 		// 닉네임, 지역만 있고 공룡이 없는 상태는 '공룡 선택 단계'이므로 1단계 재호출 허용
 		boolean hasDino = userDinoRepository.existsByUserId(userId);
 		if (!user.isOnboardingRequired(hasDino)) {
 			throw new BusinessException(ErrorCode.ALREADY_ONBOARDED);
 		}
-		
-		if (userRepository.existsByNickname(request.nickname())) {
+
+		// 닉네임/지역은 이미 저장되어 있고, 공룡만 없는 상태
+		// -> 409 에러를 내지 않고 기존 프로필을 반환, 프론트가 공룡 선택 화면으로 진행하게 함
+		if (user.isOnboarded() && !hasDino) {
+			Region region = regionRepository.findById(user.getRegionId())
+					.orElseThrow(() -> new BusinessException(ErrorCode.INVALID_REGION_CODE));
+
+			return toProfile(user, region);
+		}
+
+		// 처음 닉네임/지역을 저장하는 경우 자기 자신이 이미 쓰는 닉네임은 중복으로 보지 않음(자기 제외)
+		if (userRepository.existsByNicknameAndIdNot(request.nickname(), userId)) {
 			throw new BusinessException(ErrorCode.DUPLICATE_NICKNAME);
 		}
+		
 		Region region = regionRepository.findByRegionCode(request.regionCode())
 				.orElseThrow(() -> new BusinessException(ErrorCode.INVALID_REGION_CODE));
 
@@ -100,7 +111,7 @@ public class UserService {
 		if (region.getId().equals(user.getRegionId())) {
 			return toProfile(user, region);
 		}
-		
+
 		checkCooldown(user.getLastRegionChangedAt(), REGION_COOLDOWN_DAYS, "region",
 				"지역은 " + REGION_COOLDOWN_DAYS + "일에 1회만 변경할 수 있습니다.");
 
