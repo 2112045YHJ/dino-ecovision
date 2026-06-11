@@ -69,6 +69,11 @@ public class UserService {
 	@Transactional
 	public UserDto.ProfileResponse changeNickname(Long userId, UserDto.NicknameChangeRequest request) {
 		User user = getUser(userId);
+		if (request.nickname().equals(user.getNickname())) {
+			Region region = (user.getRegionId() == null) ? null
+					: regionRepository.findById(user.getRegionId()).orElse(null);
+			return toProfile(user, region);
+		}
 		checkCooldown(user.getLastNicknameChangedAt(), NICKNAME_COOLDOWN_DAYS, "nickname",
 				"닉네임은 " + NICKNAME_COOLDOWN_DAYS + "일에 1회만 변경할 수 있습니다.");
 		if (userRepository.existsByNickname(request.nickname())) {
@@ -84,10 +89,15 @@ public class UserService {
 	@Transactional
 	public UserDto.ProfileResponse changeRegion(Long userId, UserDto.RegionChangeRequest request) {
 		User user = getUser(userId);
-		checkCooldown(user.getLastRegionChangedAt(), REGION_COOLDOWN_DAYS, "region",
-				"지역은 " + REGION_COOLDOWN_DAYS + "일에 1회만 변경할 수 있습니다.");
 		Region region = regionRepository.findByRegionCode(request.regionCode())
 				.orElseThrow(() -> new BusinessException(ErrorCode.INVALID_REGION_CODE));
+
+		if (region.getId().equals(user.getRegionId())) {
+			return toProfile(user, region);
+		}
+		
+		checkCooldown(user.getLastRegionChangedAt(), REGION_COOLDOWN_DAYS, "region",
+				"지역은 " + REGION_COOLDOWN_DAYS + "일에 1회만 변경할 수 있습니다.");
 
 		user.changeRegion(region.getId(), LocalDateTime.now());
 		guildService.assignToRegion(userId, region); // 길드 재매핑
