@@ -19,8 +19,8 @@ import com.ecovision.app.global.response.ErrorResponse;
 
 import lombok.RequiredArgsConstructor;
 
-//	프로필 조회 / 닉네임 중복확인 / 온보딩 / 닉네임·지역 변경.
-//	온보딩·지역변경은 길드 배정을 포함하므로 트랜잭션으로 묶는다.
+//프로필 조회 / 닉네임 중복확인 / 온보딩 / 닉네임·지역 변경.
+//온보딩·지역변경은 길드 배정을 포함하므로 트랜잭션으로 묶는다.
 @Service
 @RequiredArgsConstructor
 public class UserService {
@@ -47,7 +47,7 @@ public class UserService {
 		return new UserDto.NicknameCheckResponse(!userRepository.existsByNickname(nickname));
 	}
 
-	// 온보딩: 닉네임·지역 등록 + 지역 길드 자동 배정. 쿨다운 기준 시점도 여기서 설정.
+// 온보딩: 닉네임·지역 등록 + 지역 길드 자동 배정. 쿨다운 기준 시점도 여기서 설정.
 	@Transactional
 	public UserDto.ProfileResponse onboarding(Long userId, UserDto.OnboardingRequest request) {
 		User user = getUser(userId);
@@ -95,38 +95,30 @@ public class UserService {
 		return toProfile(user, region);
 	}
 
-	// ===== 내부 헬퍼 =====
+// ===== 내부 헬퍼 =====
 
 	private User getUser(Long userId) {
-		return userRepository.findById(userId)
-				.orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
+		return userRepository.findById(userId).orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
 	}
 
-	// 쿨다운 미경과 시 CHANGE_COOLDOWN(429) + 다음 변경 가능일 안내
+// 쿨다운 미경과 시 CHANGE_COOLDOWN(429) + 다음 변경 가능일 안내
 	private void checkCooldown(LocalDateTime lastChangedAt, int cooldownDays, String field, String message) {
 		if (lastChangedAt == null) {
 			return;
 		}
 		LocalDateTime nextAllowed = lastChangedAt.plusDays(cooldownDays);
 		if (LocalDateTime.now().isBefore(nextAllowed)) {
-			List<ErrorResponse.FieldError> details = List.of(
-					new ErrorResponse.FieldError(field, "다음 변경 가능일: " + nextAllowed.toLocalDate()));
+			List<ErrorResponse.FieldError> details = List
+					.of(new ErrorResponse.FieldError(field, "다음 변경 가능일: " + nextAllowed.toLocalDate()));
 			throw new BusinessException(ErrorCode.CHANGE_COOLDOWN, details);
 		}
 	}
 
 	private UserDto.ProfileResponse toProfile(User user, Region region) {
 		boolean hasDino = userDinoRepository.existsByUserId(user.getId());
-		return new UserDto.ProfileResponse(
-				user.getId(),
-				user.getEmail(),
-				user.getNickname(),
-				region == null ? null : region.getRegionCode(),
-				region == null ? null : region.displayName(),
-				user.getTotalPoints(),
-				user.getRankingPoint(),
-				user.getSavedCarbonKg().doubleValue(),
-				user.getRole().name(),
-				user.isOnboardingRequired(hasDino));
+		return new UserDto.ProfileResponse(user.getId(), user.getEmail(), user.getNickname(),
+				region == null ? null : region.getRegionCode(), region == null ? null : region.displayName(),
+				user.getTotalPoints(), user.getRankingPoint(), user.getSavedCarbonKg().doubleValue(),
+				user.getRole().name(), user.isOnboardingRequired(hasDino));
 	}
 }
