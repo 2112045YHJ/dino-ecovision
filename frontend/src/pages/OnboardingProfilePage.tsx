@@ -132,7 +132,7 @@ export function OnboardingProfilePage() {
       // 백엔드 답변 기준:
       // 닉네임/지역 저장 후에도 공룡 선택을 안 했으면 onboardingRequired가 true입니다.
       // 그래서 온보딩 프로필 저장 성공 후에는 공룡 선택 화면으로 이동합니다.
-      navigate("/dino-selection");
+      navigate("/onboarding/dino");
     } catch (error) {
       console.error(error);
 
