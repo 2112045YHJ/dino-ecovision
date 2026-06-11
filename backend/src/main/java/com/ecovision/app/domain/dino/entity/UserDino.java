@@ -22,6 +22,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class UserDino {
 
+	private static final int AFFINITY_MAX = 100;
+	
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
@@ -65,5 +67,25 @@ public class UserDino {
 	// 부화: EGG 상태로 생성
 	public static UserDino hatch(Long userId, Long dinoTemplateId, String nickname) {
 		return new UserDino(userId, dinoTemplateId, nickname);
+	}
+	
+	// ===== 미션 완료 시 갱신 =====
+	
+	// 클린에너지(=실적립 포인트)를 EXP에 반영
+	public void addCleanEnergy(int amount) {
+		this.exp += amount;
+	}
+	
+	// 친밀도 증가(최대 100), 실제 증가분 반환.
+	public int increaseAffinity(int amount) {
+		int before = this.affinity;
+		this.affinity = Math.min(AFFINITY_MAX, this.affinity + amount);
+		return this.affinity - before;
+	}
+	
+	// 진화 단계 상승
+	public void evolveTo(DinoStage stage, LocalDateTime now) {
+		this.stage = stage;
+		this.evolvedAt = now;
 	}
 }

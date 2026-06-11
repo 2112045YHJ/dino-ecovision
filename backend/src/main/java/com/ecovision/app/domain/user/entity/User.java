@@ -98,6 +98,15 @@ public class User {
         return status == UserStatus.ACTIVE && deletedAt == null;
     }
 
+    // 날짜가 바뀌었으면 0으로 간주(자정 리셋 전 완료 대비)
+    // 상한 계산용
+    public int effectiveTodayAccumulated(LocalDate today) {
+    	if(lastPointAccumulatedDate == null || !lastPointAccumulatedDate.equals(today)) {
+    		return 0;
+    	}
+    	return todayPointsAccumulated;
+    }
+    
     // ===== 변경 동작 =====
 
     // 온보딩 등록
@@ -117,5 +126,15 @@ public class User {
     public void changeRegion(Long regionId, LocalDateTime now) {
         this.regionId = regionId;
         this.lastRegionChangedAt = now;
+    }
+    
+    // 미션 완료 적립: total/today/ranking/saved_carbon 갱신 (today는 날짜 리셋 반영)
+    public void applyMissionReward(int earnedPoint, BigDecimal reductionKg, LocalDate today) {
+    	int base = effectiveTodayAccumulated(today);
+    	this.todayPointsAccumulated = base + earnedPoint;
+    	this.lastPointAccumulatedDate = today;
+    	this.totalPoints += earnedPoint;
+    	this.rankingPoint += earnedPoint;
+    	this.savedCarbonKg = this.savedCarbonKg.add(reductionKg);
     }
 }
