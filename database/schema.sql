@@ -3,6 +3,9 @@
 -- DB 설계서 v6.0 최종 스펙 반영 (2026-06-04)
 -- =======================================================
 
+SET NAMES utf8mb4;
+SET CHARACTER SET utf8mb4;
+
 CREATE DATABASE IF NOT EXISTS `dino_ecovision` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE `dino_ecovision`;
 
