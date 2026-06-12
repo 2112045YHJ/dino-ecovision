@@ -3,6 +3,7 @@ package com.ecovision.app.domain.user.dto;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import java.time.LocalDateTime;
 
 //	user 도메인 요청/응답 DTO 모음 (중첩 record)
 
@@ -43,4 +44,12 @@ public final class UserDto {
 			@NotBlank(message = "지역 코드는 필수입니다.")
 			String regionCode
 			) {}
+
+	// 포인트 이력 응답 (GET /api/me/points)
+	public record PointHistoryResponse(
+			Long id,
+			String reason,
+			int amount,
+			LocalDateTime createdAt
+	) {}
 }
