@@ -5,6 +5,7 @@ import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
@@ -34,13 +35,13 @@ public class EnergyUsage {
     private EnergyType energyType;
 
     @Column(name = "usage_amount", nullable = false)
-    private Double usageAmount;
+    private BigDecimal usageAmount;
 
     @Column(name = "usage_unit", length = 30)
     private String usageUnit;
 
     @Column(name = "carbon_emission_kg")
-    private Double carbonEmissionKg;
+    private BigDecimal carbonEmissionKg;
 
     @Column(name = "source_name", length = 255)
     private String sourceName;

@@ -5,12 +5,14 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
+
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
 public class EnergyUsageSumDto {
     private String usageYearMonth;
     private EnergyType energyType;
-    private Double sumUsageAmount;
-    private Double sumCarbonEmissionKg;
+    private BigDecimal sumUsageAmount;
+    private BigDecimal sumCarbonEmissionKg;
 }

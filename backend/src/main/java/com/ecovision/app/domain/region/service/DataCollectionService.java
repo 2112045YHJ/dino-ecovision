@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.client.WebClient;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 
+import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
@@ -223,6 +224,9 @@ public class DataCollectionService {
         Optional<EnergyUsage> existingData = energyUsageRepository
                 .findByRegionCodeAndUsageYearMonthAndEnergyType(regionCode, yearMonth, energyType);
 
+        BigDecimal bdUsageAmount = usageAmount != null ? BigDecimal.valueOf(usageAmount) : null;
+        BigDecimal bdCarbonEmission = carbonEmission != null ? BigDecimal.valueOf(carbonEmission) : null;
+
         if (existingData.isPresent()) {
             EnergyUsage data = existingData.get();
             EnergyUsage updated = EnergyUsage.builder()
@@ -231,9 +235,9 @@ public class DataCollectionService {
                     .regionCode(regionCode)
                     .usageYearMonth(yearMonth)
                     .energyType(energyType)
-                    .usageAmount(usageAmount)
+                    .usageAmount(bdUsageAmount)
                     .usageUnit(usageUnit)
-                    .carbonEmissionKg(carbonEmission)
+                    .carbonEmissionKg(bdCarbonEmission)
                     .sourceName(sourceName)
                     .build();
             energyUsageRepository.save(updated);
@@ -242,9 +246,9 @@ public class DataCollectionService {
                     .regionCode(regionCode)
                     .usageYearMonth(yearMonth)
                     .energyType(energyType)
-                    .usageAmount(usageAmount)
+                    .usageAmount(bdUsageAmount)
                     .usageUnit(usageUnit)
-                    .carbonEmissionKg(carbonEmission)
+                    .carbonEmissionKg(bdCarbonEmission)
                     .sourceName(sourceName)
                     .build();
             energyUsageRepository.save(newData);
