@@ -2,6 +2,7 @@ package com.ecovision.app.domain.mission.scheduler;
 
 import com.ecovision.app.domain.mission.entity.Mission;
 import com.ecovision.app.domain.mission.repository.MissionRepository;
+import com.ecovision.app.domain.mission.service.MissionAssignmentService;
 import com.ecovision.app.domain.user.entity.User;
 import com.ecovision.app.domain.user.entity.UserStatus;
 import com.ecovision.app.domain.user.repository.UserRepository;
@@ -9,20 +10,15 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
 import java.time.LocalDate;
 import java.sql.Date;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -32,6 +28,7 @@ public class MissionScheduler {
     private final UserRepository userRepository;
     private final MissionRepository missionRepository;
     private final JdbcTemplate jdbcTemplate;
+    private final MissionAssignmentService missionAssignmentService;
 
     /**
      * 매일 자정에 모든 활성 사용자에게 중복 카테고리가 없는 3종의 일일 미션을 일괄 배정하고, 일일 누적 포인트를 초기화합니다.
@@ -52,12 +49,9 @@ public class MissionScheduler {
                 return;
             }
 
-            List<Mission> dayMissions = activeDailyMissions.stream()
-                    .filter(m -> "DAY".equalsIgnoreCase(m.getSlotType())).collect(Collectors.toList());
-            List<Mission> eveningMissions = activeDailyMissions.stream()
-                    .filter(m -> "EVENING".equalsIgnoreCase(m.getSlotType())).collect(Collectors.toList());
-            List<Mission> anytimeMissions = activeDailyMissions.stream()
-                    .filter(m -> "ANYTIME".equalsIgnoreCase(m.getSlotType())).collect(Collectors.toList());
+            List<Mission> dayMissions = missionAssignmentService.bySlot(activeDailyMissions, "DAY");
+            List<Mission> eveningMissions = missionAssignmentService.bySlot(activeDailyMissions, "EVENING");
+            List<Mission> anytimeMissions = missionAssignmentService.bySlot(activeDailyMissions, "ANYTIME");
 
             if (dayMissions.isEmpty() || eveningMissions.isEmpty() || anytimeMissions.isEmpty()) {
                 log.error("[MISSION SCHEDULER ERROR] Missing missions in one of the slots (DAY: {}, EVENING: {}, ANYTIME: {}).", 
@@ -88,8 +82,9 @@ public class MissionScheduler {
 
                 for (User user : users) {
                     // 카테고리가 겹치지 않는 3가지 미션 선정
-                    List<Mission> selectedMissions = selectNonOverlappingMissions(dayMissions, eveningMissions, anytimeMissions);
-                    
+                    List<Mission> selectedMissions = 
+                    		missionAssignmentService.selectNonOverlappingMissions(dayMissions, eveningMissions, anytimeMissions);
+                  
                     if (selectedMissions != null && selectedMissions.size() == 3) {
                         for (Mission mission : selectedMissions) {
                             assignmentBatch.add(new Object[]{
@@ -103,7 +98,7 @@ public class MissionScheduler {
 
                 // Chunk 단위 벌크 인서트 실행
                 if (!assignmentBatch.isEmpty()) {
-                    executeBatchInsert(insertAssignmentSql, assignmentBatch);
+                    missionAssignmentService.batchInsert(assignmentBatch);
                     log.info("[MISSION SCHEDULER BULK INSERT] Inserted {} assignments.", assignmentBatch.size());
                     assignmentBatch.clear();
                 }
@@ -122,52 +117,54 @@ public class MissionScheduler {
     /**
      * DAY, EVENING, ANYTIME 슬롯 미션 목록에서 서로 카테고리가 중복되지 않는 3종의 미션을 무작위 선택합니다.
      */
-    private List<Mission> selectNonOverlappingMissions(List<Mission> dayList, List<Mission> eveningList, List<Mission> anytimeList) {
-        // 무작위 선택을 위해 각 리스트의 사본을 생성하고 셔플
-        List<Mission> dayMissions = new ArrayList<>(dayList);
-        List<Mission> eveningMissions = new ArrayList<>(eveningList);
-        List<Mission> anytimeMissions = new ArrayList<>(anytimeList);
-
-        Collections.shuffle(dayMissions);
-        Collections.shuffle(eveningMissions);
-        Collections.shuffle(anytimeMissions);
-
-        // 카테고리 중복 회피를 위한 탐색 매칭 루프
-        for (Mission d : dayMissions) {
-            for (Mission e : eveningMissions) {
-                if (d.getCategory().equalsIgnoreCase(e.getCategory())) {
-                    continue;
-                }
-                for (Mission a : anytimeMissions) {
-                    if (d.getCategory().equalsIgnoreCase(a.getCategory()) || e.getCategory().equalsIgnoreCase(a.getCategory())) {
-                        continue;
-                    }
-                    // 성공 매칭 리턴
-                    return List.of(d, e, a);
-                }
-            }
-        }
-        return null;
-    }
+    // => service 쪽으로 옮겼으므로 주석 처리
+//    private List<Mission> selectNonOverlappingMissions(List<Mission> dayList, List<Mission> eveningList, List<Mission> anytimeList) {
+//        // 무작위 선택을 위해 각 리스트의 사본을 생성하고 셔플
+//        List<Mission> dayMissions = new ArrayList<>(dayList);
+//        List<Mission> eveningMissions = new ArrayList<>(eveningList);
+//        List<Mission> anytimeMissions = new ArrayList<>(anytimeList);
+//
+//        Collections.shuffle(dayMissions);
+//        Collections.shuffle(eveningMissions);
+//        Collections.shuffle(anytimeMissions);
+//
+//        // 카테고리 중복 회피를 위한 탐색 매칭 루프
+//        for (Mission d : dayMissions) {
+//            for (Mission e : eveningMissions) {
+//                if (d.getCategory().equalsIgnoreCase(e.getCategory())) {
+//                    continue;
+//                }
+//                for (Mission a : anytimeMissions) {
+//                    if (d.getCategory().equalsIgnoreCase(a.getCategory()) || e.getCategory().equalsIgnoreCase(a.getCategory())) {
+//                        continue;
+//                    }
+//                    // 성공 매칭 리턴
+//                    return List.of(d, e, a);
+//                }
+//            }
+//        }
+//        return null;
+//    }
 
     /**
      * JdbcTemplate의 batchUpdate를 이용하여 assignments 벌크 인서트를 호출합니다.
      */
-    private void executeBatchInsert(String sql, List<Object[]> batchArgs) {
-        jdbcTemplate.batchUpdate(sql, new BatchPreparedStatementSetter() {
-            @Override
-            public void setValues(PreparedStatement ps, int i) throws SQLException {
-                Object[] args = batchArgs.get(i);
-                ps.setLong(1, (Long) args[0]);          // user_id
-                ps.setLong(2, (Long) args[1]);          // mission_id
-                ps.setDate(3, (Date) args[2]);          // assigned_date
-                ps.setString(4, (String) args[3]);      // slot_type
-            }
-
-            @Override
-            public int getBatchSize() {
-                return batchArgs.size();
-            }
-        });
-    }
+    // => service 쪽으로 옮겼으므로 주석 처리
+//    private void executeBatchInsert(String sql, List<Object[]> batchArgs) {
+//        jdbcTemplate.batchUpdate(sql, new BatchPreparedStatementSetter() {
+//            @Override
+//            public void setValues(PreparedStatement ps, int i) throws SQLException {
+//                Object[] args = batchArgs.get(i);
+//                ps.setLong(1, (Long) args[0]);          // user_id
+//                ps.setLong(2, (Long) args[1]);          // mission_id
+//                ps.setDate(3, (Date) args[2]);          // assigned_date
+//                ps.setString(4, (String) args[3]);      // slot_type
+//            }
+//
+//            @Override
+//            public int getBatchSize() {
+//                return batchArgs.size();
+//            }
+//        });
+//    }
 }

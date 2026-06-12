@@ -14,20 +14,25 @@ import com.ecovision.app.domain.dino.repository.DinoTemplateRepository;
 import com.ecovision.app.domain.dino.repository.LevelPolicyRepository;
 import com.ecovision.app.domain.dino.repository.UserDinoCollectionRepository;
 import com.ecovision.app.domain.dino.repository.UserDinoRepository;
+import com.ecovision.app.domain.mission.scheduler.MissionScheduler;
+import com.ecovision.app.domain.mission.service.MissionAssignmentService;
 import com.ecovision.app.global.exception.BusinessException;
 import com.ecovision.app.global.exception.ErrorCode;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 //	공룡 부화(온보딩 마지막 단계) 및 상태 조회.
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class DinoService {
 
 	private final UserDinoRepository userDinoRepository;
 	private final DinoTemplateRepository dinoTemplateRepository;
 	private final UserDinoCollectionRepository collectionRepository;
 	private final LevelPolicyRepository levelPolicyRepository;
+	private final MissionAssignmentService missionAssignmentService;
 
 	// 부화: 1인 1마리 → 보유 시 DINO_ALREADY_EXISTS. 템플릿 검증 후 EGG 생성 + 도감 해금.
 	@Transactional
@@ -46,6 +51,13 @@ public class DinoService {
 			collectionRepository.save(UserDinoCollection.unlock(userId, request.templateId()));
 		}
 
+		// 온보딩 완료 → 당일 미션 즉시 배정 (best-effort: 실패해도 부화는 성공)
+		try {
+		    missionAssignmentService.assignForUser(userId, java.time.LocalDate.now());
+		} catch (Exception e) {
+		    log.warn("[HATCH] 미션 자동 배정 실패 (부화는 정상 완료). userId={}", userId, e);
+		}
+		
 		return new DinoDto.HatchResponse(
 				dino.getId(), dino.getNickname(), dino.getStage().name(), dino.getExp(), dino.getAffinity());
 	}
