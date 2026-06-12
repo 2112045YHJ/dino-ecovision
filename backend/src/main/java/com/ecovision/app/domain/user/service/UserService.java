@@ -179,11 +179,20 @@ public class UserService {
 		}
 	}
 
+	@Transactional
+	public UserDto.ProfileResponse changeAvatar(Long userId, UserDto.AvatarChangeRequest request) {
+		User user = getUser(userId);
+		user.setAvatarUrl(request.avatarUrl());
+		Region region = (user.getRegionId() == null) ? null
+				: regionRepository.findById(user.getRegionId()).orElse(null);
+		return toProfile(user, region);
+	}
+
 	private UserDto.ProfileResponse toProfile(User user, Region region) {
 		boolean hasDino = userDinoRepository.existsByUserId(user.getId());
 		return new UserDto.ProfileResponse(user.getId(), user.getEmail(), user.getNickname(),
 				region == null ? null : region.getRegionCode(), region == null ? null : region.displayName(),
 				user.getTotalPoints(), user.getRankingPoint(), user.getSavedCarbonKg().doubleValue(),
-				user.getRole().name(), user.isOnboardingRequired(hasDino));
+				user.getRole().name(), user.isOnboardingRequired(hasDino), user.getAvatarUrl());
 	}
 }

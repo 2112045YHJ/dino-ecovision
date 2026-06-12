@@ -68,6 +68,13 @@ public class UserController {
 		return ApiResponse.success(userService.changeRegion(userId, request));
 	}
 
+	@PatchMapping("/avatar")
+	public ApiResponse<UserDto.ProfileResponse> changeAvatar(
+			@AuthenticationPrincipal Long userId,
+			@Valid @RequestBody UserDto.AvatarChangeRequest request) {
+		return ApiResponse.success(userService.changeAvatar(userId, request));
+	}
+
 	@GetMapping("/points")
 	public ApiResponse<List<UserDto.PointHistoryResponse>> getPointTimeline(
 			@AuthenticationPrincipal Long userId) {

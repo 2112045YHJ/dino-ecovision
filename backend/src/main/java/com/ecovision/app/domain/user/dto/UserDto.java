@@ -14,7 +14,8 @@ public final class UserDto {
 	// 내 프로필 (GET /api/me, 온보딩/변경 응답 공통)
 	public record ProfileResponse(
 			Long userId, String email, String nickname, String regionCode, String regionName,
-			int totalPoints, int rankingPoint, double savedCarbonKg, String role, boolean onboardingRequired) {}
+			int totalPoints, int rankingPoint, double savedCarbonKg, String role, boolean onboardingRequired,
+			String avatarUrl) {}
 
 	// 닉네임 중복 확인 (GET /api/me/nickname/check)
 	public record NicknameCheckResponse(boolean available) {}
@@ -44,6 +45,12 @@ public final class UserDto {
 			@NotBlank(message = "지역 코드는 필수입니다.")
 			String regionCode
 			) {}
+
+	// 아바타 변경 (PATCH /api/me/avatar)
+	public record AvatarChangeRequest(
+			@NotBlank(message = "아바타 이미지는 필수입니다.")
+			String avatarUrl
+	) {}
 
 	// 포인트 이력 응답 (GET /api/me/points)
 	public record PointHistoryResponse(
