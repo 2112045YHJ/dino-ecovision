@@ -4,46 +4,11 @@ import { useEffect, useState } from "react";
 
 import { getMyDino, type MyDinoResponse } from "../api/dinoApi";
 
-import {
-  dinoImagesByType,
-  type DinoType,
-} from "../assets/images/dinos/dinoImages";
+import { dinoImagesByType } from "../assets/images/dinos/dinoImages";
 
 // 디노룸 배경 이미지입니다.
 // 파일 위치: src/assets/images/dinos/dino-room-bg.png
 import dinoRoomBg from "../assets/images/dinos/dino-room-bg.png";
-
-// 백엔드 응답에는 아직 templateCode가 없고 templateName만 있습니다.
-// 그래서 임시로 templateName 글자를 보고 프론트 공룡 타입으로 바꿉니다.
-//
-// 백엔드 templateName 예시:
-// "에코 티라노"
-// "에코 브라키오"
-// "에코 트리케라"
-function getDinoTypeFromTemplateName(templateName: string): DinoType {
-  if (templateName.includes("티라노") || templateName.includes("TYRANO")) {
-    return "TYRANO";
-  }
-
-  if (
-    templateName.includes("브라키오") ||
-    templateName.includes("BRACHIO") ||
-    templateName.includes("용각")
-  ) {
-    return "SAURO";
-  }
-
-  if (
-    templateName.includes("트리케라") ||
-    templateName.includes("TRICERA") ||
-    templateName.includes("각룡")
-  ) {
-    return "CERATO";
-  }
-
-  // 혹시 모르는 이름이 오면 기본값으로 용각류를 보여줍니다.
-  return "SAURO";
-}
 
 export function DinoRoomPage() {
   // 백엔드에서 받아온 내 공룡 정보입니다.
@@ -59,7 +24,6 @@ export function DinoRoomPage() {
   const [message, setMessage] = useState("공룡을 클릭해보세요!");
 
   // 공룡이 기뻐하는 상태인지 저장합니다.
-  // 지금은 행복 이미지 연결 전이라 말풍선 반응용으로만 사용합니다.
   const [isHappy, setIsHappy] = useState(false);
 
   // 페이지가 처음 열릴 때 내 공룡 정보를 백엔드에서 가져옵니다.
@@ -95,7 +59,7 @@ export function DinoRoomPage() {
     );
   }
 
-  // 에러가 났을 때 보여줄 화면입니다.
+  // 에러가 났거나 공룡 정보가 없을 때 보여줄 화면입니다.
   if (errorMessage || !dino) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-[#FAF9F5] p-6 text-[#2C3531]">
@@ -114,14 +78,16 @@ export function DinoRoomPage() {
     );
   }
 
-  // 백엔드 templateName을 프론트 DinoType으로 바꿉니다.
-  const dinoType = getDinoTypeFromTemplateName(dino.templateName);
+  // 백엔드에서 받은 templateCode를 그대로 사용합니다.
+  // 예: TYRANO / SAURO / CERATO
+  const dinoType = dino.templateCode;
 
   // EXP 진행률을 계산합니다.
   // 예: 240 / 1000 * 100 = 24%
   const expPercent = Math.min((dino.exp / dino.nextStageExp) * 100, 100);
 
   // 현재 화면에 보여줄 공룡 이미지입니다.
+  // 예: dinoImagesByType["SAURO"]["EGG"]
   const currentDinoImage = dinoImagesByType[dinoType][dino.stage];
 
   // 공룡을 클릭했을 때 실행됩니다.
@@ -234,8 +200,7 @@ export function DinoRoomPage() {
               </p>
 
               <p className="mt-1 text-xs text-gray-500">
-                templateCode가 추가되기 전까지 templateName을 기준으로 임시
-                매칭합니다.
+                백엔드의 templateCode를 기준으로 이미지를 표시합니다.
               </p>
             </div>
           </aside>

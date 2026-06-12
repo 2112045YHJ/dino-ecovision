@@ -16,6 +16,11 @@ type ApiResponse<T> = {
 
 // 공룡 선택 저장 요청 타입입니다.
 // 백엔드가 확인해준 요청 body 형태입니다.
+// POST /api/me/dino/hatch 요청 body:
+// {
+//   "templateId": 1,
+//   "nickname": "초록초록이"
+// }
 type HatchDinoRequest = {
   templateId: number;
   nickname: string;
@@ -33,10 +38,15 @@ export type HatchDinoResponse = {
 
 // 내 공룡 조회 응답 타입입니다.
 // GET /api/me/dino 응답입니다.
-// templateCode는 아직 백엔드가 추가 가능 여부 확인 중이므로 지금은 넣지 않습니다.
 export type MyDinoResponse = {
   dinoId: number;
   nickname: string;
+
+  // 백엔드에서 내려주는 공룡 코드입니다.
+  // 프론트 이미지 매핑에 사용합니다.
+  // 예: TYRANO / SAURO / CERATO
+  templateCode: DinoType;
+
   templateName: string;
   stage: DinoStage;
   exp: number;

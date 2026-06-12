@@ -1,9 +1,9 @@
 // src/mocks/quizMock.ts
 
-import type { Quiz } from "../types/quiz";
+import type { MockQuiz } from "../types/quiz";
 
 // 백엔드 API가 완성되기 전까지 사용할 가짜 퀴즈 데이터입니다.
-export const mockTodayQuiz: Quiz = {
+export const mockTodayQuiz: MockQuiz = {
   quizId: 1,
   question:
     "사용하지 않는 가전제품의 플러그를 뽑는 행동은 무엇을 줄이는 데 도움이 될까요?",

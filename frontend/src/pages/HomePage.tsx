@@ -8,45 +8,10 @@ import { getMyDino, type MyDinoResponse } from "../api/dinoApi";
 
 import { EcoQuizModal } from "../components/quiz/EcoQuizModal";
 
-import {
-  dinoImagesByType,
-  type DinoType,
-} from "../assets/images/dinos/dinoImages";
+import { dinoImagesByType } from "../assets/images/dinos/dinoImages";
 
 import { mockHomeStatus } from "../mocks/homeMock";
 import { mockTodayQuiz } from "../mocks/quizMock";
-
-// 백엔드 응답에는 아직 templateCode가 없고 templateName만 있습니다.
-// 그래서 임시로 templateName 글자를 보고 프론트 공룡 타입으로 바꿉니다.
-//
-// 예:
-// "에코 티라노" -> TYRANO
-// "에코 브라키오" -> SAURO
-// "에코 트리케라" -> CERATO
-function getDinoTypeFromTemplateName(templateName: string): DinoType {
-  if (templateName.includes("티라노") || templateName.includes("TYRANO")) {
-    return "TYRANO";
-  }
-
-  if (
-    templateName.includes("브라키오") ||
-    templateName.includes("BRACHIO") ||
-    templateName.includes("용각")
-  ) {
-    return "SAURO";
-  }
-
-  if (
-    templateName.includes("트리케라") ||
-    templateName.includes("TRICERA") ||
-    templateName.includes("각룡")
-  ) {
-    return "CERATO";
-  }
-
-  // 혹시 모르는 이름이 오면 기본값으로 용각류 이미지를 보여줍니다.
-  return "SAURO";
-}
 
 export function HomePage() {
   // 페이지 이동을 도와주는 함수입니다.
@@ -115,11 +80,11 @@ export function HomePage() {
     }
   };
 
-  // 내 공룡 이미지 계산
-  const myDinoType = myDino
-    ? getDinoTypeFromTemplateName(myDino.templateName)
-    : null;
+  // 백엔드에서 받은 templateCode를 그대로 사용합니다.
+  // 예: TYRANO / SAURO / CERATO
+  const myDinoType = myDino ? myDino.templateCode : null;
 
+  // 내 공룡 이미지 계산
   const myDinoImage =
     myDino && myDinoType ? dinoImagesByType[myDinoType][myDino.stage] : null;
 
@@ -254,7 +219,7 @@ export function HomePage() {
               <button
                 type="button"
                 className="mt-4 w-full rounded-2xl bg-[#5F8C74] py-3 font-bold text-white transition hover:bg-[#4d735f]"
-                onClick={() => navigate("/dino-selection")}
+                onClick={() => navigate("/onboarding/dino")}
               >
                 공룡 선택하러 가기
               </button>
