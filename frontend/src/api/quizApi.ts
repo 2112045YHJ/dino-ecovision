@@ -14,7 +14,7 @@ type ApiResponse<T> = {
   error: {
     code: string;
     message: string;
-    details: unknown[];
+    details?: unknown[];
   } | null;
 };
 
@@ -42,7 +42,7 @@ export async function getTodayQuiz(): Promise<TodayQuiz> {
 
   const result = (await response.json()) as ApiResponse<TodayQuiz>;
 
-  if (!response.ok) {
+  if (!response.ok || result.success === false) {
     throw new Error(
       result.error?.message ?? "오늘의 퀴즈를 불러오지 못했습니다.",
     );
@@ -66,7 +66,7 @@ export async function submitQuizAnswer(
 
   const result = (await response.json()) as ApiResponse<SubmitQuizResult>;
 
-  if (!response.ok) {
+  if (!response.ok || result.success === false) {
     throw new Error(result.error?.message ?? "퀴즈 제출에 실패했습니다.");
   }
 

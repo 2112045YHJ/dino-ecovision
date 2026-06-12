@@ -10,7 +10,7 @@ type ApiResponse<T> = {
   error: {
     code: string;
     message: string;
-    details: unknown[];
+    details?: unknown[];
   } | null;
 };
 
@@ -43,15 +43,37 @@ export type MyDinoResponse = {
   nickname: string;
 
   // 백엔드에서 내려주는 공룡 코드입니다.
-  // 프론트 이미지 매핑에 사용합니다.
   // 예: TYRANO / SAURO / CERATO
-  templateCode: DinoType;
+  // 백엔드에서 BRACHIO / TRICERA처럼 다른 이름이 올 수도 있어서 string도 허용합니다.
+  templateCode: DinoType | string;
 
   templateName: string;
-  stage: DinoStage;
+  stage: DinoStage | string;
   exp: number;
   nextStageExp: number;
   affinity: number;
+};
+
+// 공룡 도감 아이템 타입입니다.
+// GET /api/me/dino/collection 응답의 한 줄입니다.
+//
+// 정확한 백엔드 응답을 아직 못 봤기 때문에
+// 자주 쓰는 필드는 optional(?)로 열어둡니다.
+// 이렇게 하면 필드가 조금 달라도 프론트가 바로 터지지 않습니다.
+export type DinoCollectionItem = {
+  collectionId?: number;
+  dinoId?: number;
+
+  templateId?: number;
+  templateCode?: DinoType | string;
+  templateName?: string;
+
+  nickname?: string;
+  stage?: DinoStage | string;
+
+  owned?: boolean;
+  acquired?: boolean;
+  acquiredAt?: string | null;
 };
 
 // 프론트 공룡 타입을 백엔드 templateId로 바꿔주는 표입니다.
@@ -76,6 +98,21 @@ function createAuthHeaders() {
   };
 }
 
+// 공통으로 API 응답을 확인하는 함수입니다.
+// success가 false거나 HTTP 상태가 실패면 에러를 던집니다.
+async function readApiResponse<T>(
+  response: Response,
+  fallbackMessage: string,
+): Promise<T> {
+  const result = (await response.json()) as ApiResponse<T>;
+
+  if (!response.ok || result.success === false) {
+    throw new Error(result.error?.message ?? fallbackMessage);
+  }
+
+  return result.data;
+}
+
 // 공룡 선택 저장 API
 // POST /api/me/dino/hatch
 export async function hatchDino(params: {
@@ -94,13 +131,10 @@ export async function hatchDino(params: {
     body: JSON.stringify(request),
   });
 
-  const result = (await response.json()) as ApiResponse<HatchDinoResponse>;
-
-  if (!response.ok) {
-    throw new Error(result.error?.message ?? "공룡 선택 저장에 실패했습니다.");
-  }
-
-  return result.data;
+  return readApiResponse<HatchDinoResponse>(
+    response,
+    "공룡 선택 저장에 실패했습니다.",
+  );
 }
 
 // 내 공룡 조회 API
@@ -112,13 +146,30 @@ export async function getMyDino(): Promise<MyDinoResponse> {
     headers: createAuthHeaders(),
   });
 
-  const result = (await response.json()) as ApiResponse<MyDinoResponse>;
+  return readApiResponse<MyDinoResponse>(
+    response,
+    "내 공룡 정보를 불러오지 못했습니다.",
+  );
+}
 
-  if (!response.ok) {
-    throw new Error(
-      result.error?.message ?? "내 공룡 정보를 불러오지 못했습니다.",
-    );
+// 내 공룡 도감 조회 API
+// GET /api/me/dino/collection
+export async function getMyDinoCollection(): Promise<DinoCollectionItem[]> {
+  const response = await fetch(`${API_BASE_URL}/api/me/dino/collection`, {
+    method: "GET",
+    credentials: "include",
+    headers: createAuthHeaders(),
+  });
+
+  const data = await readApiResponse<
+    DinoCollectionItem[] | { items?: DinoCollectionItem[] }
+  >(response, "공룡 도감 정보를 불러오지 못했습니다.");
+
+  // 백엔드가 data: [...] 형태로 주는 경우
+  if (Array.isArray(data)) {
+    return data;
   }
 
-  return result.data;
+  // 백엔드가 data: { items: [...] } 형태로 주는 경우도 방어
+  return data.items ?? [];
 }

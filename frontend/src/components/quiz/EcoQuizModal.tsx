@@ -1,41 +1,60 @@
 // src/components/quiz/EcoQuizModal.tsx
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
-import { submitQuizAnswer } from "../../api/quizApi";
+import { getTodayQuiz, submitQuizAnswer } from "../../api/quizApi";
+import type { SubmitQuizResult, TodayQuiz } from "../../types/quiz";
 
-import type {
-  QuizOptionKey,
-  SubmitQuizResult,
-  TodayQuiz,
-} from "../../types/quiz";
-
-interface EcoQuizModalProps {
-  quiz: TodayQuiz;
+type EcoQuizModalProps = {
   onClose: () => void;
+};
+
+function getOptionNo(option: { optionNo?: number; optioinNo?: number }) {
+  return option.optionNo ?? option.optioinNo;
 }
 
-export function EcoQuizModal({ quiz, onClose }: EcoQuizModalProps) {
-  // 사용자가 선택한 답입니다.
-  const [selectedKey, setSelectedKey] = useState<QuizOptionKey | null>(null);
+function getExplanation(result: SubmitQuizResult) {
+  return result.explanation ?? result.explantaion ?? "해설 정보가 없습니다.";
+}
 
-  // 제출이 끝났는지 저장합니다.
-  const [isSubmitted, setIsSubmitted] = useState(false);
-
-  // 제출 중인지 저장합니다.
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // 백엔드에서 받은 채점 결과입니다.
+export function EcoQuizModal({ onClose }: EcoQuizModalProps) {
+  const [quiz, setQuiz] = useState<TodayQuiz | null>(null);
+  const [selectedOptionNo, setSelectedOptionNo] = useState<number | null>(null);
   const [submitResult, setSubmitResult] = useState<SubmitQuizResult | null>(
     null,
   );
 
-  // 에러 메시지입니다.
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
+  useEffect(() => {
+    const fetchQuiz = async () => {
+      try {
+        setIsLoading(true);
+        setErrorMessage("");
+
+        const data = await getTodayQuiz();
+
+        setQuiz(data);
+      } catch (error) {
+        console.error(error);
+
+        if (error instanceof Error) {
+          setErrorMessage(error.message);
+        } else {
+          setErrorMessage("오늘의 퀴즈를 불러오지 못했습니다.");
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchQuiz();
+  }, []);
+
   const handleSubmit = async () => {
-    if (!selectedKey) {
-      alert("정답을 선택해주세요.");
+    if (!quiz || selectedOptionNo === null) {
       return;
     }
 
@@ -44,113 +63,139 @@ export function EcoQuizModal({ quiz, onClose }: EcoQuizModalProps) {
       setErrorMessage("");
 
       const result = await submitQuizAnswer(quiz.quizId, {
-        answerKey: selectedKey,
+        optionNo: selectedOptionNo,
       });
 
       setSubmitResult(result);
-      setIsSubmitted(true);
     } catch (error) {
       console.error(error);
 
-      const message =
-        error instanceof Error ? error.message : "퀴즈 제출에 실패했습니다.";
-
-      setErrorMessage(message);
+      if (error instanceof Error) {
+        setErrorMessage(error.message);
+      } else {
+        setErrorMessage("퀴즈 제출에 실패했습니다.");
+      }
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  const alreadyAttempted = quiz?.attempted === true;
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4">
-      <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-xl">
-        <p className="text-sm font-bold text-[#5F8C74]">DAILY ECO QUIZ</p>
+      <section className="w-full max-w-md rounded-3xl bg-white p-6 shadow-xl">
+        <header className="text-center">
+          <p className="text-sm font-bold text-[#5F8C74]">ECO QUIZ</p>
 
-        <h2 className="mt-2 text-xl font-bold text-[#2C3531]">
-          오늘의 에코 퀴즈
-        </h2>
+          <h2 className="mt-2 text-xl font-bold text-[#2C3531]">
+            오늘의 데일리 에코 퀴즈
+          </h2>
+        </header>
 
-        <p className="mt-4 rounded-2xl bg-[#FAF9F5] p-4 text-sm font-medium text-[#2C3531]">
-          {quiz.question}
-        </p>
+        {isLoading && (
+          <div className="mt-5 rounded-2xl bg-[#FAF9F5] p-4 text-center text-sm font-bold text-gray-500">
+            퀴즈를 불러오는 중입니다...
+          </div>
+        )}
 
-        <div className="mt-4 grid gap-2">
-          {quiz.options.map((option) => {
-            const isSelected = selectedKey === option.key;
-            const isCorrectAnswer =
-              isSubmitted && submitResult?.correctAnswerKey === option.key;
-
-            return (
-              <button
-                key={option.key}
-                type="button"
-                disabled={isSubmitted || isSubmitting}
-                onClick={() => setSelectedKey(option.key)}
-                className={`rounded-2xl border p-3 text-left text-sm transition ${
-                  isCorrectAnswer
-                    ? "border-[#5F8C74] bg-[#E8F2EC] font-bold text-[#5F8C74]"
-                    : isSelected
-                      ? "border-[#5F8C74] bg-[#E8F2EC] font-bold text-[#5F8C74]"
-                      : "border-[#E8F2EC] bg-white text-gray-700 hover:bg-[#FAF9F5]"
-                }`}
-              >
-                <span className="mr-2 font-bold">{option.key}.</span>
-                {option.text}
-              </button>
-            );
-          })}
-        </div>
-
-        {errorMessage && (
+        {!isLoading && errorMessage && (
           <div className="mt-5 rounded-2xl bg-[#FFF0EA] p-4 text-sm font-bold text-[#E07A5F]">
             {errorMessage}
           </div>
         )}
 
-        {isSubmitted && submitResult && (
-          <div className="mt-5 rounded-2xl bg-[#FAF9F5] p-4">
-            <p
-              className={`font-bold ${
-                submitResult.correct ? "text-[#5F8C74]" : "text-[#E07A5F]"
-              }`}
-            >
-              {submitResult.correct
-                ? `정답입니다! +${submitResult.earnedPoint}P를 획득했어요.`
-                : "아쉽지만 오답이에요."}
-            </p>
+        {!isLoading && quiz && (
+          <>
+            <div className="mt-5 rounded-2xl border border-[#E8F2EC] bg-[#FAF9F5] p-4 text-sm leading-6">
+              <strong>Q. {quiz.question}</strong>
+            </div>
 
-            <p className="mt-2 text-sm text-gray-600">
-              정답: {submitResult.correctAnswerKey}
-            </p>
+            <div className="mt-4 flex flex-col gap-2">
+              {quiz.options.map((option) => {
+                const optionNo = getOptionNo(option);
 
-            <p className="mt-2 text-sm text-gray-600">
-              {submitResult.explanation}
-            </p>
-          </div>
+                if (optionNo === undefined) {
+                  return null;
+                }
+
+                const isSelected = selectedOptionNo === optionNo;
+                const isAnswer =
+                  submitResult !== null && submitResult.answerNo === optionNo;
+
+                return (
+                  <button
+                    key={optionNo}
+                    type="button"
+                    disabled={alreadyAttempted || submitResult !== null}
+                    onClick={() => setSelectedOptionNo(optionNo)}
+                    className={[
+                      "rounded-2xl border px-4 py-3 text-left text-sm font-bold transition",
+                      isSelected
+                        ? "border-[#5F8C74] bg-[#E8F2EC] text-[#5F8C74]"
+                        : "border-[#E8F2EC] bg-white text-[#2C3531]",
+                      isAnswer ? "border-[#E07A5F] bg-[#FFF0EA]" : "",
+                    ].join(" ")}
+                  >
+                    {optionNo}번) {option.text}
+                  </button>
+                );
+              })}
+            </div>
+
+            {alreadyAttempted && (
+              <div className="mt-4 rounded-2xl bg-[#FAF9F5] p-4 text-sm font-bold text-[#5F8C74]">
+                오늘의 퀴즈는 이미 참여했습니다.
+              </div>
+            )}
+
+            {submitResult && (
+              <div className="mt-4 rounded-2xl bg-[#FAF9F5] p-4 text-sm">
+                <p className="font-bold text-[#5F8C74]">
+                  {submitResult.correct ? "정답입니다!" : "오답입니다."}
+                </p>
+
+                <p className="mt-2 text-gray-700">
+                  정답 번호: {submitResult.answerNo}번
+                </p>
+
+                <p className="mt-2 leading-6 text-gray-700">
+                  {getExplanation(submitResult)}
+                </p>
+
+                <p className="mt-2 font-bold text-[#E07A5F]">
+                  지급 보상: +{submitResult.rewardGranted} AP
+                </p>
+              </div>
+            )}
+          </>
         )}
 
-        <div className="mt-6 flex gap-3">
+        <footer className="mt-6 flex gap-3">
           <button
             type="button"
-            className="flex-1 rounded-2xl border border-[#E8F2EC] py-3 font-bold text-gray-600 disabled:bg-gray-100"
             onClick={onClose}
-            disabled={isSubmitting}
+            className="flex-1 rounded-2xl border border-gray-300 bg-white py-3 text-sm font-bold text-gray-600"
           >
             닫기
           </button>
 
-          {!isSubmitted && (
-            <button
-              type="button"
-              className="flex-1 rounded-2xl bg-[#5F8C74] py-3 font-bold text-white transition hover:bg-[#4d735f] disabled:bg-gray-300"
-              onClick={handleSubmit}
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? "제출 중..." : "정답 제출"}
-            </button>
-          )}
-        </div>
-      </div>
+          <button
+            type="button"
+            disabled={
+              isLoading ||
+              isSubmitting ||
+              alreadyAttempted ||
+              submitResult !== null ||
+              selectedOptionNo === null
+            }
+            onClick={handleSubmit}
+            className="flex-1 rounded-2xl bg-[#5F8C74] py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:bg-gray-300"
+          >
+            {isSubmitting ? "제출 중..." : `정답 제출`}
+          </button>
+        </footer>
+      </section>
     </div>
   );
 }
