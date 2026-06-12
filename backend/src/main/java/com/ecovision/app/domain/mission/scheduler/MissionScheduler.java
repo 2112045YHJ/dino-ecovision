@@ -3,6 +3,7 @@ package com.ecovision.app.domain.mission.scheduler;
 import com.ecovision.app.domain.mission.entity.Mission;
 import com.ecovision.app.domain.mission.repository.MissionRepository;
 import com.ecovision.app.domain.user.entity.User;
+import com.ecovision.app.domain.user.entity.UserStatus;
 import com.ecovision.app.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -81,7 +82,7 @@ public class MissionScheduler {
             List<Object[]> assignmentBatch = new ArrayList<>(pageSize * 3);
 
             do {
-                userPage = userRepository.findByStatusAndDeletedAtIsNull("ACTIVE", PageRequest.of(page, pageSize));
+                userPage = userRepository.findByStatusAndDeletedAtIsNull(UserStatus.ACTIVE, PageRequest.of(page, pageSize));
                 List<User> users = userPage.getContent();
                 log.info("[MISSION SCHEDULER PROCESSING] Page: {}, Users in page: {}", page, users.size());
 

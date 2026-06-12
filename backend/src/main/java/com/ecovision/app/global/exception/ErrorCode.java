@@ -39,7 +39,12 @@ public enum ErrorCode {
 	// dino 도메인 코드
 	DINO_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 공룡을 보유하고 있습니다."),
 	INVALID_TEMPLATE(HttpStatus.BAD_REQUEST, "존재하지 않는 공룡 템플릿입니다."),
-	DINO_NOT_FOUND(HttpStatus.NOT_FOUND, "보유한 공룡이 없습니다.");
+	DINO_NOT_FOUND(HttpStatus.NOT_FOUND, "보유한 공룡이 없습니다."),
+	
+	// mission 도메인 코드
+	ASSIGNMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "본인에게 배정되지 않은 미션입니다."),
+	ALREADY_COMPLETED(HttpStatus.CONFLICT, "이미 완료한 미션입니다."),
+	MISSION_EXPIRED(HttpStatus.BAD_REQUEST, "만료된 미션입니다.");
 	
 	private final HttpStatus status;
 	private final String message;

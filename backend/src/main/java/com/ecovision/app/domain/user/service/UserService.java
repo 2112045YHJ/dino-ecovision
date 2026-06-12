@@ -58,9 +58,14 @@ public class UserService {
 	@Transactional
 	public UserDto.ProfileResponse onboarding(Long userId, UserDto.OnboardingRequest request) {
 		User user = getUser(userId);
-		if (user.isOnboarded()) {
+		
+		// 전체 온보딩 완료(닉네임, 지역, 공룡)된 사용자만 중복 차단
+		// 닉네임, 지역만 있고 공룡이 없는 상태는 '공룡 선택 단계'이므로 1단계 재호출 허용
+		boolean hasDino = userDinoRepository.existsByUserId(userId);
+		if (!user.isOnboardingRequired(hasDino)) {
 			throw new BusinessException(ErrorCode.ALREADY_ONBOARDED);
 		}
+		
 		if (userRepository.existsByNickname(request.nickname())) {
 			throw new BusinessException(ErrorCode.DUPLICATE_NICKNAME);
 		}

@@ -86,12 +86,7 @@ public class User {
     public boolean isOnboarded() {
         return nickname != null && regionId != null;
     }
-
-    // 온보딩 미완료 여부 (dino 정보가 없는 로그인 단계 등에서 사용)
-    public boolean isOnboardingRequired() {
-        return nickname == null || regionId == null;
-    }
-
+    
     // 온보딩 미완료 여부
     // 명세상 닉네임 + 지역 + 공룡 보유까지 필요
     // 공룡 보유 여부(hasDino)는 dino 도메인 조회 결과를 서비스에서 주입
@@ -103,6 +98,15 @@ public class User {
         return status == UserStatus.ACTIVE && deletedAt == null;
     }
 
+    // 날짜가 바뀌었으면 0으로 간주(자정 리셋 전 완료 대비)
+    // 상한 계산용
+    public int effectiveTodayAccumulated(LocalDate today) {
+    	if(lastPointAccumulatedDate == null || !lastPointAccumulatedDate.equals(today)) {
+    		return 0;
+    	}
+    	return todayPointsAccumulated;
+    }
+    
     // ===== 변경 동작 =====
 
     // 온보딩 등록
@@ -122,5 +126,15 @@ public class User {
     public void changeRegion(Long regionId, LocalDateTime now) {
         this.regionId = regionId;
         this.lastRegionChangedAt = now;
+    }
+    
+    // 미션 완료 적립: total/today/ranking/saved_carbon 갱신 (today는 날짜 리셋 반영)
+    public void applyMissionReward(int earnedPoint, BigDecimal reductionKg, LocalDate today) {
+    	int base = effectiveTodayAccumulated(today);
+    	this.todayPointsAccumulated = base + earnedPoint;
+    	this.lastPointAccumulatedDate = today;
+    	this.totalPoints += earnedPoint;
+    	this.rankingPoint += earnedPoint;
+    	this.savedCarbonKg = this.savedCarbonKg.add(reductionKg);
     }
 }
