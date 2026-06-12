@@ -1,54 +1,100 @@
 // src/pages/HomePage.tsx
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { Header } from "../components/layout/Header";
 import { EcoQuizModal } from "../components/quiz/EcoQuizModal";
+import { logout } from "../api/authApi";
+import { getMyDino, type MyDinoResponse } from "../api/dinoApi";
 
 import {
   dinoImagesByType,
-  type DinoStage,
   type DinoType,
 } from "../assets/images/dinos/dinoImages";
 
 import { mockHomeStatus } from "../mocks/homeMock";
-import { mockMyDino } from "../mocks/dinoMock";
 import { mockTodayQuiz } from "../mocks/quizMock";
 
-interface StoredDino {
-  type: DinoType;
-  name: string;
-  stage: DinoStage;
-  exp: number;
-  maxExp: number;
-  affinity: number;
+function getDinoTypeFromTemplateName(templateName: string): DinoType {
+  if (templateName.includes("티라노") || templateName.includes("TYRANO")) {
+    return "TYRANO";
+  }
+
+  if (
+    templateName.includes("브라키오") ||
+    templateName.includes("BRACHIO") ||
+    templateName.includes("용각")
+  ) {
+    return "SAURO";
+  }
+
+  if (
+    templateName.includes("트리케라") ||
+    templateName.includes("TRICERA") ||
+    templateName.includes("각룡")
+  ) {
+    return "CERATO";
+  }
+
+  return "SAURO";
 }
 
 export function HomePage() {
   const navigate = useNavigate();
   const [isQuizOpen, setIsQuizOpen] = useState(false);
 
-  const dino = mockMyDino;
+  // 백엔드에서 받아온 내 공룡 정보
+  const [myDino, setMyDino] = useState<MyDinoResponse | null>(null);
+  // 내 공룡 정보를 불러오는 중인지 저장
+  const [isDinoLoading, setIsDinoLoading] = useState(true);
+  // 내 공룡 정보를 불러오지 못했을 때 메시지
+  const [dinoErrorMessage, setDinoErrorMessage] = useState("");
+
   const homeStatus = mockHomeStatus;
-
-  const savedDinoText = localStorage.getItem("myDino");
-  const savedDino = savedDinoText
-    ? (JSON.parse(savedDinoText) as StoredDino)
-    : null;
-
-  const homeDino: StoredDino = savedDino ?? {
-    type: "SAURO",
-    name: dino.name,
-    stage: dino.stage as DinoStage,
-    exp: dino.exp,
-    maxExp: dino.requiredExp,
-    affinity: dino.intimacy,
-  };
-
-  const homeDinoImage = dinoImagesByType[homeDino.type][homeDino.stage];
   const missionProgressText = `${homeStatus.completedMissionCount} / ${homeStatus.todayMissionCount}`;
   const reserveBarWidth = Math.min(homeStatus.powerReserveRate * 5, 100);
+
+  // 내 공룡 정보 로드
+  useEffect(() => {
+    const fetchMyDino = async () => {
+      try {
+        setIsDinoLoading(true);
+        setDinoErrorMessage("");
+        const data = await getMyDino();
+        setMyDino(data);
+      } catch (error) {
+        console.error(error);
+        setDinoErrorMessage("내 공룡 정보를 불러오지 못했습니다.");
+      } finally {
+        setIsDinoLoading(false);
+      }
+    };
+
+    fetchMyDino();
+  }, []);
+
+  // 로그아웃 버튼 액션
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (error) {
+      console.error(error);
+    } finally {
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("role");
+      localStorage.removeItem("myDino");
+      navigate("/login");
+    }
+  };
+
+  // 내 공룡 이미지 계산
+  const myDinoType = myDino
+    ? getDinoTypeFromTemplateName(myDino.templateName)
+    : null;
+
+  const myDinoImage =
+    myDino && myDinoType ? dinoImagesByType[myDinoType][myDino.stage] : null;
 
   return (
     <div className="min-h-screen bg-[#FAF9F5] text-[#2C3531]">
@@ -56,13 +102,23 @@ export function HomePage() {
       <Header />
 
       <main className="mx-auto max-w-4xl p-6">
-        {/* 상단 제목 영역 */}
-        <header className="mb-6">
-          <p className="text-sm font-bold text-[#5F8C74]">ECOVISION</p>
-          <h1 className="mt-1 text-3xl font-bold text-[#2C3531]">오늘의 탄소 절감 현황</h1>
-          <p className="mt-1 text-sm text-gray-600">
-            전력 상황을 확인하고, 미션과 퀴즈로 공룡을 성장시켜보세요.
-          </p>
+        {/* 상단 제목 및 로그아웃 버튼 영역 */}
+        <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <p className="text-sm font-bold text-[#5F8C74]">ECOVISION</p>
+            <h1 className="mt-1 text-3xl font-bold text-[#2C3531]">오늘의 탄소 절감 현황</h1>
+            <p className="mt-1 text-sm text-gray-600">
+              전력 상황을 확인하고, 미션과 퀴즈로 공룡을 성장시켜보세요.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="rounded-2xl border border-[#5F8C74] px-4 py-2 text-xs font-bold text-[#5F8C74] transition hover:bg-[#E8F2EC] cursor-pointer shadow-xs self-start"
+          >
+            로그아웃
+          </button>
         </header>
 
         {/* 던전 경고 영역 */}
@@ -166,60 +222,89 @@ export function HomePage() {
           {/* 오른쪽 열: 내 디노 및 미션 요약 */}
           <div className="flex flex-col gap-6">
             {/* 내 공룡 요약 카드 */}
-            <article className="rounded-3xl border border-[#E8F2EC] bg-white p-6 shadow-sm flex flex-col justify-between">
+            <article className="rounded-3xl border border-[#E8F2EC] bg-white p-6 shadow-sm flex flex-col justify-between min-h-[300px]">
               <div>
                 <p className="text-xs font-bold text-[#5F8C74] tracking-wider mb-4">MY DINO</p>
                 
-                <div className="flex items-center gap-5">
-                  {/* 디노 이미지 랩 */}
-                  <div className="flex h-28 w-28 shrink-0 items-center justify-center rounded-3xl bg-[#E8F2EC] border border-[#5F8C74]/10 shadow-sm">
-                    <img
-                      src={homeDinoImage}
-                      alt={`${homeDino.name} 이미지`}
-                      className="h-24 object-contain animate-wiggle"
-                    />
+                {isDinoLoading && (
+                  <div className="rounded-2xl bg-[#FAF9F5] p-4 text-xs font-bold text-gray-500 animate-pulse text-center">
+                    🦕 내 공룡 정보를 불러오는 중...
                   </div>
+                )}
 
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <h2 className="text-lg font-bold text-gray-800 truncate">{homeDino.name}</h2>
-                      <span className="text-[10px] font-bold text-[#5F8C74] bg-[#E8F2EC] px-2 py-0.5 rounded-full uppercase border border-[#5F8C74]/20">
-                        {homeDino.stage}
-                      </span>
-                    </div>
-
-                    <p className="mt-2 text-xs text-gray-500">
-                      공룡 타입: <span className="font-bold text-gray-700">{homeDino.type}</span>
-                    </p>
-                    
-                    {/* 경험치 바 */}
-                    <div className="mt-2">
-                      <div className="flex justify-between text-[10px] text-gray-500 mb-1">
-                        <span>EXP {homeDino.exp} / {homeDino.maxExp}</span>
-                        <span>{Math.round((homeDino.exp / homeDino.maxExp) * 100)}%</span>
-                      </div>
-                      <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-[#5F8C74] rounded-full"
-                          style={{ width: `${Math.min((homeDino.exp / homeDino.maxExp) * 100, 100)}%` }}
-                        />
-                      </div>
-                    </div>
-
-                    <p className="mt-2 text-xs text-gray-500">
-                      친밀도: <span className="font-bold text-gray-700">{homeDino.affinity} / 100 ♡</span>
+                {!isDinoLoading && dinoErrorMessage && (
+                  <div className="rounded-2xl bg-[#FFF1EC] p-4 text-xs font-bold text-[#E07A5F] text-center border border-[#E07A5F]/20">
+                    <p>{dinoErrorMessage}</p>
+                    <p className="mt-1 text-[10px] font-normal text-gray-500">
+                      공룡 선택을 완료하지 않았다면 아래 버튼으로 가 분양받아주세요.
                     </p>
                   </div>
-                </div>
+                )}
+
+                {!isDinoLoading && myDino && myDinoImage && (
+                  <div className="flex items-center gap-5">
+                    {/* 디노 이미지 랩 */}
+                    <div className="flex h-28 w-28 shrink-0 items-center justify-center rounded-3xl bg-[#E8F2EC] border border-[#5F8C74]/10 shadow-sm">
+                      <img
+                        src={myDinoImage}
+                        alt={`${myDino.nickname} 이미지`}
+                        className="h-24 object-contain animate-wiggle"
+                      />
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <h2 className="text-lg font-bold text-gray-800 truncate">{myDino.nickname}</h2>
+                        <span className="text-[10px] font-bold text-[#5F8C74] bg-[#E8F2EC] px-2 py-0.5 rounded-full uppercase border border-[#5F8C74]/20">
+                          {myDino.stage}
+                        </span>
+                      </div>
+
+                      <p className="mt-2 text-xs text-gray-500">
+                        공룡 타입: <span className="font-bold text-gray-700">{myDino.templateName}</span>
+                      </p>
+                      
+                      {/* 경험치 바 */}
+                      <div className="mt-2">
+                        <div className="flex justify-between text-[10px] text-gray-500 mb-1">
+                          <span>EXP {myDino.exp} / {myDino.nextStageExp}</span>
+                          <span>{Math.round((myDino.exp / myDino.nextStageExp) * 100)}%</span>
+                        </div>
+                        <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-[#5F8C74] rounded-full"
+                            style={{ width: `${Math.min((myDino.exp / myDino.nextStageExp) * 100, 100)}%` }}
+                          />
+                        </div>
+                      </div>
+
+                      <p className="mt-2 text-xs text-gray-500">
+                        친밀도: <span className="font-bold text-gray-700">{myDino.affinity} / 100 ♡</span>
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
 
-              <button
-                type="button"
-                className="mt-6 w-full rounded-2xl bg-[#5F8C74] py-3 text-sm font-bold text-white transition hover:bg-[#4d735f] cursor-pointer shadow-sm"
-                onClick={() => navigate("/dino-room")}
-              >
-                디노 룸 가기
-              </button>
+              {!isDinoLoading && myDino && (
+                <button
+                  type="button"
+                  className="mt-6 w-full rounded-2xl bg-[#5F8C74] py-3 text-sm font-bold text-white transition hover:bg-[#4d735f] cursor-pointer shadow-sm"
+                  onClick={() => navigate("/dino-room")}
+                >
+                  디노 룸 가기
+                </button>
+              )}
+
+              {!isDinoLoading && !myDino && (
+                <button
+                  type="button"
+                  className="mt-6 w-full rounded-2xl bg-[#5F8C74] py-3 text-sm font-bold text-white transition hover:bg-[#4d735f] cursor-pointer shadow-sm"
+                  onClick={() => navigate("/onboarding/dino")}
+                >
+                  🦕 공룡 알 선택하러 가기
+                </button>
+              )}
             </article>
 
             {/* 오늘의 미션 요약 카드 */}
@@ -244,7 +329,7 @@ export function HomePage() {
                   오늘 배정된 탄소 절감 미션을 완료하고 포인트와 EXP를 얻어보세요.
                 </p>
 
-                {/* 미션 간이 리스트 (스토리보드 반영) */}
+                {/* 미션 간이 리스트 */}
                 <div className="flex flex-col gap-2">
                   <div className="p-3 bg-[#FAF9F5] rounded-xl border border-[#E8F2EC] flex justify-between items-center text-xs">
                     <span className="font-medium text-gray-700">☀️ 낮 - 불필요한 조명기구 소등하기</span>
@@ -280,4 +365,3 @@ export function HomePage() {
     </div>
   );
 }
-

@@ -3,6 +3,8 @@
 -- DB 설계서 v6.0 최종 스펙 반영 (2026-06-08)
 -- =======================================================
 
+SET NAMES utf8mb4;
+
 USE `dino_ecovision`;
 
 -- 1. regions (지역 정보) 적재
@@ -22,8 +24,8 @@ INSERT INTO `guilds` (`id`, `guild_name`, `description`, `region_id`, `capacity`
 -- 3. dino_templates (공룡 템플릿) 적재 - 4단계 이미지 포함
 INSERT INTO `dino_templates` (`id`, `dino_code`, `dino_name`, `description`, `egg_image_url`, `hatchling_image_url`, `juvenile_image_url`, `adult_image_url`) VALUES
 (1, 'TYRANO', '에코 티라노', '강력한 활력과 거대한 용량을 지닌 에너제틱 공룡', 'https://assets.ecovision.com/eggs/tyrano.png', 'https://assets.ecovision.com/hatchlings/tyrano.png', 'https://assets.ecovision.com/juveniles/tyrano.png', 'https://assets.ecovision.com/adults/tyrano.png'),
-(2, 'BRACHIO', '에코 브라키오', '꾸준한 물 소비 절감에 특화된 평화로운 초식형 공룡', 'https://assets.ecovision.com/eggs/brachio.png', 'https://assets.ecovision.com/hatchlings/brachio.png', 'https://assets.ecovision.com/juveniles/brachio.png', 'https://assets.ecovision.com/adults/brachio.png'),
-(3, 'TRICERA', '에코 트리케라', '자원 순환 분리 배출에 두각을 나타내는 수호형 뿔 공룡', 'https://assets.ecovision.com/eggs/tricera.png', 'https://assets.ecovision.com/hatchlings/tricera.png', 'https://assets.ecovision.com/juveniles/tricera.png', 'https://assets.ecovision.com/adults/tricera.png');
+(2, 'SAURO', '에코 브라키오', '꾸준한 물 소비 절감에 특화된 평화로운 초식형 공룡', 'https://assets.ecovision.com/eggs/sauro.png', 'https://assets.ecovision.com/hatchlings/sauro.png', 'https://assets.ecovision.com/juveniles/sauro.png', 'https://assets.ecovision.com/adults/sauro.png'),
+(3, 'CERATO', '에코 트리케라', '자원 순환 분리 배출에 두각을 나타내는 수호형 뿔 공룡', 'https://assets.ecovision.com/eggs/cerato.png', 'https://assets.ecovision.com/hatchlings/cerato.png', 'https://assets.ecovision.com/juveniles/cerato.png', 'https://assets.ecovision.com/adults/cerato.png');
 
 -- 4. level_policies (레벨/진화 기준) 적재 - 4단계 경험치 임계값
 INSERT INTO `level_policies` (`level_code`, `level_name`, `required_exp`, `sort_order`) VALUES
