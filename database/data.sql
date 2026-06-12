@@ -99,3 +99,6 @@ INSERT INTO `quizzes` (`id`, `question`, `option_a`, `option_b`, `option_c`, `co
 -- 9. ranking_seasons (랭킹 시즌) 적재
 INSERT INTO `ranking_seasons` (`id`, `season_name`, `start_date`, `end_date`, `is_active`) VALUES
 (1, '2026 에코 서머 시즌 1', '2026-06-01', '2026-08-31', TRUE);
+
+-- 10. users 관리자 계정 추가
+INSERT INTO `users` (`id`, `email`, `password`, `nickname`, `avatar_url`, `region_id`, `role`, `status`, `total_points`, `ranking_point`, `today_points_accumulated`, `last_point_accumulated_date`, `saved_carbon_kg`, `last_region_changed_at`, `last_nickname_changed_at`, `created_at`, `updated_at`, `deleted_at`) VALUES (1, 'admin@example.com', '$2a$10$4OzfDb97/VOE2kzOCqT2IONV5an9L9rvmwKNULsaaUPttomrH2mZq', 'admin', NULL, 1, 'ADMIN', 'ACTIVE', 0, 0, 0, '2026-06-12', 0.0, '2026-06-12 11:54:52', '2026-06-12 11:54:52', '2026-06-12 01:57:31', '2026-06-12 03:33:52', NULL);
