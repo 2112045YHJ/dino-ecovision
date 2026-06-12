@@ -5,55 +5,63 @@ import { useNavigate } from "react-router-dom";
 
 import { logout } from "../api/authApi";
 import { getMyDino, type MyDinoResponse } from "../api/dinoApi";
-
-import { EcoQuizModal } from "../components/quiz/EcoQuizModal";
+import { getTodayMissions } from "../api/missionApi";
 
 import {
   dinoImagesByType,
+  type DinoStage,
   type DinoType,
 } from "../assets/images/dinos/dinoImages";
 
 import { mockHomeStatus } from "../mocks/homeMock";
-import { mockTodayQuiz } from "../mocks/quizMock";
+import type { Mission } from "../types/mission";
 
-// 백엔드 응답에는 아직 templateCode가 없고 templateName만 있습니다.
-// 그래서 임시로 templateName 글자를 보고 프론트 공룡 타입으로 바꿉니다.
-//
-// 예:
-// "에코 티라노" -> TYRANO
-// "에코 브라키오" -> SAURO
-// "에코 트리케라" -> CERATO
-function getDinoTypeFromTemplateName(templateName: string): DinoType {
-  if (templateName.includes("티라노") || templateName.includes("TYRANO")) {
+// 백엔드에서 내려주는 templateCode를
+// 프론트가 아는 공룡 타입으로 바꿔주는 함수입니다.
+function getSafeDinoType(templateCode?: string | null): DinoType {
+  if (templateCode === "TYRANO") {
     return "TYRANO";
   }
 
-  if (
-    templateName.includes("브라키오") ||
-    templateName.includes("BRACHIO") ||
-    templateName.includes("용각")
-  ) {
+  // 예전 백엔드 값 BRACHIO가 오더라도 프론트에서는 SAURO 이미지로 보여줍니다.
+  if (templateCode === "SAURO" || templateCode === "BRACHIO") {
     return "SAURO";
   }
 
-  if (
-    templateName.includes("트리케라") ||
-    templateName.includes("TRICERA") ||
-    templateName.includes("각룡")
-  ) {
+  // 예전 백엔드 값 TRICERA가 오더라도 프론트에서는 CERATO 이미지로 보여줍니다.
+  if (templateCode === "CERATO" || templateCode === "TRICERA") {
     return "CERATO";
   }
 
-  // 혹시 모르는 이름이 오면 기본값으로 용각류 이미지를 보여줍니다.
-  return "SAURO";
+  // 혹시 이상한 값이 오면 기본값으로 티라노를 보여줍니다.
+  return "TYRANO";
+}
+
+// 백엔드에서 내려주는 stage를 안전하게 처리하는 함수입니다.
+function getSafeDinoStage(stage?: string | null): DinoStage {
+  if (stage === "EGG") {
+    return "EGG";
+  }
+
+  if (stage === "HATCHLING") {
+    return "HATCHLING";
+  }
+
+  if (stage === "JUVENILE") {
+    return "JUVENILE";
+  }
+
+  if (stage === "ADULT") {
+    return "ADULT";
+  }
+
+  // 혹시 stage가 없거나 이상하면 알 이미지로 보여줍니다.
+  return "EGG";
 }
 
 export function HomePage() {
   // 페이지 이동을 도와주는 함수입니다.
   const navigate = useNavigate();
-
-  // 퀴즈 모달이 열려 있는지 저장합니다.
-  const [isQuizOpen, setIsQuizOpen] = useState(false);
 
   // 백엔드에서 받아온 내 공룡 정보입니다.
   const [myDino, setMyDino] = useState<MyDinoResponse | null>(null);
@@ -64,14 +72,19 @@ export function HomePage() {
   // 내 공룡 정보를 불러오지 못했을 때 메시지입니다.
   const [dinoErrorMessage, setDinoErrorMessage] = useState("");
 
-  // 미션/퀴즈/전력 상태는 아직 실제 API가 없으므로 Mock 데이터를 사용합니다.
+  // 백엔드에서 받아온 오늘의 미션 목록입니다.
+  const [missions, setMissions] = useState<Mission[]>([]);
+
+  // 미션 정보를 불러오는 중인지 저장합니다.
+  const [isMissionLoading, setIsMissionLoading] = useState(true);
+
+  // 미션 정보를 불러오지 못했을 때 메시지입니다.
+  const [missionErrorMessage, setMissionErrorMessage] = useState("");
+
+  // 전력 상태는 아직 실제 API가 없으므로 Mock 데이터를 사용합니다.
   const homeStatus = mockHomeStatus;
 
-  // 오늘의 미션 진행 상황 텍스트입니다.
-  const missionProgressText = `${homeStatus.completedMissionCount} / ${homeStatus.todayMissionCount}`;
-
   // 전력 예비율 바의 너비입니다.
-  // 예비율 9.8%처럼 숫자가 작으면 화면에서 너무 짧게 보여서 임시로 5배 해서 표시합니다.
   const reserveBarWidth = Math.min(homeStatus.powerReserveRate * 5, 100);
 
   // 홈 화면이 처음 열릴 때 내 공룡 정보를 백엔드에서 가져옵니다.
@@ -96,32 +109,64 @@ export function HomePage() {
     fetchMyDino();
   }, []);
 
+  // 홈 화면이 처음 열릴 때 오늘의 미션 목록을 백엔드에서 가져옵니다.
+  useEffect(() => {
+    const fetchTodayMissions = async () => {
+      try {
+        setIsMissionLoading(true);
+        setMissionErrorMessage("");
+
+        const data = await getTodayMissions();
+
+        setMissions(data);
+      } catch (error) {
+        console.error(error);
+
+        setMissionErrorMessage("오늘의 미션 정보를 불러오지 못했습니다.");
+      } finally {
+        setIsMissionLoading(false);
+      }
+    };
+
+    fetchTodayMissions();
+  }, []);
+
   // 로그아웃 버튼을 눌렀을 때 실행됩니다.
   const handleLogout = async () => {
     try {
-      // 1. 백엔드 로그아웃 API 호출
       await logout();
     } catch (error) {
-      // 서버 로그아웃이 실패해도 프론트에서는 토큰을 지워줍니다.
       console.error(error);
     } finally {
-      // 2. 프론트에 저장된 로그인 정보 삭제
       localStorage.removeItem("accessToken");
       localStorage.removeItem("role");
       localStorage.removeItem("myDino");
 
-      // 3. 로그인 화면으로 이동
       navigate("/login");
     }
   };
 
-  // 내 공룡 이미지 계산
-  const myDinoType = myDino
-    ? getDinoTypeFromTemplateName(myDino.templateName)
-    : null;
+  // 오늘 전체 미션 개수입니다.
+  const totalMissionCount = missions.length;
 
-  const myDinoImage =
-    myDino && myDinoType ? dinoImagesByType[myDinoType][myDino.stage] : null;
+  // 오늘 완료한 미션 개수입니다.
+  const completedMissionCount = missions.filter(
+    (mission) => mission.completed,
+  ).length;
+
+  // 남은 미션 개수입니다.
+  const remainingMissionCount = totalMissionCount - completedMissionCount;
+
+  // 오늘의 미션 진행 상황 텍스트입니다.
+  const missionProgressText = `${completedMissionCount} / ${totalMissionCount}`;
+
+  // 공룡 이미지 계산입니다.
+  const safeDinoType = getSafeDinoType(myDino?.templateCode);
+  const safeDinoStage = getSafeDinoStage(myDino?.stage);
+
+  const myDinoImage = myDino
+    ? dinoImagesByType[safeDinoType][safeDinoStage]
+    : null;
 
   return (
     <main className="min-h-screen bg-[#FAF9F5] p-6 text-[#2C3531]">
@@ -254,7 +299,7 @@ export function HomePage() {
               <button
                 type="button"
                 className="mt-4 w-full rounded-2xl bg-[#5F8C74] py-3 font-bold text-white transition hover:bg-[#4d735f]"
-                onClick={() => navigate("/dino-selection")}
+                onClick={() => navigate("/onboarding/dino")}
               >
                 공룡 선택하러 가기
               </button>
@@ -273,26 +318,36 @@ export function HomePage() {
               오늘 배정된 탄소 절감 미션을 완료하고 포인트와 EXP를 얻어보세요.
             </p>
 
-            <div className="mt-4 rounded-2xl bg-[#FAF9F5] p-4 text-sm">
-              <div className="flex justify-between">
-                <span>전체 미션</span>
-                <span>{homeStatus.todayMissionCount}개</span>
+            {isMissionLoading && (
+              <div className="mt-4 rounded-2xl bg-[#FAF9F5] p-4 text-sm font-bold text-gray-500">
+                미션 정보를 불러오는 중...
               </div>
+            )}
 
-              <div className="mt-1 flex justify-between">
-                <span>완료한 미션</span>
-                <span>{homeStatus.completedMissionCount}개</span>
+            {!isMissionLoading && missionErrorMessage && (
+              <div className="mt-4 rounded-2xl bg-[#FFF0EA] p-4 text-sm font-bold text-[#E07A5F]">
+                {missionErrorMessage}
               </div>
+            )}
 
-              <div className="mt-1 flex justify-between font-bold text-[#E07A5F]">
-                <span>남은 미션</span>
-                <span>
-                  {homeStatus.todayMissionCount -
-                    homeStatus.completedMissionCount}
-                  개
-                </span>
+            {!isMissionLoading && !missionErrorMessage && (
+              <div className="mt-4 rounded-2xl bg-[#FAF9F5] p-4 text-sm">
+                <div className="flex justify-between">
+                  <span>전체 미션</span>
+                  <span>{totalMissionCount}개</span>
+                </div>
+
+                <div className="mt-1 flex justify-between">
+                  <span>완료한 미션</span>
+                  <span>{completedMissionCount}개</span>
+                </div>
+
+                <div className="mt-1 flex justify-between font-bold text-[#E07A5F]">
+                  <span>남은 미션</span>
+                  <span>{remainingMissionCount}개</span>
+                </div>
               </div>
-            </div>
+            )}
 
             <button
               type="button"
@@ -314,36 +369,23 @@ export function HomePage() {
             </p>
 
             <div className="mt-4 rounded-2xl bg-[#FAF9F5] p-4 text-sm">
-              {homeStatus.quizAvailable ? (
-                <p className="font-bold text-[#5F8C74]">
-                  아직 오늘의 퀴즈를 풀 수 있어요.
-                </p>
-              ) : (
-                <p className="font-bold text-gray-500">
-                  오늘의 퀴즈를 이미 완료했어요.
-                </p>
-              )}
+              <p className="font-bold text-gray-500">
+                퀴즈 API는 아직 준비 중입니다.
+              </p>
             </div>
 
             <button
               type="button"
-              className="mt-4 w-full rounded-2xl bg-[#E07A5F] py-3 font-bold text-white transition hover:bg-[#c8654d] disabled:bg-gray-300"
-              disabled={!homeStatus.quizAvailable}
-              onClick={() => setIsQuizOpen(true)}
+              className="mt-4 w-full rounded-2xl bg-[#E07A5F] py-3 font-bold text-white transition hover:bg-[#c8654d]"
+              onClick={() => {
+                alert("퀴즈 API는 아직 준비 중입니다.");
+              }}
             >
               퀴즈 풀기
             </button>
           </article>
         </section>
       </section>
-
-      {/* 퀴즈 모달 */}
-      {isQuizOpen && (
-        <EcoQuizModal
-          quiz={mockTodayQuiz}
-          onClose={() => setIsQuizOpen(false)}
-        />
-      )}
     </main>
   );
 }
