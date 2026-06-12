@@ -40,10 +40,10 @@ export function MyPage() {
     savedCarbonKg: number;
   }>({
     nickname: localStorage.getItem("nickname") || "에코시티즌",
-    email: "green@ecovision.com",
-    totalPoints: 3420,
-    rankingPoint: 340,
-    savedCarbonKg: 74.32,
+    email: "",
+    totalPoints: 0,
+    rankingPoint: 0,
+    savedCarbonKg: 0,
   });
 
   // 탄소 절감량 -> 소나무 수량 변환 (소나무 1그루당 연간 6.6kg 흡수 기준)
@@ -59,7 +59,7 @@ export function MyPage() {
         if (data) {
           setProfile({
             nickname: data.nickname || "에코시티즌",
-            email: data.email || "green@ecovision.com",
+            email: data.email || "",
             totalPoints: data.totalPoints,
             rankingPoint: data.rankingPoint,
             savedCarbonKg: data.savedCarbonKg,
@@ -70,21 +70,7 @@ export function MyPage() {
           }
         }
       } catch (err) {
-        console.warn("Failed to fetch profile from API, falling back to mock info: ", err);
-        const storedProfile = localStorage.getItem("mockUserProfile");
-        if (storedProfile) {
-          setProfile(JSON.parse(storedProfile));
-        } else {
-          const defaultProfile = {
-            nickname: localStorage.getItem("nickname") || "에코시티즌",
-            email: "green@ecovision.com",
-            totalPoints: 3420,
-            rankingPoint: 340,
-            savedCarbonKg: 74.32,
-          };
-          localStorage.setItem("mockUserProfile", JSON.stringify(defaultProfile));
-          setProfile(defaultProfile);
-        }
+        console.error("Failed to fetch profile from API:", err);
       }
     }
 
@@ -95,29 +81,15 @@ export function MyPage() {
           setPointHistory(data);
         }
       } catch (err) {
-        console.warn("Failed to fetch point history from API, falling back to mock timeline: ", err);
-        const storedHistory = localStorage.getItem("mockPointHistory");
-        if (storedHistory) {
-          setPointHistory(JSON.parse(storedHistory));
-        } else {
-          const defaultHistory: PointHistoryItem[] = [
-            { id: 1, reason: "오늘의 퀴즈 정답 보상", amount: 30, createdAt: new Date(Date.now() - 3600000).toISOString() },
-            { id: 2, reason: "일일 미션 [조명 소등하기] 완료", amount: 65, createdAt: new Date(Date.now() - 7200000).toISOString() },
-            { id: 3, reason: "게시글 [전력 공급 예비율 꿀팁] 작성", amount: 100, createdAt: new Date(Date.now() - 86400000).toISOString() },
-            { id: 4, reason: "댓글 작성 보상", amount: 30, createdAt: new Date(Date.now() - 172800000).toISOString() },
-          ];
-          localStorage.setItem("mockPointHistory", JSON.stringify(defaultHistory));
-          setPointHistory(defaultHistory);
-        }
+        console.error("Failed to fetch point history from API:", err);
       }
     }
 
     async function loadMyPosts() {
       try {
         const data = await fetchPosts(0, 100);
-        const currentNickname = localStorage.getItem("nickname") || "에코시티즌";
         const filtered = data.content.filter(
-          (p) => p.authorNickname === currentNickname || p.authorId === 101
+          (p) => p.authorNickname === profile.nickname
         );
         setMyPosts(filtered);
       } catch (e) {

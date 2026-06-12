@@ -24,6 +24,8 @@ import com.ecovision.app.domain.mission.entity.QUserMissionResult;
 import com.ecovision.app.domain.guild.entity.QGuildMember;
 import com.ecovision.app.domain.ranking.entity.QUserRankingScore;
 
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -47,6 +49,7 @@ public class RankingScheduler {
      * Cron: "0 * / 5 * * * *" (매 5분마다 0초에 구동)
      */
     @Scheduled(cron = "0 */5 * * * *")
+    @SchedulerLock(name = "calculateRankingScoresLock", lockAtLeastFor = "4m", lockAtMostFor = "9m")
     @Transactional
     public void calculateRankingScores() {
         log.info("[RANKING SCHEDULER START] Initiating 5-minute seasonal ranking calculation...");

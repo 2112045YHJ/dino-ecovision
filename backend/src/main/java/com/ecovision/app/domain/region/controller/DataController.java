@@ -3,6 +3,7 @@ package com.ecovision.app.domain.region.controller;
 import com.ecovision.app.domain.region.dto.EnergyUsageSumDto;
 import com.ecovision.app.domain.region.entity.EnergyUsage;
 import com.ecovision.app.domain.region.repository.EnergyUsageRepository;
+import com.ecovision.app.domain.region.service.DataCollectionService;
 import com.ecovision.app.global.response.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,6 +19,7 @@ import java.util.List;
 public class DataController {
 
     private final EnergyUsageRepository energyUsageRepository;
+    private final DataCollectionService dataCollectionService;
 
     /**
      * 대시보드용 월별 전력/탄소 통계 집계 데이터 반환
@@ -32,6 +34,12 @@ public class DataController {
         // DDL 규격상 usage_year_month가 YYYY-MM(7자) 또는 YYYYMM(6자)일 수 있으므로 두 가지 패턴을 모두 지원
         String yearPattern = year + "%";
         List<EnergyUsageSumDto> summaryList = energyUsageRepository.findMonthlyEnergyUsageSum(regionCode, yearPattern);
+        
+        if (summaryList.isEmpty()) {
+            log.info("No data found in DB for regionCode: {}, year: {}. Generating simulation data...", regionCode, year);
+            dataCollectionService.generateFallbackDataForRegionAndYear(regionCode, year);
+            summaryList = energyUsageRepository.findMonthlyEnergyUsageSum(regionCode, yearPattern);
+        }
         
         return ResponseEntity.ok(ApiResponse.success(summaryList));
     }

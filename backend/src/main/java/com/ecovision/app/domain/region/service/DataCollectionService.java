@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.client.WebClient;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 
 import java.time.Duration;
 import java.util.List;
@@ -38,6 +39,7 @@ public class DataCollectionService {
     /**
      * 한전 전력사용량 API 호출 및 저장
      */
+    @CircuitBreaker(name = "externalApi", fallbackMethod = "kepcoFallback")
     @Transactional
     public void fetchAndSaveKepcoPowerData(String year, String month) {
         log.info("Fetching KEPCO power data for {}/{}", year, month);
@@ -80,14 +82,19 @@ public class DataCollectionService {
                 generateFallbackData(year, month, EnergyType.ELECTRICITY);
             }
         } catch (Exception e) {
-            log.error("KEPCO API fetch failed: {}. Activating Fallback for {}/{}", e.getMessage(), year, month);
-            generateFallbackData(year, month, EnergyType.ELECTRICITY);
+            throw new RuntimeException("KEPCO API fetch failed", e);
         }
+    }
+
+    public void kepcoFallback(String year, String month, Throwable t) {
+        log.error("KEPCO API fetch failed (Circuit Breaker Triggered): {}. Activating Fallback for {}/{}", t.getMessage(), year, month);
+        generateFallbackData(year, month, EnergyType.ELECTRICITY);
     }
 
     /**
      * 환경공단 온실가스 배출량 API 호출 및 저장
      */
+    @CircuitBreaker(name = "externalApi", fallbackMethod = "kecoFallback")
     @Transactional
     public void fetchAndSaveKecoCarbonData(String year) {
         log.info("Fetching KECO carbon data for {}", year);
@@ -130,9 +137,13 @@ public class DataCollectionService {
                 generateFallbackData(year, "01", EnergyType.GAS);
             }
         } catch (Exception e) {
-            log.error("KECO API fetch failed: {}. Activating Fallback for {}", e.getMessage(), year);
-            generateFallbackData(year, "01", EnergyType.GAS);
+            throw new RuntimeException("KECO API fetch failed", e);
         }
+    }
+
+    public void kecoFallback(String year, Throwable t) {
+        log.error("KECO API fetch failed (Circuit Breaker Triggered): {}. Activating Fallback for {}", t.getMessage(), year);
+        generateFallbackData(year, "01", EnergyType.GAS);
     }
 
     /**
@@ -237,6 +248,65 @@ public class DataCollectionService {
                     .sourceName(sourceName)
                     .build();
             energyUsageRepository.save(newData);
+        }
+    }
+
+    /**
+     * 임의 지역 코드(regionCode) 및 연도에 대하여 12개월분 가상 시뮬레이션 데이터를 실시간 생성 및 적재합니다.
+     */
+    @Transactional
+    public void generateFallbackDataForRegionAndYear(String regionCode, String year) {
+        log.info("Generating dynamic simulation data for regionCode: {}, year: {}", regionCode, year);
+        
+        long seed = regionCode.hashCode() + year.hashCode();
+        Random random = new Random(seed);
+        
+        // 지역 해시코드 기반의 결정론적 기본량 계산
+        double basePower = 230.0 + (Math.abs(regionCode.hashCode()) % 50);
+        double baseGas = 150.0 + (Math.abs(regionCode.hashCode()) % 40);
+        
+        for (int m = 1; m <= 12; m++) {
+            String month = m < 10 ? "0" + m : String.valueOf(m);
+            String yearMonth = year + "-" + month;
+            
+            // ELECTRICITY 계절 가중치 및 난수화
+            double powerFactor;
+            switch (m) {
+                case 7: powerFactor = 1.30; break;
+                case 8: powerFactor = 1.35; break;
+                case 1: powerFactor = 1.25; break;
+                case 12: powerFactor = 1.20; break;
+                case 2: powerFactor = 1.15; break;
+                case 3: case 6: case 11: powerFactor = 0.95; break;
+                case 9: powerFactor = 0.90; break;
+                case 4: powerFactor = 0.85; break;
+                case 5: case 10: powerFactor = 0.80; break;
+                default: powerFactor = 1.0;
+            }
+            double powerOffset = 0.97 + (0.06 * random.nextDouble());
+            double powerUsage = Math.round(basePower * powerFactor * powerOffset * 100.0) / 100.0;
+            double powerCarbon = Math.round(powerUsage * 0.4781 * 100.0) / 100.0;
+            saveOrUpdateData(regionCode, yearMonth, EnergyType.ELECTRICITY, powerUsage, "kWh", powerCarbon, "Fallback Seeding");
+            
+            // GAS 계절 가중치 및 난수화
+            double gasFactor;
+            switch (m) {
+                case 1: gasFactor = 1.60; break;
+                case 2: gasFactor = 1.50; break;
+                case 12: gasFactor = 1.40; break;
+                case 3: gasFactor = 1.10; break;
+                case 11: gasFactor = 1.00; break;
+                case 4: gasFactor = 0.80; break;
+                case 10: gasFactor = 0.70; break;
+                case 5: gasFactor = 0.50; break;
+                case 6: case 9: gasFactor = 0.40; break;
+                case 7: case 8: gasFactor = 0.25; break;
+                default: gasFactor = 1.0;
+            }
+            double gasOffset = 0.97 + (0.06 * random.nextDouble());
+            double gasUsage = Math.round(baseGas * gasFactor * gasOffset * 100.0) / 100.0;
+            double gasCarbon = Math.round(gasUsage * 2.22 * 100.0) / 100.0;
+            saveOrUpdateData(regionCode, yearMonth, EnergyType.GAS, gasUsage, "m3", gasCarbon, "Fallback Seeding");
         }
     }
 }
