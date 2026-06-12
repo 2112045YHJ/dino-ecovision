@@ -4,11 +4,79 @@ import { useEffect, useState } from "react";
 
 import { getMyDino, type MyDinoResponse } from "../api/dinoApi";
 
-import { dinoImagesByType } from "../assets/images/dinos/dinoImages";
+import {
+  dinoImagesByType,
+  type DinoStage,
+  type DinoType,
+} from "../assets/images/dinos/dinoImages";
 
 // 디노룸 배경 이미지입니다.
 // 파일 위치: src/assets/images/dinos/dino-room-bg.png
 import dinoRoomBg from "../assets/images/dinos/dino-room-bg.png";
+
+// 백엔드에서 받은 templateCode를 프론트 이미지 타입으로 안전하게 바꿔주는 함수입니다.
+// 프론트 이미지는 TYRANO / SAURO / CERATO만 알고 있습니다.
+// 그런데 백엔드나 DB에서는 BRACHIO / TRICERA 같은 이름이 올 수도 있어서 안전 변환이 필요합니다.
+function getSafeDinoType(dino: MyDinoResponse): DinoType {
+  const templateCode = String(dino.templateCode ?? "");
+  const templateName = String(dino.templateName ?? "");
+
+  if (templateCode === "TYRANO") {
+    return "TYRANO";
+  }
+
+  if (templateCode === "SAURO" || templateCode === "BRACHIO") {
+    return "SAURO";
+  }
+
+  if (templateCode === "CERATO" || templateCode === "TRICERA") {
+    return "CERATO";
+  }
+
+  if (templateName.includes("티라노") || templateName.includes("TYRANO")) {
+    return "TYRANO";
+  }
+
+  if (
+    templateName.includes("용각") ||
+    templateName.includes("브라키오") ||
+    templateName.includes("BRACHIO")
+  ) {
+    return "SAURO";
+  }
+
+  if (
+    templateName.includes("각룡") ||
+    templateName.includes("트리케라") ||
+    templateName.includes("TRICERA")
+  ) {
+    return "CERATO";
+  }
+
+  return "TYRANO";
+}
+
+// 백엔드에서 받은 stage를 프론트 이미지 단계로 안전하게 바꿔주는 함수입니다.
+// 프론트 이미지는 EGG / HATCHLING / JUVENILE / ADULT 단계만 알고 있습니다.
+function getSafeDinoStage(stage?: string | null): DinoStage {
+  if (stage === "EGG") {
+    return "EGG";
+  }
+
+  if (stage === "HATCHLING") {
+    return "HATCHLING";
+  }
+
+  if (stage === "JUVENILE") {
+    return "JUVENILE";
+  }
+
+  if (stage === "ADULT") {
+    return "ADULT";
+  }
+
+  return "EGG";
+}
 
 export function DinoRoomPage() {
   // 백엔드에서 받아온 내 공룡 정보입니다.
@@ -78,17 +146,18 @@ export function DinoRoomPage() {
     );
   }
 
-  // 백엔드에서 받은 templateCode를 그대로 사용합니다.
-  // 예: TYRANO / SAURO / CERATO
-  const dinoType = dino.templateCode;
+  // 백엔드에서 받은 공룡 타입과 성장 단계를 프론트 이미지용 값으로 안전하게 바꿉니다.
+  const dinoType = getSafeDinoType(dino);
+  const dinoStage = getSafeDinoStage(String(dino.stage));
 
   // EXP 진행률을 계산합니다.
-  // 예: 240 / 1000 * 100 = 24%
-  const expPercent = Math.min((dino.exp / dino.nextStageExp) * 100, 100);
+  // nextStageExp가 0이거나 없으면 나누기 오류가 날 수 있으므로 1로 방어합니다.
+  const nextStageExp = dino.nextStageExp > 0 ? dino.nextStageExp : 1;
+  const expPercent = Math.min((dino.exp / nextStageExp) * 100, 100);
 
   // 현재 화면에 보여줄 공룡 이미지입니다.
   // 예: dinoImagesByType["SAURO"]["EGG"]
-  const currentDinoImage = dinoImagesByType[dinoType][dino.stage];
+  const currentDinoImage = dinoImagesByType[dinoType][dinoStage];
 
   // 공룡을 클릭했을 때 실행됩니다.
   const handleDinoClick = () => {
@@ -197,11 +266,20 @@ export function DinoRoomPage() {
               </p>
 
               <p className="mt-1 text-sm text-gray-600">
-                프론트 타입: {dinoType}
+                백엔드 타입: {dino.templateCode}
+              </p>
+
+              <p className="mt-1 text-sm text-gray-600">
+                프론트 변환 타입: {dinoType}
+              </p>
+
+              <p className="mt-1 text-sm text-gray-600">
+                프론트 변환 단계: {dinoStage}
               </p>
 
               <p className="mt-1 text-xs text-gray-500">
-                백엔드의 templateCode를 기준으로 이미지를 표시합니다.
+                백엔드 값을 프론트 이미지 이름에 맞게 안전하게 변환해서
+                표시합니다.
               </p>
             </div>
           </aside>

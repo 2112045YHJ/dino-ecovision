@@ -9,6 +9,7 @@ import { QuizTestPage } from "./pages/QuizTestPage";
 import { LoginPage } from "./pages/LoginPage";
 import { OnboardingProfilePage } from "./pages/OnboardingProfilePage";
 import { DinoSelectionPage } from "./pages/DinoSelectionPage";
+import { DinoCollectionPage } from "./pages/DinoCollectionPage";
 
 function App() {
   return (
@@ -45,6 +46,8 @@ function App() {
 
       {/* 없는 주소로 들어오면 로그인으로 보냅니다. */}
       <Route path="*" element={<Navigate to="/login" replace />} />
+
+      <Route path="/dino-collection" element={<DinoCollectionPage />} />
     </Routes>
   );
 }
