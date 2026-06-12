@@ -1,30 +1,14 @@
 // src/pages/OnboardingProfilePage.tsx
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { checkNickname, saveOnboardingProfile } from "../api/meApi";
-
-// 지역 목록 API가 아직 없으므로,
-// 프론트에서 임시로 사용하는 지역 목록입니다.
-const mockRegions = [
-  {
-    regionCode: "2635051000",
-    regionName: "부산광역시 해운대구 우동",
-  },
-  {
-    regionCode: "2635052000",
-    regionName: "부산광역시 해운대구 중동",
-  },
-  {
-    regionCode: "2635053000",
-    regionName: "부산광역시 해운대구 좌동",
-  },
-  {
-    regionCode: "2611051000",
-    regionName: "부산광역시 중구 중앙동",
-  },
-];
+import {
+  checkNickname,
+  getRegions,
+  saveOnboardingProfile,
+  type Region,
+} from "../api/meApi";
 
 export function OnboardingProfilePage() {
   // 페이지 이동을 도와주는 함수입니다.
@@ -33,8 +17,14 @@ export function OnboardingProfilePage() {
   // 사용자가 입력한 닉네임입니다.
   const [nickname, setNickname] = useState("");
 
+  // 백엔드에서 받아온 지역 목록입니다.
+  const [regions, setRegions] = useState<Region[]>([]);
+
   // 사용자가 선택한 지역 코드입니다.
-  const [regionCode, setRegionCode] = useState(mockRegions[0].regionCode);
+  const [regionCode, setRegionCode] = useState("");
+
+  // 지역 목록을 불러오는 중인지 저장합니다.
+  const [isRegionLoading, setIsRegionLoading] = useState(true);
 
   // 닉네임 중복 확인 결과 메시지입니다.
   const [nicknameMessage, setNicknameMessage] = useState("");
@@ -50,6 +40,33 @@ export function OnboardingProfilePage() {
 
   // 에러 메시지입니다.
   const [errorMessage, setErrorMessage] = useState("");
+
+  // 화면이 처음 열릴 때 지역 목록 API를 호출합니다.
+  useEffect(() => {
+    const fetchRegions = async () => {
+      try {
+        setIsRegionLoading(true);
+        setErrorMessage("");
+
+        const regionList = await getRegions();
+
+        setRegions(regionList);
+
+        // 지역 목록이 있으면 첫 번째 지역을 기본 선택값으로 넣습니다.
+        if (regionList.length > 0) {
+          setRegionCode(regionList[0].regionCode);
+        }
+      } catch (error) {
+        console.error(error);
+
+        setErrorMessage("지역 목록을 불러오지 못했습니다.");
+      } finally {
+        setIsRegionLoading(false);
+      }
+    };
+
+    fetchRegions();
+  }, []);
 
   // 닉네임 입력값이 바뀔 때 실행됩니다.
   const handleNicknameChange = (value: string) => {
@@ -101,7 +118,7 @@ export function OnboardingProfilePage() {
     }
   };
 
-  // 저장 버튼을 눌렀을 때 실행됩니다.
+  // 다음으로 버튼을 눌렀을 때 실행됩니다.
   const handleSubmit = async () => {
     const trimmedNickname = nickname.trim();
 
@@ -129,14 +146,27 @@ export function OnboardingProfilePage() {
         regionCode,
       });
 
-      // 백엔드 답변 기준:
-      // 닉네임/지역 저장 후에도 공룡 선택을 안 했으면 onboardingRequired가 true입니다.
-      // 그래서 온보딩 프로필 저장 성공 후에는 공룡 선택 화면으로 이동합니다.
+      // 닉네임/지역 저장 후에는 공룡 선택 화면으로 이동합니다.
       navigate("/onboarding/dino");
     } catch (error) {
       console.error(error);
 
-      setErrorMessage("온보딩 정보를 저장하지 못했습니다.");
+      const message =
+        error instanceof Error
+          ? error.message
+          : "온보딩 정보를 저장하지 못했습니다.";
+
+      // 백엔드 수정 전/후 테스트 중 이미 프로필이 저장된 상태라면
+      // 공룡 선택 단계로 넘겨줍니다.
+      if (
+        message.includes("이미 온보딩을 완료했습니다") ||
+        message.includes("ALREADY_ONBOARDED")
+      ) {
+        navigate("/onboarding/dino");
+        return;
+      }
+
+      setErrorMessage(message || "온보딩 정보를 저장하지 못했습니다.");
     } finally {
       setIsSaving(false);
     }
@@ -208,18 +238,25 @@ export function OnboardingProfilePage() {
               id="region"
               value={regionCode}
               onChange={(event) => setRegionCode(event.target.value)}
-              className="mt-2 w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-[#5F8C74]"
+              disabled={isRegionLoading || regions.length === 0}
+              className="mt-2 w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-[#5F8C74] disabled:bg-gray-100 disabled:text-gray-400"
             >
-              {mockRegions.map((region) => (
-                <option key={region.regionCode} value={region.regionCode}>
-                  {region.regionName}
-                </option>
-              ))}
+              {isRegionLoading && <option>지역 목록 불러오는 중...</option>}
+
+              {!isRegionLoading && regions.length === 0 && (
+                <option>선택 가능한 지역이 없습니다.</option>
+              )}
+
+              {!isRegionLoading &&
+                regions.map((region) => (
+                  <option key={region.regionCode} value={region.regionCode}>
+                    {region.regionName}
+                  </option>
+                ))}
             </select>
 
             <p className="mt-2 text-xs text-gray-500">
-              지역 목록 API가 아직 구현 전이라 임시 지역 목록을 사용하고
-              있습니다.
+              활동 지역은 지역 길드와 랭킹에 사용됩니다.
             </p>
           </div>
 
@@ -234,7 +271,7 @@ export function OnboardingProfilePage() {
           <button
             type="button"
             onClick={handleSubmit}
-            disabled={isSaving}
+            disabled={isSaving || isRegionLoading}
             className="mt-6 w-full rounded-2xl bg-[#5F8C74] py-3 font-bold text-white transition hover:bg-[#4d735f] disabled:bg-gray-300"
           >
             {isSaving ? "저장 중..." : "다음으로"}

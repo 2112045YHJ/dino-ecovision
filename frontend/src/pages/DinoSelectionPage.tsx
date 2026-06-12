@@ -97,7 +97,7 @@ export function DinoSelectionPage() {
       );
 
       // 공룡 선택까지 끝났으므로 홈 화면으로 이동합니다.
-      navigate("/");
+      navigate("/home");
     } catch (error) {
       console.error(error);
       setErrorMessage("공룡 선택 정보를 저장하지 못했습니다.");

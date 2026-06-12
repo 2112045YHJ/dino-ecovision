@@ -31,6 +31,14 @@ export type MeProfile = {
   onboardingRequired: boolean;
 };
 
+// 지역 목록 응답 타입입니다.
+// GET /api/regions 응답의 data 배열 안에 들어있는 지역 1개의 모양입니다.
+export type Region = {
+  regionId: number;
+  regionCode: string;
+  regionName: string;
+};
+
 // 온보딩 저장 요청 타입입니다.
 // 프론트가 백엔드에게 보내는 값입니다.
 type SaveOnboardingRequest = {
@@ -39,7 +47,6 @@ type SaveOnboardingRequest = {
 };
 
 // 닉네임 중복 확인 응답 타입입니다.
-// 실제 백엔드 응답 필드명이 다르면 나중에 여기만 수정하면 됩니다.
 export type NicknameCheckResult = {
   available: boolean;
   nickname?: string;
@@ -75,6 +82,26 @@ export async function getMe(): Promise<MeProfile> {
 
   if (!response.ok) {
     throw new Error(result.error?.message ?? "내 정보를 불러오지 못했습니다.");
+  }
+
+  return result.data;
+}
+
+// 지역 목록 조회 API
+// GET /api/regions
+export async function getRegions(): Promise<Region[]> {
+  const response = await fetch(`${API_BASE_URL}/api/regions`, {
+    method: "GET",
+    credentials: "include",
+    headers: createAuthHeaders(),
+  });
+
+  const result = (await response.json()) as ApiResponse<Region[]>;
+
+  if (!response.ok) {
+    throw new Error(
+      result.error?.message ?? "지역 목록을 불러오지 못했습니다.",
+    );
   }
 
   return result.data;
