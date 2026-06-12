@@ -118,9 +118,10 @@ export function DinoRoomPage() {
           {/* 디노룸 배경 + 공룡 영역 */}
           <article className="overflow-hidden rounded-3xl bg-white shadow-sm">
             <div
-              className="relative flex min-h-[520px] items-end justify-center bg-cover bg-center p-6"
+              className="relative flex items-end justify-center bg-cover bg-center"
               style={{
                 backgroundImage: `url(${dinoRoomBg})`,
+                minHeight: "520px",
               }}
             >
               {/* 말풍선 */}
