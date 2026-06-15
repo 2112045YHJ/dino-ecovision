@@ -10,9 +10,13 @@ import { LoginPage } from "./pages/LoginPage";
 import { OnboardingProfilePage } from "./pages/OnboardingProfilePage";
 import { DinoSelectionPage } from "./pages/DinoSelectionPage";
 import { DinoCollectionPage } from "./pages/DinoCollectionPage";
-import { MyPageMainPage } from "./pages/MyPageMainPage";
 import { MyPageBillInputPage } from "./pages/MyPageBillInputPage";
 import { MyPageTrendChartPage } from "./pages/MyPageTrendChartPage";
+import { CommunityPage } from "./pages/CommunityPage";
+import { CommunityDetailPage } from "./pages/CommunityDetailPage";
+import { CommunityWritePage } from "./pages/CommunityWritePage";
+import { MyPage } from "./pages/MyPage";
+import { Dashboard } from "./pages/Dashboard";
 
 function App() {
   return (
@@ -50,8 +54,11 @@ function App() {
       {/* 퀴즈 테스트 */}
       <Route path="/quiz" element={<QuizTestPage />} />
 
-      {/* 마이페이지 */}
-      <Route path="/mypage" element={<MyPageMainPage />} />
+      <Route path="/dashboard" element={<Dashboard />} />
+      <Route path="/community" element={<CommunityPage />} />
+      <Route path="/community/:id" element={<CommunityDetailPage />} />
+      <Route path="/community/write" element={<CommunityWritePage />} />
+      <Route path="/mypage" element={<MyPage />} />
       <Route path="/mypage/bills" element={<MyPageBillInputPage />} />
       <Route path="/mypage/trend" element={<MyPageTrendChartPage />} />
 
@@ -62,3 +69,4 @@ function App() {
 }
 
 export default App;
+
