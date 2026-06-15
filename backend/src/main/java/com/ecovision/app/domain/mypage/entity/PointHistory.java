@@ -40,15 +40,21 @@ public class PointHistory {
 	@Column(name = "created_at", insertable = false, updatable = false)
 	private LocalDateTime createdAt;
 	
-	private PointHistory(Long userId, Integer pointAmount, String reason, Long relatedMissionResultId) {
+	private PointHistory(Long userId, Integer pointAmount, String reason, Long relatedMissionResultId, Long relatedQuizAttemptId) {
 		this.userId = userId;
 		this.pointAmount = pointAmount;
 		this.reason = reason;
 		this.relatedMissionResultId = relatedMissionResultId;
+		this.relatedQuizAttemptId = relatedQuizAttemptId;
 	}
 
 	// 미션 완료 보상 이력
 	public static PointHistory missionComplete(Long userId, int pointAmount, Long missionResultId) {
-		return new PointHistory(userId, pointAmount, "MISSION_COMPLETE", missionResultId);
+		return new PointHistory(userId, pointAmount, "MISSION_COMPLETE", missionResultId, null);
+	}
+	
+	// 퀴즈 정답 보상 이력
+	public static PointHistory quizCorrect(Long userId, int pointAmount, Long quizAttemptId) {
+		return new PointHistory(userId, pointAmount, "QUIZ_CORRECT", null, quizAttemptId);
 	}
 }
