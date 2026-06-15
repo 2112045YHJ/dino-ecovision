@@ -27,92 +27,60 @@ public class MissionScheduler {
 
     private final UserRepository userRepository;
     private final MissionRepository missionRepository;
-    private final JdbcTemplate jdbcTemplate;
     private final MissionAssignmentService missionAssignmentService;
 
     /**
      * 매일 자정에 모든 활성 사용자에게 중복 카테고리가 없는 3종의 일일 미션을 일괄 배정하고, 일일 누적 포인트를 초기화합니다.
      * Cron: "0 0 0 * * *" (매일 자정 00:00:00 실행)
      */
-    @Scheduled(cron = "0 0 0 * * *")
-    @Transactional
-    public void assignDailyMissions() {
-        log.info("[MISSION SCHEDULER START] Initiating midnight daily mission distribution and user points reset...");
+	public void assignDailyMissions() {
+		log.info("[MISSION SCHEDULER START] midnight daily mission distribution...");
+		LocalDate today = LocalDate.now();
 
-        try {
-            LocalDate today = LocalDate.now();
+		// 1. 활성 DAILY 미션 조회 및 슬롯 분리
+		List<Mission> active = missionRepository.findByIsActiveTrueAndMissionType("DAILY");
+		if (active.isEmpty()) {
+			log.error("[MISSION SCHEDULER ERROR] No active daily missions. aborting.");
+			return;
+		}
 
-            // 1. 활성화된 DAILY 미션 목록 조회 및 슬롯별 분리
-            List<Mission> activeDailyMissions = missionRepository.findByIsActiveTrueAndMissionType("DAILY");
-            if (activeDailyMissions.isEmpty()) {
-                log.error("[MISSION SCHEDULER ERROR] No active daily missions found in database! Aborting distribution.");
-                return;
-            }
+		List<Mission> dayMissions = missionAssignmentService.bySlot(active, "DAY");
+		List<Mission> eveningMissions = missionAssignmentService.bySlot(active, "EVENING");
+		List<Mission> anytimeMissions = missionAssignmentService.bySlot(active, "ANYTIME");
 
-            List<Mission> dayMissions = missionAssignmentService.bySlot(activeDailyMissions, "DAY");
-            List<Mission> eveningMissions = missionAssignmentService.bySlot(activeDailyMissions, "EVENING");
-            List<Mission> anytimeMissions = missionAssignmentService.bySlot(activeDailyMissions, "ANYTIME");
+		if (dayMissions.isEmpty() || eveningMissions.isEmpty() || anytimeMissions.isEmpty()) {
+			log.error("[MISSION SCHEDULER ERROR] Missing slot missions (DAY:{}, EVENING:{}, ANYTIME:{}). aborting.",
+					dayMissions.size(), eveningMissions.size(), anytimeMissions.size());
+			return;
+		}
 
-            if (dayMissions.isEmpty() || eveningMissions.isEmpty() || anytimeMissions.isEmpty()) {
-                log.error("[MISSION SCHEDULER ERROR] Missing missions in one of the slots (DAY: {}, EVENING: {}, ANYTIME: {}).", 
-                        dayMissions.size(), eveningMissions.size(), anytimeMissions.size());
-                return;
-            }
+		// 2. 포인트 리셋 — 독립 트랜잭션 (바로 커밋되어 락 해제)
+		try {
+			missionAssignmentService.resetTodayPoints(today);
+		} catch (Exception e) {
+			log.error("[MISSION SCHEDULER ERROR] today_points reset failed.", e);
+			// 리셋 실패해도 배정은 진행 (정책상 배정이 더 중요)
+		}
 
-            // 2. 고속 데이터 일괄 리셋: 모든 활성 사용자의 일일 누적 포인트를 0으로 일괄 갱신
-            String resetUsersSql = "UPDATE users SET today_points_accumulated = 0, last_point_accumulated_date = ? " +
-                    "WHERE status = 'ACTIVE' AND deleted_at IS NULL";
-            int resetCount = jdbcTemplate.update(resetUsersSql, Date.valueOf(today));
-            log.info("[MISSION SCHEDULER] Reset today_points_accumulated to 0 for {} active users.", resetCount);
+		// 3. 사용자 페이징 — 페이지마다 독립 트랜잭션, 한 페이지 실패가 다음 페이지를 막지 않음
+		int page = 0;
+		int pageSize = 500;
+		Page<User> userPage;
+		do {
+			userPage = userRepository.findByStatusAndDeletedAtIsNull(UserStatus.ACTIVE, PageRequest.of(page, pageSize));
+			List<User> users = userPage.getContent();
+			log.info("[MISSION SCHEDULER PROCESSING] page: {}, users: {}", page, users.size());
 
-            // 3. OOM 예방을 위해 활성 사용자 목록을 페이징 조회하여 배정 처리
-            int page = 0;
-            int pageSize = 500;
-            Page<User> userPage;
+			try {
+				missionAssignmentService.assignForUserPage(users, dayMissions, eveningMissions, anytimeMissions, today);
+			} catch (Exception e) {
+				log.error("[MISSION SCHEDULER ERROR] page {} failed, continue next page.", page, e);
+			}
+			page++;
+		} while (userPage.hasNext());
 
-            String insertAssignmentSql = "INSERT INTO daily_mission_assignments " +
-                    "(user_id, mission_id, assigned_date, slot_type, status) VALUES (?, ?, ?, ?, 'ASSIGNED')";
-            
-            List<Object[]> assignmentBatch = new ArrayList<>(pageSize * 3);
-
-            do {
-                userPage = userRepository.findByStatusAndDeletedAtIsNull(UserStatus.ACTIVE, PageRequest.of(page, pageSize));
-                List<User> users = userPage.getContent();
-                log.info("[MISSION SCHEDULER PROCESSING] Page: {}, Users in page: {}", page, users.size());
-
-                for (User user : users) {
-                    // 카테고리가 겹치지 않는 3가지 미션 선정
-                    List<Mission> selectedMissions = 
-                    		missionAssignmentService.selectNonOverlappingMissions(dayMissions, eveningMissions, anytimeMissions);
-                  
-                    if (selectedMissions != null && selectedMissions.size() == 3) {
-                        for (Mission mission : selectedMissions) {
-                            assignmentBatch.add(new Object[]{
-                                    user.getId(), mission.getId(), Date.valueOf(today), mission.getSlotType()
-                            });
-                        }
-                    } else {
-                        log.warn("[MISSION SCHEDULER WARNING] Failed to select 3 non-overlapping category missions for user ID: {}", user.getId());
-                    }
-                }
-
-                // Chunk 단위 벌크 인서트 실행
-                if (!assignmentBatch.isEmpty()) {
-                    missionAssignmentService.batchInsert(assignmentBatch);
-                    log.info("[MISSION SCHEDULER BULK INSERT] Inserted {} assignments.", assignmentBatch.size());
-                    assignmentBatch.clear();
-                }
-
-                page++;
-            } while (userPage.hasNext());
-
-            log.info("[MISSION SCHEDULER SUCCESS] Completed daily mission distribution successfully.");
-
-        } catch (Exception e) {
-            log.error("[MISSION SCHEDULER ERROR] Critical error during daily mission assignment: {}", e.getMessage(), e);
-            throw new RuntimeException("Midnight mission assignment failed", e);
-        }
-    }
+		log.info("[MISSION SCHEDULER SUCCESS] daily mission distribution finished.");
+	}
 
     /**
      * DAY, EVENING, ANYTIME 슬롯 미션 목록에서 서로 카테고리가 중복되지 않는 3종의 미션을 무작위 선택합니다.

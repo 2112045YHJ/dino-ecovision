@@ -57,7 +57,7 @@ public class DinoService {
 		} catch (Exception e) {
 		    log.warn("[HATCH] 미션 자동 배정 실패 (부화는 정상 완료). userId={}", userId, e);
 		}
-		
+
 		return new DinoDto.HatchResponse(
 				dino.getId(), dino.getNickname(), dino.getStage().name(), dino.getExp(), dino.getAffinity());
 	}
