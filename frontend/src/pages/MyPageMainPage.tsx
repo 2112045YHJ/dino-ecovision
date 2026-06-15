@@ -3,28 +3,49 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { getMySummary, type MyPageSummary } from "../api/mypageApi";
+import { getMe, type MeResponse } from "../api/userApi";
+import { getMyDino, type MyDinoResponse } from "../api/dinoApi";
+import { getTodayMissions } from "../api/missionApi";
 
-function formatNumber(value?: number) {
-  return value ?? 0;
-}
+import type { Mission } from "../types/mission";
 
 export function MyPageMainPage() {
   const navigate = useNavigate();
 
-  const [summary, setSummary] = useState<MyPageSummary | null>(null);
+  const [me, setMe] = useState<MeResponse | null>(null);
+  const [myDino, setMyDino] = useState<MyDinoResponse | null>(null);
+  const [missions, setMissions] = useState<Mission[]>([]);
+
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
-    const fetchSummary = async () => {
+    const fetchMyPageData = async () => {
       try {
         setIsLoading(true);
         setErrorMessage("");
 
-        const data = await getMySummary();
+        const [meData, dinoData, missionData] = await Promise.allSettled([
+          getMe(),
+          getMyDino(),
+          getTodayMissions(),
+        ]);
 
-        setSummary(data);
+        if (meData.status === "fulfilled") {
+          setMe(meData.value);
+        }
+
+        if (dinoData.status === "fulfilled") {
+          setMyDino(dinoData.value);
+        }
+
+        if (missionData.status === "fulfilled") {
+          setMissions(missionData.value);
+        }
+
+        if (meData.status === "rejected") {
+          throw meData.reason;
+        }
       } catch (error) {
         console.error(error);
 
@@ -39,8 +60,12 @@ export function MyPageMainPage() {
       }
     };
 
-    fetchSummary();
+    fetchMyPageData();
   }, []);
+
+  const completedMissionCount = missions.filter(
+    (mission) => mission.completed,
+  ).length;
 
   return (
     <main className="min-h-screen bg-[#FAF9F5] p-6 text-[#2C3531]">
@@ -52,7 +77,7 @@ export function MyPageMainPage() {
             <h1 className="mt-2 text-3xl font-bold">마이페이지</h1>
 
             <p className="mt-2 text-sm text-gray-600">
-              내 포인트, 미션 기록, 공룡 성장 정보를 한눈에 확인해요.
+              내 프로필, 공룡 상태, 오늘의 미션 현황을 확인해요.
             </p>
           </div>
 
@@ -77,99 +102,91 @@ export function MyPageMainPage() {
           </div>
         )}
 
-        {!isLoading && !errorMessage && summary && (
+        {!isLoading && !errorMessage && (
           <>
-            <section className="mb-6 rounded-3xl bg-white p-6 shadow-sm">
+            <section className="rounded-3xl bg-white p-6 shadow-sm">
               <p className="text-sm font-bold text-[#5F8C74]">PROFILE</p>
 
               <h2 className="mt-2 text-2xl font-bold">
-                {summary.nickname ?? "이름 없는 사용자"}
+                {me?.nickname ?? "닉네임 없음"}
               </h2>
 
               <p className="mt-2 text-sm text-gray-600">
-                이메일: {summary.email ?? "-"}
+                이메일: {me?.email ?? "-"}
               </p>
 
               <p className="mt-1 text-sm text-gray-600">
-                지역: {summary.regionName ?? "지역 정보 없음"}
+                지역: {me?.regionName ?? me?.regionCode ?? "지역 정보 없음"}
               </p>
+
+              <p className="mt-1 text-sm text-gray-600">
+                상태: {me?.status ?? "-"}
+              </p>
+
+              <button
+                type="button"
+                onClick={() => navigate("/mypage/edit")}
+                className="mt-5 rounded-2xl bg-[#5F8C74] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#4d735f]"
+              >
+                프로필 수정하기
+              </button>
             </section>
 
-            <section className="grid gap-4 md:grid-cols-3">
+            <section className="mt-6 grid gap-4 md:grid-cols-3">
               <article className="rounded-3xl bg-white p-5 shadow-sm">
-                <p className="text-sm font-bold text-gray-500">누적 포인트</p>
+                <p className="text-sm font-bold text-gray-500">오늘의 미션</p>
+
                 <p className="mt-2 text-3xl font-bold text-[#5F8C74]">
-                  {formatNumber(summary.totalPoints)} AP
+                  {completedMissionCount} / {missions.length}
                 </p>
+
+                <button
+                  type="button"
+                  onClick={() => navigate("/missions")}
+                  className="mt-5 w-full rounded-2xl bg-[#5F8C74] py-3 text-sm font-bold text-white transition hover:bg-[#4d735f]"
+                >
+                  미션 보러가기
+                </button>
               </article>
 
               <article className="rounded-3xl bg-white p-5 shadow-sm">
-                <p className="text-sm font-bold text-gray-500">랭킹 점수</p>
-                <p className="mt-2 text-3xl font-bold text-[#E07A5F]">
-                  {formatNumber(summary.rankingPoint)} 점
+                <p className="text-sm font-bold text-gray-500">나의 디노</p>
+
+                <p className="mt-2 text-2xl font-bold text-[#2C3531]">
+                  {myDino?.nickname ?? "공룡 없음"}
                 </p>
-              </article>
-
-              <article className="rounded-3xl bg-white p-5 shadow-sm">
-                <p className="text-sm font-bold text-gray-500">완료한 미션</p>
-                <p className="mt-2 text-3xl font-bold text-[#2C3531]">
-                  {formatNumber(summary.completedMissionCount)} 개
-                </p>
-              </article>
-            </section>
-
-            <section className="mt-6 grid gap-4 md:grid-cols-2">
-              <article className="rounded-3xl bg-white p-6 shadow-sm">
-                <p className="text-sm font-bold text-[#5F8C74]">MY DINO</p>
-
-                <h2 className="mt-2 text-2xl font-bold">
-                  {summary.dinoNickname ?? "공룡 정보 없음"}
-                </h2>
 
                 <p className="mt-2 text-sm text-gray-600">
-                  성장 단계: {summary.dinoStage ?? "-"}
+                  성장 단계: {myDino?.stage ?? "-"}
                 </p>
 
                 <button
                   type="button"
                   onClick={() => navigate("/dino-room")}
-                  className="mt-5 w-full rounded-2xl bg-[#5F8C74] py-3 text-sm font-bold text-white transition hover:bg-[#4d735f]"
+                  className="mt-5 w-full rounded-2xl bg-[#E07A5F] py-3 text-sm font-bold text-white transition hover:bg-[#c8654d]"
                 >
                   디노룸으로 이동
                 </button>
               </article>
 
-              <article className="rounded-3xl bg-white p-6 shadow-sm">
-                <p className="text-sm font-bold text-[#5F8C74]">
-                  CARBON RECORD
-                </p>
+              <article className="rounded-3xl bg-white p-5 shadow-sm">
+                <p className="text-sm font-bold text-gray-500">퀴즈</p>
 
-                <h2 className="mt-2 text-2xl font-bold">
-                  예상 감축량 {formatNumber(summary.estimatedReductionKg)} kg
-                </h2>
+                <p className="mt-2 text-2xl font-bold text-[#2C3531]">
+                  에코 퀴즈
+                </p>
 
                 <p className="mt-2 text-sm text-gray-600">
-                  생활 미션과 사용량 입력을 바탕으로 나의 절감 흐름을 확인할 수
-                  있어요.
+                  하루 한 번 퀴즈를 풀고 AP를 받을 수 있어요.
                 </p>
 
-                <div className="mt-5 grid gap-2">
-                  <button
-                    type="button"
-                    onClick={() => navigate("/mypage/bills")}
-                    className="w-full rounded-2xl bg-[#E07A5F] py-3 text-sm font-bold text-white transition hover:bg-[#c8654d]"
-                  >
-                    사용량 입력하기
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => navigate("/mypage/trend")}
-                    className="w-full rounded-2xl border border-[#5F8C74] bg-white py-3 text-sm font-bold text-[#5F8C74] transition hover:bg-[#E8F2EC]"
-                  >
-                    사용량 추이 보기
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => navigate("/home")}
+                  className="mt-5 w-full rounded-2xl border border-[#5F8C74] bg-white py-3 text-sm font-bold text-[#5F8C74] transition hover:bg-[#E8F2EC]"
+                >
+                  홈에서 퀴즈 풀기
+                </button>
               </article>
             </section>
           </>
