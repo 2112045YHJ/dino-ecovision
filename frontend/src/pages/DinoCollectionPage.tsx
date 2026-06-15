@@ -1,129 +1,105 @@
 // src/pages/DinoCollectionPage.tsx
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { getMyDino, type MyDinoResponse } from "../api/dinoApi";
+
 import {
   dinoImagesByType,
   type DinoStage,
   type DinoType,
 } from "../assets/images/dinos/dinoImages";
 
-type CollectionCard = {
+/*
+  이 파일에서 하는 일
+
+  1. 별도 도감 API가 아직 없기 때문에 GET /api/me/dino만 사용합니다.
+  2. 현재 내 디노 타입과 성장 단계를 기준으로 도감을 보여줍니다.
+  3. 현재 성장 단계까지는 "보유 중"으로 표시합니다.
+  4. 현재 내 디노 카드에는 "현재 내 디노" 뱃지를 표시합니다.
+  5. 내가 키우는 공룡 타입이 도감 상단에 먼저 나오도록 정렬합니다.
+*/
+
+type DinoCollectionCard = {
   type: DinoType;
   stage: DinoStage;
-  title: string;
+  typeLabel: string;
+  stageLabel: string;
   description: string;
 };
 
+const typeOrder: DinoType[] = ["TYRANO", "SAURO", "CERATO"];
 const stageOrder: DinoStage[] = ["EGG", "HATCHLING", "JUVENILE", "ADULT"];
 
-const typeOrder: DinoType[] = ["TYRANO", "SAURO", "CERATO"];
+const typeLabels: Record<DinoType, string> = {
+  TYRANO: "티라노",
+  SAURO: "용각류",
+  CERATO: "각룡류",
+};
 
-// 현재 백엔드에는 도감 전체 API가 없으므로,
-// 프론트에서 보여줄 도감 카드 목록을 직접 준비합니다.
-const collectionCards: CollectionCard[] = [
-  {
-    type: "TYRANO",
-    stage: "EGG",
-    title: "티라노 알",
-    description: "아직 깨어나기 전의 티라노 알입니다.",
-  },
-  {
-    type: "TYRANO",
-    stage: "HATCHLING",
-    title: "티라노 유아기",
-    description: "막 태어난 티라노입니다.",
-  },
-  {
-    type: "TYRANO",
-    stage: "JUVENILE",
-    title: "티라노 청소년기",
-    description: "씩씩하게 자라고 있는 티라노입니다.",
-  },
-  {
-    type: "TYRANO",
-    stage: "ADULT",
-    title: "티라노 성룡",
-    description: "완전히 성장한 티라노입니다.",
-  },
+const stageLabels: Record<DinoStage, string> = {
+  EGG: "알",
+  HATCHLING: "유아기",
+  JUVENILE: "청소년기",
+  ADULT: "성룡",
+};
 
-  {
-    type: "SAURO",
-    stage: "EGG",
-    title: "용각류 알",
-    description: "아직 깨어나기 전의 용각류 알입니다.",
-  },
-  {
-    type: "SAURO",
-    stage: "HATCHLING",
-    title: "용각류 유아기",
-    description: "순하게 자라는 용각류입니다.",
-  },
-  {
-    type: "SAURO",
-    stage: "JUVENILE",
-    title: "용각류 청소년기",
-    description: "목이 길게 자라기 시작한 용각류입니다.",
-  },
-  {
-    type: "SAURO",
-    stage: "ADULT",
-    title: "용각류 성룡",
-    description: "커다랗고 듬직하게 성장한 용각류입니다.",
-  },
+const stageDescriptions: Record<DinoStage, string> = {
+  EGG: "아직 알 속에서 세상을 기다리는 단계예요.",
+  HATCHLING: "막 깨어나 호기심이 많은 유아기 단계예요.",
+  JUVENILE: "미션을 통해 빠르게 성장하는 청소년기 단계예요.",
+  ADULT: "탄소 절감 경험을 충분히 쌓은 성룡 단계예요.",
+};
 
-  {
-    type: "CERATO",
-    stage: "EGG",
-    title: "각룡 알",
-    description: "아직 깨어나기 전의 각룡 알입니다.",
-  },
-  {
-    type: "CERATO",
-    stage: "HATCHLING",
-    title: "각룡 유아기",
-    description: "작고 단단한 각룡입니다.",
-  },
-  {
-    type: "CERATO",
-    stage: "JUVENILE",
-    title: "각룡 청소년기",
-    description: "뿔이 조금씩 자라나는 각룡입니다.",
-  },
-  {
-    type: "CERATO",
-    stage: "ADULT",
-    title: "각룡 성룡",
-    description: "튼튼하게 성장한 각룡입니다.",
-  },
-];
+const collectionCards: DinoCollectionCard[] = typeOrder.flatMap((type) =>
+  stageOrder.map((stage) => ({
+    type,
+    stage,
+    typeLabel: typeLabels[type],
+    stageLabel: stageLabels[stage],
+    description: stageDescriptions[stage],
+  })),
+);
 
-function getSafeDinoType(dino: MyDinoResponse | null): DinoType {
+/* =========================
+   공룡 타입 안전 변환 함수
+   ========================= */
+
+function getSafeDinoType(dino?: MyDinoResponse | null): DinoType {
   const templateCode = String(dino?.templateCode ?? "").toUpperCase();
   const templateName = String(dino?.templateName ?? "").toUpperCase();
 
-  if (templateCode.includes("TYRANO") || templateName.includes("TYRANO")) {
+  if (templateCode === "TYRANO") {
+    return "TYRANO";
+  }
+
+  if (templateCode === "SAURO" || templateCode === "BRACHIO") {
+    return "SAURO";
+  }
+
+  if (templateCode === "CERATO" || templateCode === "TRICERA") {
+    return "CERATO";
+  }
+
+  if (templateName.includes("티라노") || templateName.includes("TYRANO")) {
     return "TYRANO";
   }
 
   if (
-    templateCode.includes("SAURO") ||
-    templateCode.includes("BRACHIO") ||
-    templateName.includes("SAURO") ||
+    templateName.includes("용각") ||
+    templateName.includes("브라키오") ||
     templateName.includes("BRACHIO") ||
-    templateName.includes("용각")
+    templateName.includes("SAURO")
   ) {
     return "SAURO";
   }
 
   if (
-    templateCode.includes("CERATO") ||
-    templateCode.includes("TRICERA") ||
-    templateName.includes("CERATO") ||
+    templateName.includes("각룡") ||
+    templateName.includes("트리케라") ||
     templateName.includes("TRICERA") ||
-    templateName.includes("각룡")
+    templateName.includes("CERATO")
   ) {
     return "CERATO";
   }
@@ -131,57 +107,88 @@ function getSafeDinoType(dino: MyDinoResponse | null): DinoType {
   return "TYRANO";
 }
 
+/* =========================
+   성장 단계 안전 변환 함수
+   ========================= */
+
 function getSafeDinoStage(stage?: string | null): DinoStage {
   const safeStage = String(stage ?? "").toUpperCase();
 
-  if (safeStage === "EGG") return "EGG";
-  if (safeStage === "HATCHLING") return "HATCHLING";
-  if (safeStage === "JUVENILE") return "JUVENILE";
-  if (safeStage === "ADULT") return "ADULT";
+  if (safeStage === "EGG") {
+    return "EGG";
+  }
+
+  if (safeStage === "HATCHLING") {
+    return "HATCHLING";
+  }
+
+  if (safeStage === "JUVENILE") {
+    return "JUVENILE";
+  }
+
+  if (safeStage === "ADULT") {
+    return "ADULT";
+  }
 
   return "EGG";
 }
 
-// 현재 내 공룡이 특정 도감 카드를 보유한 상태인지 확인합니다.
-// 예: 내 공룡이 SAURO / HATCHLING 이면
-// SAURO / EGG       → 보유 중
-// SAURO / HATCHLING → 보유 중
-// SAURO / JUVENILE  → 미보유
-// SAURO / ADULT     → 미보유
+/* =========================
+   보유 여부 판단 함수
+   ========================= */
+
+function getStageIndex(stage: DinoStage) {
+  return stageOrder.indexOf(stage);
+}
+
 function isOwnedCard(
-  card: CollectionCard,
-  myDinoType: DinoType,
-  myDinoStage: DinoStage,
+  card: DinoCollectionCard,
+  myDinoType: DinoType | null,
+  myDinoStage: DinoStage | null,
 ) {
+  if (!myDinoType || !myDinoStage) {
+    return false;
+  }
+
   if (card.type !== myDinoType) {
     return false;
   }
 
-  const cardStageIndex = stageOrder.indexOf(card.stage);
-  const myStageIndex = stageOrder.indexOf(myDinoStage);
-
-  return cardStageIndex <= myStageIndex;
+  return getStageIndex(card.stage) <= getStageIndex(myDinoStage);
 }
 
-// 정렬 규칙:
-// 1. 내가 키우는 공룡 타입 전체를 먼저 보여줍니다.
-// 2. 같은 타입 안에서는 EGG → HATCHLING → JUVENILE → ADULT 순서로 보여줍니다.
-// 3. 나머지 공룡은 TYRANO → SAURO → CERATO 순서로 보여줍니다.
-function sortCollectionCards(cards: CollectionCard[], myDinoType: DinoType) {
+/* =========================
+   정렬 함수
+   ========================= */
+
+function sortCollectionCards(
+  cards: DinoCollectionCard[],
+  myDinoType: DinoType | null,
+) {
   return [...cards].sort((a, b) => {
-    const aIsMyType = a.type === myDinoType;
-    const bIsMyType = b.type === myDinoType;
+    if (myDinoType) {
+      if (a.type === myDinoType && b.type !== myDinoType) {
+        return -1;
+      }
 
-    if (aIsMyType && !bIsMyType) return -1;
-    if (!aIsMyType && bIsMyType) return 1;
-
-    if (a.type === b.type) {
-      return stageOrder.indexOf(a.stage) - stageOrder.indexOf(b.stage);
+      if (a.type !== myDinoType && b.type === myDinoType) {
+        return 1;
+      }
     }
 
-    return typeOrder.indexOf(a.type) - typeOrder.indexOf(b.type);
+    const typeDiff = typeOrder.indexOf(a.type) - typeOrder.indexOf(b.type);
+
+    if (typeDiff !== 0) {
+      return typeDiff;
+    }
+
+    return getStageIndex(a.stage) - getStageIndex(b.stage);
   });
 }
+
+/* =========================
+   디노도감 페이지
+   ========================= */
 
 export function DinoCollectionPage() {
   const navigate = useNavigate();
@@ -201,13 +208,7 @@ export function DinoCollectionPage() {
         setMyDino(data);
       } catch (error) {
         console.error(error);
-
-        const message =
-          error instanceof Error
-            ? error.message
-            : "디노 정보를 불러오지 못했습니다.";
-
-        setErrorMessage(message);
+        setErrorMessage("내 디노 정보를 불러오지 못했습니다.");
       } finally {
         setIsLoading(false);
       }
@@ -216,30 +217,77 @@ export function DinoCollectionPage() {
     fetchMyDino();
   }, []);
 
-  const myDinoType = getSafeDinoType(myDino);
-  const myDinoStage = getSafeDinoStage(myDino?.stage);
+  const myDinoType = myDino ? getSafeDinoType(myDino) : null;
+  const myDinoStage = myDino ? getSafeDinoStage(myDino.stage) : null;
 
-  const sortedCards = sortCollectionCards(collectionCards, myDinoType);
+  const sortedCards = useMemo(
+    () => sortCollectionCards(collectionCards, myDinoType),
+    [myDinoType],
+  );
 
-  const ownedCount = sortedCards.filter((card) =>
-    isOwnedCard(card, myDinoType, myDinoStage),
-  ).length;
+  if (isLoading) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-[#FAF9F5] p-6 text-[#2C3531]">
+        <div className="rounded-3xl bg-white p-6 text-center shadow-sm">
+          <p className="text-sm font-bold text-[#5F8C74]">DINO COLLECTION</p>
+          <p className="mt-2 text-lg font-bold">디노도감을 불러오는 중...</p>
+        </div>
+      </main>
+    );
+  }
+
+  if (errorMessage || !myDino) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-[#FAF9F5] p-6 text-[#2C3531]">
+        <div className="rounded-3xl bg-white p-6 text-center shadow-sm">
+          <p className="text-sm font-bold text-[#E07A5F]">ERROR</p>
+
+          <h1 className="mt-2 text-xl font-bold">
+            디노도감을 불러오지 못했어요
+          </h1>
+
+          <p className="mt-2 text-sm text-gray-600">
+            공룡 선택을 완료했는지 확인해주세요.
+          </p>
+
+          <div className="mt-5 flex flex-wrap justify-center gap-2">
+            <button
+              type="button"
+              onClick={() => navigate("/home")}
+              className="rounded-2xl border border-[#5F8C74] px-5 py-3 text-sm font-bold text-[#5F8C74] transition hover:bg-[#E8F2EC]"
+            >
+              홈으로 가기
+            </button>
+
+            <button
+              type="button"
+              onClick={() => navigate("/onboarding/dino")}
+              className="rounded-2xl bg-[#5F8C74] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#4d735f]"
+            >
+              공룡 선택하러 가기
+            </button>
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-[#FAF9F5] p-6 text-[#2C3531]">
       <section className="mx-auto max-w-6xl">
-        <header className="mb-6 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-          <div>
+        <header className="mb-6 flex flex-col gap-4 md:flex-row md:items-end">
+          <div className="md:flex-1">
             <p className="text-sm font-bold text-[#5F8C74]">DINO COLLECTION</p>
 
             <h1 className="mt-2 text-3xl font-bold">디노 도감</h1>
 
             <p className="mt-2 text-sm text-gray-600">
-              내가 키우고 있는 디노와 앞으로 만날 수 있는 디노들을 확인해요.
+              현재 보유 디노 기준으로 성장 기록과 앞으로 만날 수 있는 디노를
+              확인해요.
             </p>
           </div>
 
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 md:justify-end">
             <button
               type="button"
               onClick={() => navigate("/home")}
@@ -258,77 +306,78 @@ export function DinoCollectionPage() {
           </div>
         </header>
 
-        {isLoading && (
-          <div className="rounded-3xl bg-white p-8 text-center text-sm font-bold text-gray-500 shadow-sm">
-            디노 도감을 불러오는 중입니다...
-          </div>
-        )}
+        <section className="mb-6 rounded-3xl bg-white p-5 shadow-sm">
+          <p className="text-sm font-bold text-[#5F8C74]">MY DINO</p>
 
-        {!isLoading && errorMessage && (
-          <div className="rounded-3xl bg-[#FFF0EA] p-6 text-sm font-bold text-[#E07A5F] shadow-sm">
-            {errorMessage}
-          </div>
-        )}
+          <h2 className="mt-2 text-xl font-bold">{myDino.nickname}</h2>
 
-        {!isLoading && !errorMessage && (
-          <>
-            <section className="mb-6 rounded-3xl bg-white p-6 shadow-sm">
-              <p className="text-sm font-bold text-[#5F8C74]">MY DINO</p>
+          <p className="mt-2 text-sm text-gray-600">
+            현재 내 디노는 {myDino.templateName}이며,{" "}
+            {myDinoStage ? stageLabels[myDinoStage] : "알"} 단계예요.
+          </p>
+        </section>
 
-              <h2 className="mt-2 text-2xl font-bold">
-                {myDino?.nickname ?? "이름 없는 디노"}
-              </h2>
+        <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {sortedCards.map((card) => {
+            const isOwned = isOwnedCard(card, myDinoType, myDinoStage);
 
-              <p className="mt-2 text-sm text-gray-600">
-                타입: {myDinoType} / 성장 단계: {myDinoStage}
-              </p>
+            const isCurrentDino =
+              myDinoType === card.type && myDinoStage === card.stage;
 
-              <p className="mt-2 text-sm font-bold text-[#5F8C74]">
-                보유 도감: {ownedCount} / {collectionCards.length}
-              </p>
-            </section>
+            const image = dinoImagesByType[card.type][card.stage];
 
-            <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {sortedCards.map((card) => {
-                const isOwned = isOwnedCard(card, myDinoType, myDinoStage);
-                const image = dinoImagesByType[card.type][card.stage];
+            return (
+              <article
+                key={`${card.type}-${card.stage}`}
+                className={`rounded-3xl p-5 shadow-sm transition ${
+                  isCurrentDino
+                    ? "bg-[#FFF0EA] ring-2 ring-[#E07A5F]"
+                    : isOwned
+                      ? "bg-[#E8F2EC]"
+                      : "bg-white"
+                }`}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <p className="text-sm font-bold text-[#5F8C74]">
+                      {card.typeLabel}
+                    </p>
 
-                return (
-                  <article
-                    key={`${card.type}-${card.stage}`}
-                    className={`rounded-3xl p-5 shadow-sm transition ${
-                      isOwned ? "bg-[#E8F2EC]" : "bg-white"
+                    <h2 className="mt-1 text-xl font-bold">
+                      {card.stageLabel}
+                    </h2>
+                  </div>
+
+                  <span
+                    className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold ${
+                      isCurrentDino
+                        ? "bg-[#E07A5F] text-white"
+                        : isOwned
+                          ? "bg-[#5F8C74] text-white"
+                          : "bg-gray-100 text-gray-500"
                     }`}
                   >
-                    <div className="flex justify-center">
-                      <img
-                        src={image}
-                        alt={card.title}
-                        className="h-36 w-36 object-contain"
-                      />
-                    </div>
+                    {isCurrentDino
+                      ? "현재 내 디노"
+                      : isOwned
+                        ? "보유 중"
+                        : "미보유"}
+                  </span>
+                </div>
 
-                    <div className="mt-4">
-                      <p
-                        className={`text-xs font-bold ${
-                          isOwned ? "text-[#5F8C74]" : "text-gray-400"
-                        }`}
-                      >
-                        {isOwned ? "보유 중" : "미보유"}
-                      </p>
+                <div className="mt-4 flex h-40 items-center justify-center rounded-3xl bg-[#FAF9F5]">
+                  <img
+                    src={image}
+                    alt={`${card.typeLabel} ${card.stageLabel}`}
+                    className="h-32 object-contain"
+                  />
+                </div>
 
-                      <h2 className="mt-1 text-lg font-bold">{card.title}</h2>
-
-                      <p className="mt-2 text-sm text-gray-600">
-                        {card.description}
-                      </p>
-                    </div>
-                  </article>
-                );
-              })}
-            </section>
-          </>
-        )}
+                <p className="mt-4 text-sm text-gray-600">{card.description}</p>
+              </article>
+            );
+          })}
+        </section>
       </section>
     </main>
   );

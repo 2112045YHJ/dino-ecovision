@@ -11,12 +11,22 @@ import {
   type DinoType,
 } from "../assets/images/dinos/dinoImages";
 
-// 디노룸 배경 이미지입니다.
-// 파일 위치: src/assets/images/dinos/dino-room-bg.png
 import dinoRoomBg from "../assets/images/dinos/dino-room-bg.png";
 
-// 백엔드에서 받은 templateCode를 프론트 이미지 타입으로 안전하게 바꿔주는 함수입니다.
-// 프론트 이미지는 TYRANO / SAURO / CERATO만 알고 있습니다.
+/*
+  이 파일에서 하는 일
+
+  1. GET /api/me/dino 로 내 디노 정보를 불러옵니다.
+  2. 백엔드에서 받은 디노 타입/성장 단계를 프론트 이미지 타입에 맞게 바꿉니다.
+  3. 디노룸 화면에 공룡 이미지, EXP, 친밀도, 성장 안내를 보여줍니다.
+  4. 다음 성장까지 남은 EXP를 보여줍니다.
+  5. 공룡 정보가 없을 때 홈/공룡 선택 화면으로 이동할 수 있게 합니다.
+*/
+
+/* =========================
+   공룡 타입 안전 변환 함수
+   ========================= */
+
 function getSafeDinoType(dino: MyDinoResponse): DinoType {
   const templateCode = String(dino.templateCode ?? "").toUpperCase();
   const templateName = String(dino.templateName ?? "").toUpperCase();
@@ -58,8 +68,10 @@ function getSafeDinoType(dino: MyDinoResponse): DinoType {
   return "TYRANO";
 }
 
-// 백엔드에서 받은 stage를 프론트 이미지 단계로 안전하게 바꿔주는 함수입니다.
-// 프론트 이미지는 EGG / HATCHLING / JUVENILE / ADULT 단계만 알고 있습니다.
+/* =========================
+   성장 단계 안전 변환 함수
+   ========================= */
+
 function getSafeDinoStage(stage?: string | null): DinoStage {
   const safeStage = String(stage ?? "").toUpperCase();
 
@@ -82,7 +94,10 @@ function getSafeDinoStage(stage?: string | null): DinoStage {
   return "EGG";
 }
 
-// 영어 성장 단계를 사용자가 보기 쉬운 한글 이름으로 바꿔줍니다.
+/* =========================
+   성장 단계 한글 표시 함수
+   ========================= */
+
 function getStageLabel(stage: DinoStage) {
   if (stage === "EGG") {
     return "알";
@@ -103,26 +118,20 @@ function getStageLabel(stage: DinoStage) {
   return "알";
 }
 
+/* =========================
+   디노룸 페이지
+   ========================= */
+
 export function DinoRoomPage() {
-  // 페이지 이동을 도와주는 함수입니다.
   const navigate = useNavigate();
 
-  // 백엔드에서 받아온 내 공룡 정보입니다.
   const [dino, setDino] = useState<MyDinoResponse | null>(null);
-
-  // 로딩 중인지 저장합니다.
   const [isLoading, setIsLoading] = useState(true);
-
-  // 에러 메시지입니다.
   const [errorMessage, setErrorMessage] = useState("");
 
-  // 공룡 아래에 보여줄 말풍선 문구입니다.
   const [message, setMessage] = useState("공룡을 클릭해보세요!");
-
-  // 공룡이 기뻐하는 상태인지 저장합니다.
   const [isHappy, setIsHappy] = useState(false);
 
-  // 페이지가 처음 열릴 때 내 공룡 정보를 백엔드에서 가져옵니다.
   useEffect(() => {
     const fetchMyDino = async () => {
       try {
@@ -143,7 +152,6 @@ export function DinoRoomPage() {
     fetchMyDino();
   }, []);
 
-  // 로딩 중일 때 보여줄 화면입니다.
   if (isLoading) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-[#FAF9F5] p-6 text-[#2C3531]">
@@ -155,7 +163,6 @@ export function DinoRoomPage() {
     );
   }
 
-  // 에러가 났거나 공룡 정보가 없을 때 보여줄 화면입니다.
   if (errorMessage || !dino) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-[#FAF9F5] p-6 text-[#2C3531]">
@@ -192,20 +199,31 @@ export function DinoRoomPage() {
     );
   }
 
-  // 백엔드에서 받은 공룡 타입과 성장 단계를 프론트 이미지용 값으로 안전하게 바꿉니다.
   const dinoType = getSafeDinoType(dino);
   const dinoStage = getSafeDinoStage(dino.stage);
   const dinoStageLabel = getStageLabel(dinoStage);
 
-  // EXP 진행률을 계산합니다.
-  // nextStageExp가 0이거나 없으면 나누기 오류가 날 수 있으므로 1로 방어합니다.
-  const nextStageExp = dino.nextStageExp > 0 ? dino.nextStageExp : 1;
-  const expPercent = Math.min((dino.exp / nextStageExp) * 100, 100);
+  /*
+    nextStageExp는 백엔드 응답에 따라 null일 수도 있다고 보고 방어합니다.
 
-  // 현재 화면에 보여줄 공룡 이미지입니다.
+    왜 이렇게 하냐면?
+    성룡처럼 최종 단계에 도달하면 다음 단계가 없기 때문에
+    nextStageExp가 없거나 null로 올 수 있기 때문입니다.
+  */
+  const rawNextStageExp = dino.nextStageExp as number | null | undefined;
+
+  const isMaxStage = dinoStage === "ADULT" || rawNextStageExp == null;
+
+  const nextStageExp = isMaxStage ? dino.exp : Math.max(rawNextStageExp, 1);
+
+  const remainingExp = isMaxStage ? 0 : Math.max(nextStageExp - dino.exp, 0);
+
+  const expPercent = isMaxStage
+    ? 100
+    : Math.min((dino.exp / nextStageExp) * 100, 100);
+
   const currentDinoImage = dinoImagesByType[dinoType][dinoStage];
 
-  // 공룡을 클릭했을 때 실행됩니다.
   const handleDinoClick = () => {
     setIsHappy(true);
     setMessage(`${dino.nickname}가 기뻐해요!`);
@@ -250,7 +268,6 @@ export function DinoRoomPage() {
         </header>
 
         <section className="grid gap-6 lg:grid-cols-[1.4fr_0.8fr]">
-          {/* 디노룸 배경 + 공룡 영역 */}
           <article className="overflow-hidden rounded-3xl bg-white shadow-sm">
             <div
               className="relative flex items-end justify-center bg-cover bg-center"
@@ -259,12 +276,10 @@ export function DinoRoomPage() {
                 minHeight: "520px",
               }}
             >
-              {/* 말풍선 */}
               <div className="absolute left-1/2 top-8 -translate-x-1/2 rounded-full bg-white/90 px-5 py-3 text-sm font-bold text-[#5F8C74] shadow-sm">
                 {message}
               </div>
 
-              {/* 공룡 */}
               <button
                 type="button"
                 onClick={handleDinoClick}
@@ -281,7 +296,6 @@ export function DinoRoomPage() {
             </div>
           </article>
 
-          {/* 공룡 정보 카드 */}
           <aside className="rounded-3xl bg-white p-6 shadow-sm">
             <p className="text-sm font-bold text-[#5F8C74]">MY DINO</p>
 
@@ -295,12 +309,11 @@ export function DinoRoomPage() {
               현재 성장 단계: {dinoStageLabel}
             </p>
 
-            {/* EXP */}
             <div className="mt-6">
               <div className="mb-2 flex justify-between text-sm font-bold">
                 <span>EXP</span>
                 <span>
-                  {dino.exp} / {dino.nextStageExp}
+                  {dino.exp} / {isMaxStage ? "MAX" : nextStageExp}
                 </span>
               </div>
 
@@ -312,11 +325,12 @@ export function DinoRoomPage() {
               </div>
 
               <p className="mt-2 text-xs text-gray-500">
-                미션을 완료하면 EXP가 올라가고 성장 단계가 바뀔 수 있어요.
+                {isMaxStage
+                  ? "최종 성장 단계에 도달했어요."
+                  : `다음 성장까지 ${remainingExp} EXP 남았어요.`}
               </p>
             </div>
 
-            {/* 친밀도 */}
             <div className="mt-6 rounded-2xl bg-[#FAF9F5] p-4">
               <p className="text-sm text-gray-600">친밀도</p>
 
@@ -325,7 +339,6 @@ export function DinoRoomPage() {
               </p>
             </div>
 
-            {/* 성장 안내 */}
             <div className="mt-4 rounded-2xl bg-[#E8F2EC] p-4">
               <p className="text-sm font-bold text-[#5F8C74]">성장 안내</p>
 
