@@ -1,6 +1,7 @@
 // src/pages/DinoRoomPage.tsx
 
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 import { getMyDino, type MyDinoResponse } from "../api/dinoApi";
 
@@ -79,6 +80,10 @@ function getSafeDinoStage(stage?: string | null): DinoStage {
 }
 
 export function DinoRoomPage() {
+  // 페이지 이동을 도와주는 함수입니다.
+  // 예: navigate("/dino-collection") → 디노 도감 페이지로 이동
+  const navigate = useNavigate();
+
   // 백엔드에서 받아온 내 공룡 정보입니다.
   const [dino, setDino] = useState<MyDinoResponse | null>(null);
 
@@ -173,14 +178,24 @@ export function DinoRoomPage() {
   return (
     <main className="min-h-screen bg-[#FAF9F5] p-6 text-[#2C3531]">
       <section className="mx-auto max-w-5xl">
-        <header className="mb-6">
-          <p className="text-sm font-bold text-[#5F8C74]">DINO ROOM</p>
+        <header className="mb-6 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+          <div>
+            <p className="text-sm font-bold text-[#5F8C74]">DINO ROOM</p>
 
-          <h1 className="mt-2 text-3xl font-bold">나의 디노 룸</h1>
+            <h1 className="mt-2 text-3xl font-bold">나의 디노 룸</h1>
 
-          <p className="mt-2 text-sm text-gray-600">
-            미션을 완료하고 공룡을 성장시켜보세요.
-          </p>
+            <p className="mt-2 text-sm text-gray-600">
+              미션을 완료하고 공룡을 성장시켜보세요.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => navigate("/dino-collection")}
+            className="rounded-2xl bg-[#5F8C74] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#4d735f]"
+          >
+            디노 도감 보기
+          </button>
         </header>
 
         <section className="grid gap-6 lg:grid-cols-[1.4fr_0.8fr]">
