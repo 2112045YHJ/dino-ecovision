@@ -44,7 +44,9 @@ public class SecurityConfig {
 			.cors(Customizer.withDefaults())
 			.sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 			.authorizeHttpRequests(auth -> auth
-					.requestMatchers("/api/auth/**", "/api/dungeons/active", "/api/admin/**").permitAll()
+					.requestMatchers("/api/auth/**", "/api/dungeons/active", "/api/admin/**", "/api/regions").permitAll()
+					.requestMatchers(org.springframework.http.HttpMethod.GET, "/api/posts/**").permitAll()
+					.requestMatchers(org.springframework.http.HttpMethod.GET, "/api/charts/snapshot/**").permitAll()
 					.anyRequest().authenticated())
 			.exceptionHandling(e -> e
 					.authenticationEntryPoint(authenticationEntryPoint)

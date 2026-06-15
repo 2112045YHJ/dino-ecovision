@@ -1,5 +1,7 @@
 package com.ecovision.app.domain.user.controller;
 
+import java.util.List;
+
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -11,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.ecovision.app.domain.user.dto.UserDto;
+import com.ecovision.app.domain.user.dto.MypageCommentsResponse;
 import com.ecovision.app.domain.user.service.UserService;
 import com.ecovision.app.global.response.ApiResponse;
 
@@ -20,8 +23,7 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
 
-//	user API: 프로필 / 닉네임 중복확인 / 온보딩 / 닉네임·지역 변경 (모두 인증 필요)
-//	@Validated: 닉네임 중복확인의 @RequestParam 검증 → ConstraintViolationException → 전역 핸들러가 400 처리
+//	user API: 프로필 / 닉네임 중복확인 / 온보딩 / 닉네임·지역 변경 / 포인트·댓글 조회 (모두 인증 필요)
 @RestController
 @RequestMapping("/api/me")
 @RequiredArgsConstructor
@@ -65,5 +67,24 @@ public class UserController {
 			@AuthenticationPrincipal Long userId,
 			@Valid @RequestBody UserDto.RegionChangeRequest request) {
 		return ApiResponse.success(userService.changeRegion(userId, request));
+	}
+
+	@PatchMapping("/avatar")
+	public ApiResponse<UserDto.ProfileResponse> changeAvatar(
+			@AuthenticationPrincipal Long userId,
+			@Valid @RequestBody UserDto.AvatarChangeRequest request) {
+		return ApiResponse.success(userService.changeAvatar(userId, request));
+	}
+
+	@GetMapping("/points")
+	public ApiResponse<List<UserDto.PointHistoryResponse>> getPointTimeline(
+			@AuthenticationPrincipal Long userId) {
+		return ApiResponse.success(userService.getPointTimeline(userId));
+	}
+
+	@GetMapping("/comments")
+	public ApiResponse<List<MypageCommentsResponse>> getMyComments(
+			@AuthenticationPrincipal Long userId) {
+		return ApiResponse.success(userService.getMyComments(userId));
 	}
 }

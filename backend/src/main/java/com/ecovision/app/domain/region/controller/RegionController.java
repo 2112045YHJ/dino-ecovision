@@ -24,5 +24,4 @@ public class RegionController {
 	public ApiResponse<List<RegionDto.RegionResponse>> getRegions() {
 		return ApiResponse.success(regionService.getAllRegions());
 	}
-
 }

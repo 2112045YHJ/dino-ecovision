@@ -27,8 +27,8 @@ import com.ecovision.app.domain.mission.repository.DailyMissionAssignmentReposit
 import com.ecovision.app.domain.mission.repository.MissionEmissionFactorRepository;
 import com.ecovision.app.domain.mission.repository.MissionRepository;
 import com.ecovision.app.domain.mission.repository.UserMissionResultRepository;
-import com.ecovision.app.domain.mypage.entity.PointHistory;
-import com.ecovision.app.domain.mypage.repository.PointHistoryRepository;
+import com.ecovision.app.domain.user.entity.PointHistory;
+import com.ecovision.app.domain.user.repository.PointHistoryRepository;
 import com.ecovision.app.domain.ranking.entity.RankingSeason;
 import com.ecovision.app.domain.ranking.entity.UserRankingScore;
 import com.ecovision.app.domain.ranking.repository.RankingSeasonRepository;
@@ -183,7 +183,12 @@ public class MissionService {
 		result = userMissionResultRepository.save(result);
 
 		// 7. point_history 1건
-		pointHistoryRepository.save(PointHistory.missionComplete(userId, earned, result.getId()));
+		pointHistoryRepository.save(PointHistory.builder()
+				.user(user)
+				.pointAmount(earned)
+				.reason("MISSION_COMPLETE")
+				.relatedMissionResultId(result.getId())
+				.build());
 
 		// 8. users 갱신 (total/today/ranking/saved_carbon, 날짜 리셋 포함)
 		user.applyMissionReward(earned, reductionKg, today);
