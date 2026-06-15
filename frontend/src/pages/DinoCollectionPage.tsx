@@ -297,7 +297,7 @@ export function DinoCollectionPage() {
                   <article
                     key={`${card.type}-${card.stage}`}
                     className={`rounded-3xl p-5 shadow-sm transition ${
-                      isOwned ? "bg-[#E8F2EC]" : "bg-white opacity-60"
+                      isOwned ? "bg-[#E8F2EC]" : "bg-white"
                     }`}
                   >
                     <div className="flex justify-center">

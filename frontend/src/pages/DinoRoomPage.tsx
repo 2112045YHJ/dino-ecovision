@@ -17,7 +17,6 @@ import dinoRoomBg from "../assets/images/dinos/dino-room-bg.png";
 
 // 백엔드에서 받은 templateCode를 프론트 이미지 타입으로 안전하게 바꿔주는 함수입니다.
 // 프론트 이미지는 TYRANO / SAURO / CERATO만 알고 있습니다.
-// 그런데 백엔드나 DB에서는 BRACHIO / TRICERA 같은 이름이 올 수도 있어서 안전 변환이 필요합니다.
 function getSafeDinoType(dino: MyDinoResponse): DinoType {
   const templateCode = String(dino.templateCode ?? "").toUpperCase();
   const templateName = String(dino.templateName ?? "").toUpperCase();
@@ -81,6 +80,27 @@ function getSafeDinoStage(stage?: string | null): DinoStage {
   }
 
   return "EGG";
+}
+
+// 영어 성장 단계를 사용자가 보기 쉬운 한글 이름으로 바꿔줍니다.
+function getStageLabel(stage: DinoStage) {
+  if (stage === "EGG") {
+    return "알";
+  }
+
+  if (stage === "HATCHLING") {
+    return "유아기";
+  }
+
+  if (stage === "JUVENILE") {
+    return "청소년기";
+  }
+
+  if (stage === "ADULT") {
+    return "성룡";
+  }
+
+  return "알";
 }
 
 export function DinoRoomPage() {
@@ -150,13 +170,23 @@ export function DinoRoomPage() {
             공룡 선택을 완료했는지 확인해주세요.
           </p>
 
-          <button
-            type="button"
-            onClick={() => navigate("/home")}
-            className="mt-5 rounded-2xl border border-[#5F8C74] px-5 py-3 text-sm font-bold text-[#5F8C74] transition hover:bg-[#E8F2EC]"
-          >
-            홈으로 가기
-          </button>
+          <div className="mt-5 flex flex-wrap justify-center gap-2">
+            <button
+              type="button"
+              onClick={() => navigate("/home")}
+              className="rounded-2xl border border-[#5F8C74] px-5 py-3 text-sm font-bold text-[#5F8C74] transition hover:bg-[#E8F2EC]"
+            >
+              홈으로 가기
+            </button>
+
+            <button
+              type="button"
+              onClick={() => navigate("/onboarding/dino")}
+              className="rounded-2xl bg-[#5F8C74] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#4d735f]"
+            >
+              공룡 선택하러 가기
+            </button>
+          </div>
         </div>
       </main>
     );
@@ -165,6 +195,7 @@ export function DinoRoomPage() {
   // 백엔드에서 받은 공룡 타입과 성장 단계를 프론트 이미지용 값으로 안전하게 바꿉니다.
   const dinoType = getSafeDinoType(dino);
   const dinoStage = getSafeDinoStage(dino.stage);
+  const dinoStageLabel = getStageLabel(dinoStage);
 
   // EXP 진행률을 계산합니다.
   // nextStageExp가 0이거나 없으면 나누기 오류가 날 수 있으므로 1로 방어합니다.
@@ -261,7 +292,7 @@ export function DinoRoomPage() {
             </p>
 
             <p className="mt-1 text-sm text-gray-600">
-              현재 성장 단계: {dino.stage}
+              현재 성장 단계: {dinoStageLabel}
             </p>
 
             {/* EXP */}
@@ -299,12 +330,13 @@ export function DinoRoomPage() {
               <p className="text-sm font-bold text-[#5F8C74]">성장 안내</p>
 
               <p className="mt-2 text-sm text-gray-600">
-                오늘의 미션을 완료하면 EXP가 쌓이고, EXP가 충분히 모이면 디노가
-                다음 단계로 성장할 수 있어요.
+                현재 디노는 {dino.templateName}이며, {dinoStageLabel} 단계로
+                표시되고 있어요.
               </p>
 
               <p className="mt-2 text-sm text-gray-600">
-                현재 이미지 타입: {dinoType} / 현재 이미지 단계: {dinoStage}
+                오늘의 미션을 완료하면 EXP가 쌓이고, EXP가 충분히 모이면 다음
+                성장 단계로 넘어갈 수 있어요.
               </p>
             </div>
           </aside>
