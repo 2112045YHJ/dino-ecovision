@@ -101,7 +101,30 @@ INSERT INTO `ranking_seasons` (`id`, `season_name`, `start_date`, `end_date`, `i
 (1, '2026 에코 서머 시즌 1', '2026-06-01', '2026-08-31', TRUE);
 
 -- 10. users 관리자 계정 추가
-INSERT INTO `users` (`id`, `email`, `password`, `nickname`, `avatar_url`, `region_id`, `role`, `status`, `total_points`, `ranking_point`, `today_points_accumulated`, `last_point_accumulated_date`, `saved_carbon_kg`, `last_region_changed_at`, `last_nickname_changed_at`, `created_at`, `updated_at`, `deleted_at`) VALUES (1, 'admin@example.com', '$2a$10$4OzfDb97/VOE2kzOCqT2IONV5an9L9rvmwKNULsaaUPttomrH2mZq', 'admin', NULL, 1, 'ADMIN', 'ACTIVE', 0, 0, 0, '2026-06-12', 0.0, '2026-06-12 11:54:52', '2026-06-12 11:54:52', '2026-06-12 01:57:31', '2026-06-12 03:33:52', NULL);
+INSERT INTO users (
+    id, email, password, nickname, avatar_url, 
+    region_id, role, status, total_points, ranking_point, 
+    today_points_accumulated, last_point_accumulated_date, saved_carbon_kg, 
+    last_region_changed_at, last_nickname_changed_at, created_at, updated_at, deleted_at
+) VALUES (
+    1, 'admin@example.com', '$2a$10$4OzfDb97/VOE2kzOCqT2IONV5an9L9rvmwKNULsaaUPttomrH2mZq', 'admin', NULL, 
+    1, 'ADMIN', 'ACTIVE', 0, 0, 
+    0, '2026-06-12', 0.0, 
+    '2026-06-12 11:54:52', '2026-06-12 11:54:52', '2026-06-12 01:57:31', '2026-06-12 03:33:52', NULL
+);
 
 -- 11. dino 관리자 공룡 추가
-INSERT INTO `user_dinos` (`id`, `user_id`, `dino_template_id`, `nickname`, `stage`, `exp`, `affinity`, `evolved_at`, `created_at`, `updated_at`) VALUES (1, 1, 1, 'adminDino', 'EGG', 0, 0, NULL, '2026-06-12 07:41:11', '2026-06-12 07:41:11');
+INSERT INTO user_dinos (
+    id, user_id, dino_template_id, nickname, stage, 
+    exp, affinity, evolved_at, created_at, updated_at
+) VALUES (
+    1, 1, 1, 'adminDino', 'EGG', 
+    0, 0, NULL, '2026-06-12 07:41:11', '2026-06-12 07:41:11'
+);
+
+-- 12. user_dino_collections 관리자 공룡 도감 해금 추가
+INSERT INTO user_dino_collections (
+    id, user_id, dino_template_id, unlocked_at
+) VALUES (
+    1, 1, 1, '2026-06-12 07:41:11'
+);
