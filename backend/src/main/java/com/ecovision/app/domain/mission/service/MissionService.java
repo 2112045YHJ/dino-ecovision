@@ -10,11 +10,13 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.ecovision.app.domain.dino.constant.DinoUnlockPolicy;
 import com.ecovision.app.domain.dino.entity.DinoStage;
 import com.ecovision.app.domain.dino.entity.LevelPolicy;
 import com.ecovision.app.domain.dino.entity.UserDino;
 import com.ecovision.app.domain.dino.repository.LevelPolicyRepository;
 import com.ecovision.app.domain.dino.repository.UserDinoRepository;
+import com.ecovision.app.domain.dino.service.DinoUnlockService;
 import com.ecovision.app.domain.dungeon.entity.DungeonEvent;
 import com.ecovision.app.domain.dungeon.entity.DungeonMissionAssignment;
 import com.ecovision.app.domain.dungeon.repository.DungeonEventRepository;
@@ -41,11 +43,13 @@ import com.ecovision.app.global.exception.BusinessException;
 import com.ecovision.app.global.exception.ErrorCode;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 //	오늘의 미션 조회 + 미션 완료(보상·EXP·친밀도·진화·일일상한) 트랜잭션.
 //	여러 도메인 레포를 포괄하여, 전체를 한 트랜잭션으로 묶는다(DB 9.3).
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class MissionService {
 
 	private static final int DAILY_POINT_LIMIT = 350;
@@ -64,6 +68,7 @@ public class MissionService {
 	private final UserRepository userRepository;
 	private final UserDinoRepository userDinoRepository;
 	private final LevelPolicyRepository levelPolicyRepository;
+	private final DinoUnlockService dinoUnlockService;
 
 	// 오늘 배정된 일일 미션 목록
 	@Transactional(readOnly = true)
@@ -226,6 +231,16 @@ public class MissionService {
 		}
 		if (dungeon != null) {
 			dungeon.setStatus("COMPLETED");
+		}
+		
+		// 12. 도감 자동 해금 판정 (부가 보상): 자원순환(WASTE) 미션 완료 시에만.
+		//     REQUIRES_NEW 독립 트랜잭션 + best-effort → 해금 실패가 미션 완료를 롤백시키지 않는다.
+		if (DinoUnlockPolicy.WASTE_CATEGORY.equalsIgnoreCase(mission.getCategory())) {
+			try {
+				dinoUnlockService.checkWasteMissionUnlock(userId);
+			} catch (Exception e) {
+				log.warn("[MISSION] 도감 해금 판정 실패 (미션 완료는 정상). userId={}", userId, e);
+			}
 		}
 
 		// 응답
