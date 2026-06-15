@@ -19,8 +19,8 @@ import dinoRoomBg from "../assets/images/dinos/dino-room-bg.png";
 // 프론트 이미지는 TYRANO / SAURO / CERATO만 알고 있습니다.
 // 그런데 백엔드나 DB에서는 BRACHIO / TRICERA 같은 이름이 올 수도 있어서 안전 변환이 필요합니다.
 function getSafeDinoType(dino: MyDinoResponse): DinoType {
-  const templateCode = String(dino.templateCode ?? "");
-  const templateName = String(dino.templateName ?? "");
+  const templateCode = String(dino.templateCode ?? "").toUpperCase();
+  const templateName = String(dino.templateName ?? "").toUpperCase();
 
   if (templateCode === "TYRANO") {
     return "TYRANO";
@@ -41,7 +41,8 @@ function getSafeDinoType(dino: MyDinoResponse): DinoType {
   if (
     templateName.includes("용각") ||
     templateName.includes("브라키오") ||
-    templateName.includes("BRACHIO")
+    templateName.includes("BRACHIO") ||
+    templateName.includes("SAURO")
   ) {
     return "SAURO";
   }
@@ -49,7 +50,8 @@ function getSafeDinoType(dino: MyDinoResponse): DinoType {
   if (
     templateName.includes("각룡") ||
     templateName.includes("트리케라") ||
-    templateName.includes("TRICERA")
+    templateName.includes("TRICERA") ||
+    templateName.includes("CERATO")
   ) {
     return "CERATO";
   }
@@ -60,19 +62,21 @@ function getSafeDinoType(dino: MyDinoResponse): DinoType {
 // 백엔드에서 받은 stage를 프론트 이미지 단계로 안전하게 바꿔주는 함수입니다.
 // 프론트 이미지는 EGG / HATCHLING / JUVENILE / ADULT 단계만 알고 있습니다.
 function getSafeDinoStage(stage?: string | null): DinoStage {
-  if (stage === "EGG") {
+  const safeStage = String(stage ?? "").toUpperCase();
+
+  if (safeStage === "EGG") {
     return "EGG";
   }
 
-  if (stage === "HATCHLING") {
+  if (safeStage === "HATCHLING") {
     return "HATCHLING";
   }
 
-  if (stage === "JUVENILE") {
+  if (safeStage === "JUVENILE") {
     return "JUVENILE";
   }
 
-  if (stage === "ADULT") {
+  if (safeStage === "ADULT") {
     return "ADULT";
   }
 
@@ -81,7 +85,6 @@ function getSafeDinoStage(stage?: string | null): DinoStage {
 
 export function DinoRoomPage() {
   // 페이지 이동을 도와주는 함수입니다.
-  // 예: navigate("/dino-collection") → 디노 도감 페이지로 이동
   const navigate = useNavigate();
 
   // 백엔드에서 받아온 내 공룡 정보입니다.
@@ -146,6 +149,14 @@ export function DinoRoomPage() {
           <p className="mt-2 text-sm text-gray-600">
             공룡 선택을 완료했는지 확인해주세요.
           </p>
+
+          <button
+            type="button"
+            onClick={() => navigate("/home")}
+            className="mt-5 rounded-2xl border border-[#5F8C74] px-5 py-3 text-sm font-bold text-[#5F8C74] transition hover:bg-[#E8F2EC]"
+          >
+            홈으로 가기
+          </button>
         </div>
       </main>
     );
@@ -153,7 +164,7 @@ export function DinoRoomPage() {
 
   // 백엔드에서 받은 공룡 타입과 성장 단계를 프론트 이미지용 값으로 안전하게 바꿉니다.
   const dinoType = getSafeDinoType(dino);
-  const dinoStage = getSafeDinoStage(String(dino.stage));
+  const dinoStage = getSafeDinoStage(dino.stage);
 
   // EXP 진행률을 계산합니다.
   // nextStageExp가 0이거나 없으면 나누기 오류가 날 수 있으므로 1로 방어합니다.
@@ -161,7 +172,6 @@ export function DinoRoomPage() {
   const expPercent = Math.min((dino.exp / nextStageExp) * 100, 100);
 
   // 현재 화면에 보여줄 공룡 이미지입니다.
-  // 예: dinoImagesByType["SAURO"]["EGG"]
   const currentDinoImage = dinoImagesByType[dinoType][dinoStage];
 
   // 공룡을 클릭했을 때 실행됩니다.
@@ -178,8 +188,8 @@ export function DinoRoomPage() {
   return (
     <main className="min-h-screen bg-[#FAF9F5] p-6 text-[#2C3531]">
       <section className="mx-auto max-w-5xl">
-        <header className="mb-6 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-          <div>
+        <header className="mb-6 flex flex-col gap-4 md:flex-row md:items-end">
+          <div className="md:flex-1">
             <p className="text-sm font-bold text-[#5F8C74]">DINO ROOM</p>
 
             <h1 className="mt-2 text-3xl font-bold">나의 디노 룸</h1>
@@ -189,13 +199,23 @@ export function DinoRoomPage() {
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={() => navigate("/dino-collection")}
-            className="rounded-2xl bg-[#5F8C74] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#4d735f]"
-          >
-            디노 도감 보기
-          </button>
+          <div className="flex flex-wrap gap-2 md:justify-end">
+            <button
+              type="button"
+              onClick={() => navigate("/home")}
+              className="rounded-2xl border border-[#5F8C74] px-5 py-3 text-sm font-bold text-[#5F8C74] transition hover:bg-[#E8F2EC]"
+            >
+              홈으로 가기
+            </button>
+
+            <button
+              type="button"
+              onClick={() => navigate("/dino-collection")}
+              className="rounded-2xl bg-[#5F8C74] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#4d735f]"
+            >
+              디노 도감 보기
+            </button>
+          </div>
         </header>
 
         <section className="grid gap-6 lg:grid-cols-[1.4fr_0.8fr]">
@@ -274,27 +294,17 @@ export function DinoRoomPage() {
               </p>
             </div>
 
-            {/* 현재 매칭 정보 */}
+            {/* 성장 안내 */}
             <div className="mt-4 rounded-2xl bg-[#E8F2EC] p-4">
-              <p className="text-sm font-bold text-[#5F8C74]">
-                이미지 매칭 정보
+              <p className="text-sm font-bold text-[#5F8C74]">성장 안내</p>
+
+              <p className="mt-2 text-sm text-gray-600">
+                오늘의 미션을 완료하면 EXP가 쌓이고, EXP가 충분히 모이면 디노가
+                다음 단계로 성장할 수 있어요.
               </p>
 
-              <p className="mt-1 text-sm text-gray-600">
-                백엔드 타입: {dino.templateCode}
-              </p>
-
-              <p className="mt-1 text-sm text-gray-600">
-                프론트 변환 타입: {dinoType}
-              </p>
-
-              <p className="mt-1 text-sm text-gray-600">
-                프론트 변환 단계: {dinoStage}
-              </p>
-
-              <p className="mt-1 text-xs text-gray-500">
-                백엔드 값을 프론트 이미지 이름에 맞게 안전하게 변환해서
-                표시합니다.
+              <p className="mt-2 text-sm text-gray-600">
+                현재 이미지 타입: {dinoType} / 현재 이미지 단계: {dinoStage}
               </p>
             </div>
           </aside>

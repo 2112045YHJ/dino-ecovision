@@ -11,8 +11,7 @@ import { OnboardingProfilePage } from "./pages/OnboardingProfilePage";
 import { DinoSelectionPage } from "./pages/DinoSelectionPage";
 import { DinoCollectionPage } from "./pages/DinoCollectionPage";
 import { MyPageMainPage } from "./pages/MyPageMainPage";
-import { MyPageBillInputPage } from "./pages/MyPageBillInputPage";
-import { MyPageTrendChartPage } from "./pages/MyPageTrendChartPage";
+import { ProfileEditPage } from "./pages/ProfileEditPage";
 
 function App() {
   return (
@@ -52,10 +51,12 @@ function App() {
 
       {/* 마이페이지 */}
       <Route path="/mypage" element={<MyPageMainPage />} />
-      <Route path="/mypage/bills" element={<MyPageBillInputPage />} />
-      <Route path="/mypage/trend" element={<MyPageTrendChartPage />} />
 
-      {/* 없는 주소로 들어오면 로그인으로 보냅니다. */}
+      {/* 프로필 수정 */}
+      <Route path="/mypage/edit" element={<ProfileEditPage />} />
+
+      {/* 없는 주소로 들어오면 로그인으로 보냅니다.
+          이 코드는 항상 제일 마지막에 있어야 합니다. */}
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
   );
