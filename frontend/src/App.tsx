@@ -12,6 +12,11 @@ import { DinoSelectionPage } from "./pages/DinoSelectionPage";
 import { DinoCollectionPage } from "./pages/DinoCollectionPage";
 import { MyPageMainPage } from "./pages/MyPageMainPage";
 import { ProfileEditPage } from "./pages/ProfileEditPage";
+import { LeaderboardPage } from "./pages/LeaderboardPage";
+import { GuildManagementPage } from "./pages/GuildManagementPage";
+import { AdminCsvUploadPage } from "./pages/AdminCsvUploadPage";
+import { RegionMapLeaderboardPage } from "./pages/RegionMapLeaderboardPage";
+import { WorldDungeonPage } from "./pages/WorldDungeonPage";
 
 function App() {
   return (
@@ -58,6 +63,11 @@ function App() {
       {/* 없는 주소로 들어오면 로그인으로 보냅니다.
           이 코드는 항상 제일 마지막에 있어야 합니다. */}
       <Route path="*" element={<Navigate to="/login" replace />} />
+      <Route path="/leaderboard" element={<LeaderboardPage />} />
+      <Route path="/guild" element={<GuildManagementPage />} />
+      <Route path="/admin/csv-upload" element={<AdminCsvUploadPage />} />
+      <Route path="/region-ranking" element={<RegionMapLeaderboardPage />} />
+      <Route path="/world-dungeon" element={<WorldDungeonPage />} />
     </Routes>
   );
 }
