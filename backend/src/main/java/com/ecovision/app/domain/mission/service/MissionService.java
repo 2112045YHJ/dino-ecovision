@@ -154,7 +154,7 @@ public class MissionService {
 				.orElse(BigDecimal.ZERO);
 
 		CarbonIntensityLog carbonLog = carbonIntensityLogRepository.findFirstByOrderByMeasuredAtDesc().orElse(null);
-		BigDecimal carbonWeight = (carbonLog != null) ? carbonLog.getCarbonWeight() : BigDecimal.ONE;
+		BigDecimal carbonWeight = (carbonLog != null && carbonLog.getCarbonWeight() != null) ? carbonLog.getCarbonWeight() : BigDecimal.ONE;
 		Long carbonLogId = (carbonLog != null) ? carbonLog.getId() : null;
 
 		// 3. 최종 보상 = base × carbonWeight × dungeonMultiplier (반올림)
