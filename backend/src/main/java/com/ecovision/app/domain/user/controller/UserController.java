@@ -37,12 +37,13 @@ public class UserController {
 
 	@GetMapping("/nickname/check")
 	public ApiResponse<UserDto.NicknameCheckResponse> checkNickname(
+			@AuthenticationPrincipal Long userId,
 			@RequestParam("nickname")
 			@NotBlank(message = "닉네임은 필수입니다.")
 			@Size(min = 2, max = 12, message = "닉네임은 2~12자여야 합니다.")
 			@Pattern(regexp = "^[가-힣A-Za-z0-9]+$", message = "닉네임은 한글·영문·숫자만 사용할 수 있습니다.")
 			String nickname) {
-		return ApiResponse.success(userService.checkNickname(nickname));
+		return ApiResponse.success(userService.checkNickname(userId, nickname));
 	}
 
 	@PostMapping("/onboarding")

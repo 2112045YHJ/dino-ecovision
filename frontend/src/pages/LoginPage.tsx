@@ -67,15 +67,23 @@ export function LoginPage() {
 
       // 회원가입 모드일 때
       if (isSignupMode) {
-        const result = await signup({
+        await signup({
           email: email.trim(),
           password,
         });
 
-        alert("회원가입이 완료되었습니다.");
+        alert("회원가입이 완료되었습니다. 자동으로 로그인합니다.");
 
-        // 회원가입 응답에 onboardingRequired가 true면 온보딩으로 이동합니다.
-        if (result.onboardingRequired) {
+        // 회원가입 성공 후 자동으로 로그인하여 토큰 저장
+        const loginResult = await login({
+          email: email.trim(),
+          password,
+        });
+
+        localStorage.setItem("accessToken", loginResult.accessToken);
+        localStorage.setItem("role", loginResult.role);
+
+        if (loginResult.onboardingRequired) {
           navigate("/onboarding/profile");
           return;
         }
