@@ -19,6 +19,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
     
     boolean existsByNickname(String nickname);
 
+    boolean existsByNicknameAndIdNot(String nickname, Long id);
+    
     /**
      * 활성화 상태이고 탈퇴하지 않은 유저를 페이징 조회합니다.
      */
