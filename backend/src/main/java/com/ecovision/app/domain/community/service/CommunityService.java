@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -86,21 +87,8 @@ public class CommunityService {
             }
         }
 
-        PostCategory category = null;
-        if (categoryStr != null && !categoryStr.trim().isEmpty() && !categoryStr.equalsIgnoreCase("ALL")) {
-            try {
-                category = PostCategory.valueOf(categoryStr.toUpperCase());
-            } catch (IllegalArgumentException e) {
-                // 무시
-            }
-        }
-
-        if ((category != null) || (keyword != null && !keyword.trim().isEmpty())) {
-            Specification<Post> spec = buildSearchSpecification(category, searchType, keyword);
-            return postRepository.findAll(spec, pageable).map(post -> convertToPostResponse(post, userId));
-        }
-
-        return postRepository.findAllWithUser(pageable).map(post -> convertToPostResponse(post, userId));
+        return postRepository.findAllByQueryDSL(categoryStr, searchType, keyword, pageable)
+                .map(post -> convertToPostResponse(post, userId));
     }
 
     private Specification<Post> buildSearchSpecification(PostCategory category, String searchType, String keyword) {
@@ -374,13 +362,51 @@ public class CommunityService {
     }
 
     private void rewardPoints(User user, int amount, String reason) {
-        user.setTotalPoints(user.getTotalPoints() + amount);
-        user.setRankingPoint(user.getRankingPoint() + amount);
+        LocalDate today = LocalDate.now();
+        
+        // 날짜 변경 시 누적 포인트 초기화
+        if (user.getLastPointAccumulatedDate() == null || 
+            !user.getLastPointAccumulatedDate().isEqual(today)) {
+            user.setTodayPointsAccumulated(0);
+            user.setLastPointAccumulatedDate(today);
+        }
+
+        int finalPointsToReward = 0;
+
+        if (amount <= 0) {
+            // 차감인 경우 상한 검사 제외하고 즉시 차감
+            finalPointsToReward = amount;
+        } else {
+            // 가산인 경우
+            int currentAccumulated = user.getTodayPointsAccumulated() != null ? user.getTodayPointsAccumulated() : 0;
+            int limit = 350; // 일일 획득 상한 350점 고정
+
+            if (currentAccumulated >= limit) {
+                // 이미 한도를 채운 경우
+                finalPointsToReward = 0;
+                reason = reason + "_LIMIT_EXCEEDED";
+            } else {
+                int remainingLimit = limit - currentAccumulated;
+                if (amount > remainingLimit) {
+                    // 지급할 포인트가 남은 한도보다 많은 경우 -> 남은 한도만큼만 지급
+                    finalPointsToReward = remainingLimit;
+                    user.setTodayPointsAccumulated(limit);
+                } else {
+                    // 전체 다 지급 가능
+                    finalPointsToReward = amount;
+                    user.setTodayPointsAccumulated(currentAccumulated + finalPointsToReward);
+                }
+            }
+        }
+
+        user.setTotalPoints(user.getTotalPoints() + finalPointsToReward);
+        user.setRankingPoint(user.getRankingPoint() + finalPointsToReward);
+        user.setLastPointAccumulatedDate(today);
         userRepository.save(user);
 
         PointHistory history = PointHistory.builder()
                 .user(user)
-                .pointAmount(amount)
+                .pointAmount(finalPointsToReward)
                 .reason(reason)
                 .build();
         pointHistoryRepository.save(history);
