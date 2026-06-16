@@ -14,16 +14,7 @@ import {
 import dinoRoomBg from "../assets/images/dinos/dino-room-bg.png";
 
 import { DinoCardShareModal } from "../components/dino/DinoCardShareModal";
-
-/*
-  이 파일에서 하는 일
-
-  1. GET /api/me/dino 로 내 디노 정보를 불러옵니다.
-  2. 백엔드에서 받은 디노 타입/성장 단계를 프론트 이미지 타입에 맞게 바꿉니다.
-  3. 디노룸 화면에 공룡 이미지, EXP, 친밀도, 성장 안내를 보여줍니다.
-  4. 다음 성장까지 남은 EXP를 보여줍니다.
-  5. 공룡 정보가 없을 때 홈/공룡 선택 화면으로 이동할 수 있게 합니다.
-*/
+import { DinoEvolutionModal } from "../components/dino/DinoEvolutionModal";
 
 /* =========================
    공룡 타입 안전 변환 함수
@@ -121,6 +112,17 @@ function getStageLabel(stage: DinoStage) {
 }
 
 /* =========================
+   이전 성장 단계 반환 함수
+   ========================= */
+
+function getPrevStage(stage: DinoStage): DinoStage {
+  if (stage === "HATCHLING") return "EGG";
+  if (stage === "JUVENILE") return "HATCHLING";
+  if (stage === "ADULT") return "JUVENILE";
+  return "EGG";
+}
+
+/* =========================
    디노룸 페이지
    ========================= */
 
@@ -135,6 +137,7 @@ export function DinoRoomPage() {
   const [isHappy, setIsHappy] = useState(false);
 
   const [isShareOpen, setIsShareOpen] = useState(false);
+  const [isEvolutionOpen, setIsEvolutionOpen] = useState(false);
 
   useEffect(() => {
     const fetchMyDino = async () => {
@@ -206,6 +209,7 @@ export function DinoRoomPage() {
   const dinoType = getSafeDinoType(dino);
   const dinoStage = getSafeDinoStage(dino.stage);
   const dinoStageLabel = getStageLabel(dinoStage);
+  const prevStage = getPrevStage(dinoStage);
 
   const rawNextStageExp = dino.nextStageExp as number | null | undefined;
 
@@ -260,6 +264,14 @@ export function DinoRoomPage() {
               className="rounded-2xl bg-[#5F8C74] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#4d735f]"
             >
               디노 도감 보기
+            </button>
+
+            <button
+              type="button"
+              onClick={() => navigate("/dino-growth")}
+              className="rounded-2xl border border-[#5F8C74] px-5 py-3 text-sm font-bold text-[#5F8C74] transition hover:bg-[#E8F2EC]"
+            >
+              성장 비교 보기
             </button>
           </div>
         </header>
@@ -352,8 +364,16 @@ export function DinoRoomPage() {
 
             <button
               type="button"
+              onClick={() => setIsEvolutionOpen(true)}
+              className="mt-4 w-full rounded-2xl bg-[#5F8C74] py-3 text-sm font-bold text-white transition hover:bg-[#4d735f]"
+            >
+              🎉 진화 확인하기
+            </button>
+
+            <button
+              type="button"
               onClick={() => setIsShareOpen(true)}
-              className="mt-4 w-full rounded-2xl border border-[#5F8C74] py-3 text-sm font-bold text-[#5F8C74] transition hover:bg-[#E8F2EC]"
+              className="mt-3 w-full rounded-2xl border border-[#5F8C74] py-3 text-sm font-bold text-[#5F8C74] transition hover:bg-[#E8F2EC]"
             >
               🦖 디노 카드 자랑하기
             </button>
@@ -370,6 +390,16 @@ export function DinoRoomPage() {
           savedCarbonKg={0}
           guildName="해운대 에코 길드"
           onClose={() => setIsShareOpen(false)}
+        />
+      )}
+
+      {isEvolutionOpen && (
+        <DinoEvolutionModal
+          nickname={dino.nickname}
+          dinoType={dinoType}
+          prevStage={prevStage}
+          newStage={dinoStage}
+          onClose={() => setIsEvolutionOpen(false)}
         />
       )}
     </main>
