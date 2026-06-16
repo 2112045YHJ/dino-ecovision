@@ -6,6 +6,52 @@ import { useNavigate } from "react-router-dom";
 import { guildRankingMock, myGuildMock } from "../mocks/guildMock";
 import { GuildSeasonRewardModal } from "../components/guild/GuildSeasonRewardModal";
 
+// 길드 멤버 더미 데이터
+const guildMembersMock = [
+  {
+    rank: 1,
+    nickname: "에코마스터",
+    isLeader: true,
+    isMe: false,
+    seasonPoint: 1200,
+  },
+  {
+    rank: 2,
+    nickname: "그린파워",
+    isLeader: false,
+    isMe: false,
+    seasonPoint: 980,
+  },
+  {
+    rank: 3,
+    nickname: "지구지킴이",
+    isLeader: false,
+    isMe: false,
+    seasonPoint: 720,
+  },
+  {
+    rank: 4,
+    nickname: "탄소제로",
+    isLeader: false,
+    isMe: false,
+    seasonPoint: 530,
+  },
+  {
+    rank: 5,
+    nickname: "에코시티즌",
+    isLeader: false,
+    isMe: true,
+    seasonPoint: 340,
+  },
+  {
+    rank: 6,
+    nickname: "친환경이",
+    isLeader: false,
+    isMe: false,
+    seasonPoint: 280,
+  },
+];
+
 export function GuildManagementPage() {
   const navigate = useNavigate();
 
@@ -45,12 +91,19 @@ export function GuildManagementPage() {
           </div>
         </header>
 
+        {/* 내 길드 정보 */}
         <section className="mb-6 rounded-3xl bg-white p-6 shadow-sm">
-          <p className="text-sm font-bold text-[#5F8C74]">MY GUILD</p>
+          <div className="flex items-center justify-between border-b-2 border-[#5F8C74] pb-3">
+            <div className="flex items-center gap-2">
+              <span className="text-2xl">🏠</span>
+              <h2 className="text-2xl font-bold">{myGuildMock.guildName}</h2>
+            </div>
+            <span className="rounded-full bg-[#E8F2EC] px-3 py-1 text-xs font-bold text-[#5F8C74]">
+              지역코드: 26350
+            </span>
+          </div>
 
-          <h2 className="mt-2 text-2xl font-bold">{myGuildMock.guildName}</h2>
-
-          <p className="mt-1 text-sm text-gray-600">{myGuildMock.regionName}</p>
+          <p className="mt-2 text-sm text-gray-600">{myGuildMock.regionName}</p>
 
           <div className="mt-5 grid gap-4 md:grid-cols-4">
             <div className="rounded-2xl bg-[#FAF9F5] p-4">
@@ -62,7 +115,7 @@ export function GuildManagementPage() {
 
             <div className="rounded-2xl bg-[#FAF9F5] p-4">
               <p className="text-sm text-gray-600">길드 점수</p>
-              <p className="mt-1 text-xl font-bold">
+              <p className="mt-1 text-xl font-bold text-[#5F8C74]">
                 {myGuildMock.totalPoint} P
               </p>
             </div>
@@ -83,6 +136,44 @@ export function GuildManagementPage() {
           </div>
         </section>
 
+        {/* 길드 멤버 리스트 */}
+        <section className="mb-6 rounded-3xl bg-white p-6 shadow-sm">
+          <p className="text-sm font-bold text-[#5F8C74]">GUILD MEMBERS</p>
+          <h2 className="mt-2 text-xl font-bold">
+            길드 멤버 현황 ({guildMembersMock.length} / 30)
+          </h2>
+
+          <div className="mt-4 max-h-64 overflow-y-auto">
+            <div className="flex flex-col gap-2">
+              {guildMembersMock.map((member) => (
+                <div
+                  key={member.rank}
+                  className={`flex items-center justify-between rounded-2xl p-3 text-sm ${
+                    member.isMe
+                      ? "bg-[#E8F2EC] ring-2 ring-[#5F8C74]"
+                      : "bg-[#FAF9F5]"
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-gray-500">
+                      {member.rank}위
+                    </span>
+                    <span className="font-bold">
+                      {member.isLeader && "👑 "}
+                      {member.nickname}
+                      {member.isMe && " (나)"}
+                    </span>
+                  </div>
+                  <span className="font-bold text-[#5F8C74]">
+                    시즌 누적: {member.seasonPoint} AP
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* 길드 랭킹 */}
         <section className="rounded-3xl bg-white p-6 shadow-sm">
           <p className="text-sm font-bold text-[#5F8C74]">GUILD RANKING</p>
 

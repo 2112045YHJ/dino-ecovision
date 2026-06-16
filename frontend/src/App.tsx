@@ -9,6 +9,7 @@ import { HomePage } from "./pages/HomePage";
 import { TodayMissionPage } from "./pages/TodayMissionPage";
 import { DinoRoomPage } from "./pages/DinoRoomPage";
 import { DinoCollectionPage } from "./pages/DinoCollectionPage";
+import { DinoGrowthComparePage } from "./pages/DinoGrowthComparePage";
 import { MyPageMainPage } from "./pages/MyPageMainPage";
 import { ProfileEditPage } from "./pages/ProfileEditPage";
 import { MyPageBillInputPage } from "./pages/MyPageBillInputPage";
@@ -19,6 +20,8 @@ import { GuildManagementPage } from "./pages/GuildManagementPage";
 import { WorldDungeonPage } from "./pages/WorldDungeonPage";
 import { AdminCsvUploadPage } from "./pages/AdminCsvUploadPage";
 import { AdminDungeonPage } from "./pages/AdminDungeonPage";
+import { RegionEnergyDashboardPage } from "./pages/RegionEnergyDashboardPage";
+import { RegionEnergyComparePage } from "./pages/RegionEnergyComparePage";
 
 function App() {
   return (
@@ -35,6 +38,7 @@ function App() {
       <Route path="/missions" element={<TodayMissionPage />} />
       <Route path="/dino-room" element={<DinoRoomPage />} />
       <Route path="/dino-collection" element={<DinoCollectionPage />} />
+      <Route path="/dino-growth" element={<DinoGrowthComparePage />} />
       <Route path="/mypage" element={<MyPageMainPage />} />
       <Route path="/mypage/edit" element={<ProfileEditPage />} />
       <Route path="/mypage/bill" element={<MyPageBillInputPage />} />
@@ -43,6 +47,8 @@ function App() {
       <Route path="/region-ranking" element={<RegionMapLeaderboardPage />} />
       <Route path="/guild" element={<GuildManagementPage />} />
       <Route path="/world-dungeon" element={<WorldDungeonPage />} />
+      <Route path="/dashboard" element={<RegionEnergyDashboardPage />} />
+      <Route path="/dashboard/compare" element={<RegionEnergyComparePage />} />
       <Route path="/admin/csv-upload" element={<AdminCsvUploadPage />} />
       <Route path="/admin/dungeon" element={<AdminDungeonPage />} />
       <Route path="*" element={<Navigate to="/login" replace />} />
