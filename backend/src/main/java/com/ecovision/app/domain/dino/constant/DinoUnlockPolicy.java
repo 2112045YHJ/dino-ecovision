@@ -10,7 +10,7 @@ public final class DinoUnlockPolicy {
 	}
 
 	//	자원순환 미션 카테고리 값 (missions.category)
-	public static final String WASTE_CATEGORY = "WASTE";
+	public static final String RESOURCE_CYCLE_CATEGORY = "RECYCLING";
 
 	//	브라키오: 자원순환 미션 누적 완료 임계 횟수
 	public static final long BRACHIO_TEMPLATE_ID = 2L;

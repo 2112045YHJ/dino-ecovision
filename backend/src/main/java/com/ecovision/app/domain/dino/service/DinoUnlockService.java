@@ -31,11 +31,11 @@ public class DinoUnlockService {
 
 	//	자원순환 미션 완료 직후 호출. 누적 완료 10회 도달 시 브라키오 해금.
 	@Transactional(propagation = Propagation.REQUIRES_NEW)
-	public void checkWasteMissionUnlock(Long userId) {
+	public void checkResourceCycleMissionUnlock(Long userId) {
 		if (isUnlocked(userId, DinoUnlockPolicy.BRACHIO_TEMPLATE_ID)) {
 			return; // 이미 해금 → 카운트 생략
 		}
-		long count = unlockStatRepository.countWasteMissionCompletions(userId, DinoUnlockPolicy.WASTE_CATEGORY);
+		long count = unlockStatRepository.countResourceCycleMissionCompletions(userId, DinoUnlockPolicy.RESOURCE_CYCLE_CATEGORY);
 		if (count >= DinoUnlockPolicy.RESOURCE_MISSION_THRESHOLD) {
 			unlock(userId, DinoUnlockPolicy.BRACHIO_TEMPLATE_ID, "자원순환 미션 누적 " + count + "회");
 		}

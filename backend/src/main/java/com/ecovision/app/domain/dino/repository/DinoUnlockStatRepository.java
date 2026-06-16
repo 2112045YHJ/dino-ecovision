@@ -13,7 +13,7 @@ import com.ecovision.app.domain.dino.entity.UserDinoCollection;
 //	실제 매핑 대상이 아니다(정의된 쿼리는 전부 네이티브).
 public interface DinoUnlockStatRepository extends Repository<UserDinoCollection, Long> {
 
-	//	자원순환(missions.category='WASTE') 미션의 완료 누적 횟수(반복 포함).
+	//	자원순환(missions.category='RECYCLING') 미션의 완료 누적 횟수(반복 포함).
 	//	user_mission_results(status='COMPLETED') 를 missions 와 조인해 카테고리로 필터.
 	//	→ 브라키오 해금 조건(10회) 판정에 사용.
 	@Query(value = """
@@ -24,7 +24,7 @@ public interface DinoUnlockStatRepository extends Repository<UserDinoCollection,
 			  AND umr.status = 'COMPLETED'
 			  AND m.category = :category
 			""", nativeQuery = true)
-	long countWasteMissionCompletions(@Param("userId") Long userId, @Param("category") String category);
+	long countResourceCycleMissionCompletions(@Param("userId") Long userId, @Param("category") String category);
 
 	//	사용자가 생성한 차트 공유 스냅샷 누적 개수.
 	//	→ 트리케라 해금 조건(5회) 판정에 사용. (명세 3.3: "에너지 대시보드 스냅샷 5회 생성 시 해제")

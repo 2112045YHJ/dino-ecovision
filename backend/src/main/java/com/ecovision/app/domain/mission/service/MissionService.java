@@ -235,9 +235,9 @@ public class MissionService {
 		
 		// 12. 도감 자동 해금 판정 (부가 보상): 자원순환(WASTE) 미션 완료 시에만.
 		//     REQUIRES_NEW 독립 트랜잭션 + best-effort → 해금 실패가 미션 완료를 롤백시키지 않는다.
-		if (DinoUnlockPolicy.WASTE_CATEGORY.equalsIgnoreCase(mission.getCategory())) {
+		if (DinoUnlockPolicy.RESOURCE_CYCLE_CATEGORY.equalsIgnoreCase(mission.getCategory())) {
 			try {
-				dinoUnlockService.checkWasteMissionUnlock(userId);
+				dinoUnlockService.checkResourceCycleMissionUnlock(userId);
 			} catch (Exception e) {
 				log.warn("[MISSION] 도감 해금 판정 실패 (미션 완료는 정상). userId={}", userId, e);
 			}
