@@ -3,6 +3,8 @@
 -- DB 설계서 v6.0 최종 스펙 반영 (2026-06-08)
 -- =======================================================
 
+SET NAMES utf8mb4;
+
 USE `dino_ecovision`;
 
 -- 1. regions (지역 정보) 적재
@@ -22,8 +24,8 @@ INSERT INTO `guilds` (`id`, `guild_name`, `description`, `region_id`, `capacity`
 -- 3. dino_templates (공룡 템플릿) 적재 - 4단계 이미지 포함
 INSERT INTO `dino_templates` (`id`, `dino_code`, `dino_name`, `description`, `egg_image_url`, `hatchling_image_url`, `juvenile_image_url`, `adult_image_url`) VALUES
 (1, 'TYRANO', '에코 티라노', '강력한 활력과 거대한 용량을 지닌 에너제틱 공룡', 'https://assets.ecovision.com/eggs/tyrano.png', 'https://assets.ecovision.com/hatchlings/tyrano.png', 'https://assets.ecovision.com/juveniles/tyrano.png', 'https://assets.ecovision.com/adults/tyrano.png'),
-(2, 'BRACHIO', '에코 브라키오', '꾸준한 물 소비 절감에 특화된 평화로운 초식형 공룡', 'https://assets.ecovision.com/eggs/brachio.png', 'https://assets.ecovision.com/hatchlings/brachio.png', 'https://assets.ecovision.com/juveniles/brachio.png', 'https://assets.ecovision.com/adults/brachio.png'),
-(3, 'TRICERA', '에코 트리케라', '자원 순환 분리 배출에 두각을 나타내는 수호형 뿔 공룡', 'https://assets.ecovision.com/eggs/tricera.png', 'https://assets.ecovision.com/hatchlings/tricera.png', 'https://assets.ecovision.com/juveniles/tricera.png', 'https://assets.ecovision.com/adults/tricera.png');
+(2, 'SAURO', '에코 브라키오', '꾸준한 물 소비 절감에 특화된 평화로운 초식형 공룡', 'https://assets.ecovision.com/eggs/sauro.png', 'https://assets.ecovision.com/hatchlings/sauro.png', 'https://assets.ecovision.com/juveniles/sauro.png', 'https://assets.ecovision.com/adults/sauro.png'),
+(3, 'CERATO', '에코 트리케라', '자원 순환 분리 배출에 두각을 나타내는 수호형 뿔 공룡', 'https://assets.ecovision.com/eggs/cerato.png', 'https://assets.ecovision.com/hatchlings/cerato.png', 'https://assets.ecovision.com/juveniles/cerato.png', 'https://assets.ecovision.com/adults/cerato.png');
 
 -- 4. level_policies (레벨/진화 기준) 적재 - 4단계 경험치 임계값
 INSERT INTO `level_policies` (`level_code`, `level_name`, `required_exp`, `sort_order`) VALUES
@@ -97,3 +99,32 @@ INSERT INTO `quizzes` (`id`, `question`, `option_a`, `option_b`, `option_c`, `co
 -- 9. ranking_seasons (랭킹 시즌) 적재
 INSERT INTO `ranking_seasons` (`id`, `season_name`, `start_date`, `end_date`, `is_active`) VALUES
 (1, '2026 에코 서머 시즌 1', '2026-06-01', '2026-08-31', TRUE);
+
+-- 10. users 관리자 계정 추가
+INSERT INTO users (
+    id, email, password, nickname, avatar_url, 
+    region_id, role, status, total_points, ranking_point, 
+    today_points_accumulated, last_point_accumulated_date, saved_carbon_kg, 
+    last_region_changed_at, last_nickname_changed_at, created_at, updated_at, deleted_at
+) VALUES (
+    1, 'admin@example.com', '$2a$10$4OzfDb97/VOE2kzOCqT2IONV5an9L9rvmwKNULsaaUPttomrH2mZq', 'admin', NULL, 
+    1, 'ADMIN', 'ACTIVE', 0, 0, 
+    0, '2026-06-12', 0.0, 
+    '2026-06-12 11:54:52', '2026-06-12 11:54:52', '2026-06-12 01:57:31', '2026-06-12 03:33:52', NULL
+);
+
+-- 11. dino 관리자 공룡 추가
+INSERT INTO user_dinos (
+    id, user_id, dino_template_id, nickname, stage, 
+    exp, affinity, evolved_at, created_at, updated_at
+) VALUES (
+    1, 1, 1, 'adminDino', 'EGG', 
+    0, 0, NULL, '2026-06-12 07:41:11', '2026-06-12 07:41:11'
+);
+
+-- 12. user_dino_collections 관리자 공룡 도감 해금 추가
+INSERT INTO user_dino_collections (
+    id, user_id, dino_template_id, unlocked_at
+) VALUES (
+    1, 1, 1, '2026-06-12 07:41:11'
+);

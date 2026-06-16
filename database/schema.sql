@@ -3,6 +3,8 @@
 -- DB 설계서 v6.0 최종 스펙 반영 (2026-06-04)
 -- =======================================================
 
+SET NAMES utf8mb4;
+
 CREATE DATABASE IF NOT EXISTS `dino_ecovision` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE `dino_ecovision`;
 
@@ -21,7 +23,7 @@ CREATE TABLE IF NOT EXISTS users (
     id                          BIGINT AUTO_INCREMENT PRIMARY KEY,
     email                       VARCHAR(100) NOT NULL UNIQUE   COMMENT '이메일 로그인 ID',
     password                    VARCHAR(255) NOT NULL          COMMENT '암호화 비밀번호',
-    nickname                    VARCHAR(50)  NOT NULL UNIQUE   COMMENT '닉네임',
+    nickname                    VARCHAR(50)  NULL UNIQUE       COMMENT '닉네임',
     avatar_url                  VARCHAR(255),
     region_id                   BIGINT       COMMENT '소속 지역 ID',
     role                        VARCHAR(20)  DEFAULT 'USER'    COMMENT 'USER, ADMIN',
@@ -306,7 +308,7 @@ CREATE TABLE IF NOT EXISTS user_ranking_scores (
     estimated_reduction_kg  DECIMAL(12,3) DEFAULT 0.000,
     updated_at              TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     UNIQUE KEY uk_user_season (user_id, season_id),
-    INDEX idx_region_season_score (region_id, season_id, ranking_point),
+    INDEX idx_region_season_score (region_id, season_id, ranking_point DESC),
     CONSTRAINT fk_urs_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     CONSTRAINT fk_urs_season FOREIGN KEY (season_id) REFERENCES ranking_seasons(id) ON DELETE CASCADE,
     CONSTRAINT fk_urs_region FOREIGN KEY (region_id) REFERENCES regions(id) ON DELETE SET NULL

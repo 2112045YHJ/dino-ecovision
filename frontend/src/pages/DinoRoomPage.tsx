@@ -15,6 +15,15 @@ import dinoRoomBg from "../assets/images/dinos/dino-room-bg.png";
 
 import { DinoCardShareModal } from "../components/dino/DinoCardShareModal";
 import { DinoEvolutionModal } from "../components/dino/DinoEvolutionModal";
+/*
+  이 파일에서 하는 일
+
+  1. GET /api/me/dino 로 내 디노 정보를 불러옵니다.
+  2. 백엔드에서 받은 디노 타입/성장 단계를 프론트 이미지 타입에 맞게 바꿉니다.
+  3. 디노룸 화면에 공룡 이미지, EXP, 친밀도, 성장 안내를 보여줍니다.
+  4. 다음 성장까지 남은 EXP를 보여줍니다.
+  5. 공룡 정보가 없을 때 홈/공룡 선택 화면으로 이동할 수 있게 합니다.
+*/
 
 /* =========================
    공룡 타입 안전 변환 함수
@@ -211,6 +220,14 @@ export function DinoRoomPage() {
   const dinoStageLabel = getStageLabel(dinoStage);
   const prevStage = getPrevStage(dinoStage);
 
+
+  /*
+    nextStageExp는 백엔드 응답에 따라 null일 수도 있다고 보고 방어합니다.
+
+    왜 이렇게 하냐면?
+    성룡처럼 최종 단계에 도달하면 다음 단계가 없기 때문에
+    nextStageExp가 없거나 null로 올 수 있기 때문입니다.
+  */
   const rawNextStageExp = dino.nextStageExp as number | null | undefined;
 
   const isMaxStage = dinoStage === "ADULT" || rawNextStageExp == null;

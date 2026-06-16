@@ -23,13 +23,25 @@ import { AdminDungeonPage } from "./pages/AdminDungeonPage";
 import { RegionEnergyDashboardPage } from "./pages/RegionEnergyDashboardPage";
 import { RegionEnergyComparePage } from "./pages/RegionEnergyComparePage";
 
+// 이전 버전(main branch)에 있던 부분. 필요 없을 시 밑의 Route 부분과 함께 지우시면 됩니다!
+import { QuizTestPage } from "./pages/QuizTestPage";
+
 function App() {
   return (
     <Routes>
+      {/* 처음 접속하면 로그인 화면으로 보냅니다. */}
       <Route path="/" element={<Navigate to="/login" replace />} />
+
+      {/* 로그인 */}
       <Route path="/login" element={<LoginPage />} />
+
+      {/* 온보딩 1단계: 닉네임 / 지역 설정 */}
       <Route path="/onboarding/profile" element={<OnboardingProfilePage />} />
+
+      {/* 온보딩 2단계: 공룡 선택 */}
       <Route path="/onboarding/dino" element={<DinoSelectionPage />} />
+
+      {/* 혹시 기존 코드에서 /dino-selection으로 이동해도 깨지지 않도록 임시 연결 */}
       <Route
         path="/dino-selection"
         element={<Navigate to="/onboarding/dino" replace />}
@@ -52,6 +64,12 @@ function App() {
       <Route path="/admin/csv-upload" element={<AdminCsvUploadPage />} />
       <Route path="/admin/dungeon" element={<AdminDungeonPage />} />
       <Route path="*" element={<Navigate to="/login" replace />} />
+        
+        
+      // 이전 버전(main branch)에 있던 부분. 필요 없을 시 위의 import 부분과 함께 지우시면 됩니다!
+      {/* 퀴즈 테스트 */}
+      <Route path="/quiz" element={<QuizTestPage />} />
+      
     </Routes>
   );
 }
