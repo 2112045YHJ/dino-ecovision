@@ -1,13 +1,38 @@
+<<<<<<< Updated upstream
 import { useState } from 'react'
 import reactLogo from './assets/react.svg'
 import viteLogo from './assets/vite.svg'
 import heroImg from './assets/hero.png'
 import './App.css'
+=======
+// src/App.tsx
+
+import { Navigate, Route, Routes } from "react-router-dom";
+
+import { LoginPage } from "./pages/LoginPage";
+import { OnboardingProfilePage } from "./pages/OnboardingProfilePage";
+import { DinoSelectionPage } from "./pages/DinoSelectionPage";
+import { HomePage } from "./pages/HomePage";
+import { TodayMissionPage } from "./pages/TodayMissionPage";
+import { DinoRoomPage } from "./pages/DinoRoomPage";
+import { DinoCollectionPage } from "./pages/DinoCollectionPage";
+import { MyPageMainPage } from "./pages/MyPageMainPage";
+import { ProfileEditPage } from "./pages/ProfileEditPage";
+import { MyPageBillInputPage } from "./pages/MyPageBillInputPage";
+import { MyPageTrendChartPage } from "./pages/MyPageTrendChartPage";
+import { LeaderboardPage } from "./pages/LeaderboardPage";
+import { RegionMapLeaderboardPage } from "./pages/RegionMapLeaderboardPage";
+import { GuildManagementPage } from "./pages/GuildManagementPage";
+import { WorldDungeonPage } from "./pages/WorldDungeonPage";
+import { AdminCsvUploadPage } from "./pages/AdminCsvUploadPage";
+import { AdminDungeonPage } from "./pages/AdminDungeonPage";
+>>>>>>> Stashed changes
 
 function App() {
   const [count, setCount] = useState(0)
 
   return (
+<<<<<<< Updated upstream
     <>
       <section id="center">
         <div className="hero">
@@ -117,6 +142,57 @@ function App() {
       <section id="spacer"></section>
     </>
   )
+=======
+    <Routes>
+      {/* 기본 진입점 */}
+      <Route path="/" element={<Navigate to="/login" replace />} />
+
+      {/* 인증 */}
+      <Route path="/login" element={<LoginPage />} />
+
+      {/* 온보딩 */}
+      <Route path="/onboarding/profile" element={<OnboardingProfilePage />} />
+      <Route path="/onboarding/dino" element={<DinoSelectionPage />} />
+      <Route
+        path="/dino-selection"
+        element={<Navigate to="/onboarding/dino" replace />}
+      />
+
+      {/* 메인 */}
+      <Route path="/home" element={<HomePage />} />
+
+      {/* 미션 */}
+      <Route path="/missions" element={<TodayMissionPage />} />
+
+      {/* 디노 */}
+      <Route path="/dino-room" element={<DinoRoomPage />} />
+      <Route path="/dino-collection" element={<DinoCollectionPage />} />
+
+      {/* 마이페이지 */}
+      <Route path="/mypage" element={<MyPageMainPage />} />
+      <Route path="/mypage/edit" element={<ProfileEditPage />} />
+      <Route path="/mypage/bill" element={<MyPageBillInputPage />} />
+      <Route path="/mypage/trend" element={<MyPageTrendChartPage />} />
+
+      {/* 랭킹 */}
+      <Route path="/leaderboard" element={<LeaderboardPage />} />
+      <Route path="/region-ranking" element={<RegionMapLeaderboardPage />} />
+
+      {/* 길드 */}
+      <Route path="/guild" element={<GuildManagementPage />} />
+
+      {/* 월드/던전 */}
+      <Route path="/world-dungeon" element={<WorldDungeonPage />} />
+
+      {/* 어드민 */}
+      <Route path="/admin/csv-upload" element={<AdminCsvUploadPage />} />
+      <Route path="/admin/dungeon" element={<AdminDungeonPage />} />
+
+      {/* 없는 경로 → 로그인으로 (반드시 맨 마지막) */}
+      <Route path="*" element={<Navigate to="/login" replace />} />
+    </Routes>
+  );
+>>>>>>> Stashed changes
 }
 
 export default App
