@@ -15,6 +15,13 @@ import { CommunityWritePage } from "./pages/CommunityWritePage";
 import { MyPage } from "./pages/MyPage";
 import { Dashboard } from "./pages/Dashboard";
 
+import { LeaderboardPage } from "./pages/LeaderboardPage";
+import { GuildManagementPage } from "./pages/GuildManagementPage";
+import { AdminCsvUploadPage } from "./pages/AdminCsvUploadPage";
+import { RegionMapLeaderboardPage } from "./pages/RegionMapLeaderboardPage";
+import { WorldDungeonPage } from "./pages/WorldDungeonPage";
+import { DinoCollectionPage } from "./pages/DinoCollectionPage";
+
 function App() {
   return (
     <Routes>
@@ -48,18 +55,29 @@ function App() {
       {/* 퀴즈 테스트 */}
       <Route path="/quiz" element={<QuizTestPage />} />
 
+      {/* 대시보드 */}
       <Route path="/dashboard" element={<Dashboard />} />
 
+      {/* 커뮤니티 */}
       <Route path="/community" element={<CommunityPage />} />
       <Route path="/community/:id" element={<CommunityDetailPage />} />
       <Route path="/community/write" element={<CommunityWritePage />} />
+
+      {/* 마이페이지 */}
       <Route path="/mypage" element={<MyPage />} />
+
+      {/* 추가 mock 화면 */}
+      <Route path="/leaderboard" element={<LeaderboardPage />} />
+      <Route path="/guild" element={<GuildManagementPage />} />
+      <Route path="/admin/csv-upload" element={<AdminCsvUploadPage />} />
+      <Route path="/region-ranking" element={<RegionMapLeaderboardPage />} />
+      <Route path="/world-dungeon" element={<WorldDungeonPage />} />
 
       {/* 없는 주소로 들어오면 로그인으로 보냅니다. */}
       <Route path="*" element={<Navigate to="/login" replace />} />
+      <Route path="/dino-collection" element={<DinoCollectionPage />} />
     </Routes>
   );
 }
 
 export default App;
-

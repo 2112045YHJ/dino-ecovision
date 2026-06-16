@@ -1,68 +1,139 @@
 // src/pages/DinoRoomPage.tsx
 
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 import { getMyDino, type MyDinoResponse } from "../api/dinoApi";
 
 import {
   dinoImagesByType,
+  type DinoStage,
   type DinoType,
 } from "../assets/images/dinos/dinoImages";
 
-// 디노룸 배경 이미지입니다.
-// 파일 위치: src/assets/images/dinos/dino-room-bg.png
 import dinoRoomBg from "../assets/images/dinos/dino-room-bg.png";
 
-// 백엔드 응답에는 아직 templateCode가 없고 templateName만 있습니다.
-// 그래서 임시로 templateName 글자를 보고 프론트 공룡 타입으로 바꿉니다.
-//
-// 백엔드 templateName 예시:
-// "에코 티라노"
-// "에코 브라키오"
-// "에코 트리케라"
-function getDinoTypeFromTemplateName(templateName: string): DinoType {
+/*
+  이 파일에서 하는 일
+
+  1. GET /api/me/dino 로 내 디노 정보를 불러옵니다.
+  2. 백엔드에서 받은 디노 타입/성장 단계를 프론트 이미지 타입에 맞게 바꿉니다.
+  3. 디노룸 화면에 공룡 이미지, EXP, 친밀도, 성장 안내를 보여줍니다.
+  4. 다음 성장까지 남은 EXP를 보여줍니다.
+  5. 공룡 정보가 없을 때 홈/공룡 선택 화면으로 이동할 수 있게 합니다.
+*/
+
+/* =========================
+   공룡 타입 안전 변환 함수
+   ========================= */
+
+function getSafeDinoType(dino: MyDinoResponse): DinoType {
+  const templateCode = String(
+    (dino as { templateCode?: string | null }).templateCode ?? "",
+  ).toUpperCase();
+
+  const templateName = String(dino.templateName ?? "").toUpperCase();
+  if (templateCode === "TYRANO") {
+    return "TYRANO";
+  }
+
+  if (templateCode === "SAURO" || templateCode === "BRACHIO") {
+    return "SAURO";
+  }
+
+  if (templateCode === "CERATO" || templateCode === "TRICERA") {
+    return "CERATO";
+  }
+
   if (templateName.includes("티라노") || templateName.includes("TYRANO")) {
     return "TYRANO";
   }
 
   if (
+    templateName.includes("용각") ||
     templateName.includes("브라키오") ||
     templateName.includes("BRACHIO") ||
-    templateName.includes("용각")
+    templateName.includes("SAURO")
   ) {
     return "SAURO";
   }
 
   if (
+    templateName.includes("각룡") ||
     templateName.includes("트리케라") ||
     templateName.includes("TRICERA") ||
-    templateName.includes("각룡")
+    templateName.includes("CERATO")
   ) {
     return "CERATO";
   }
 
-  // 혹시 모르는 이름이 오면 기본값으로 용각류를 보여줍니다.
-  return "SAURO";
+  return "TYRANO";
 }
 
+/* =========================
+   성장 단계 안전 변환 함수
+   ========================= */
+
+function getSafeDinoStage(stage?: string | null): DinoStage {
+  const safeStage = String(stage ?? "").toUpperCase();
+
+  if (safeStage === "EGG") {
+    return "EGG";
+  }
+
+  if (safeStage === "HATCHLING") {
+    return "HATCHLING";
+  }
+
+  if (safeStage === "JUVENILE") {
+    return "JUVENILE";
+  }
+
+  if (safeStage === "ADULT") {
+    return "ADULT";
+  }
+
+  return "EGG";
+}
+
+/* =========================
+   성장 단계 한글 표시 함수
+   ========================= */
+
+function getStageLabel(stage: DinoStage) {
+  if (stage === "EGG") {
+    return "알";
+  }
+
+  if (stage === "HATCHLING") {
+    return "유아기";
+  }
+
+  if (stage === "JUVENILE") {
+    return "청소년기";
+  }
+
+  if (stage === "ADULT") {
+    return "성룡";
+  }
+
+  return "알";
+}
+
+/* =========================
+   디노룸 페이지
+   ========================= */
+
 export function DinoRoomPage() {
-  // 백엔드에서 받아온 내 공룡 정보입니다.
+  const navigate = useNavigate();
+
   const [dino, setDino] = useState<MyDinoResponse | null>(null);
-
-  // 로딩 중인지 저장합니다.
   const [isLoading, setIsLoading] = useState(true);
-
-  // 에러 메시지입니다.
   const [errorMessage, setErrorMessage] = useState("");
 
-  // 공룡 아래에 보여줄 말풍선 문구입니다.
   const [message, setMessage] = useState("공룡을 클릭해보세요!");
-
-  // 공룡이 기뻐하는 상태인지 저장합니다.
-  // 지금은 행복 이미지 연결 전이라 말풍선 반응용으로만 사용합니다.
   const [isHappy, setIsHappy] = useState(false);
 
-  // 페이지가 처음 열릴 때 내 공룡 정보를 백엔드에서 가져옵니다.
   useEffect(() => {
     const fetchMyDino = async () => {
       try {
@@ -83,7 +154,6 @@ export function DinoRoomPage() {
     fetchMyDino();
   }, []);
 
-  // 로딩 중일 때 보여줄 화면입니다.
   if (isLoading) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-[#FAF9F5] p-6 text-[#2C3531]">
@@ -95,7 +165,6 @@ export function DinoRoomPage() {
     );
   }
 
-  // 에러가 났을 때 보여줄 화면입니다.
   if (errorMessage || !dino) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-[#FAF9F5] p-6 text-[#2C3531]">
@@ -109,22 +178,54 @@ export function DinoRoomPage() {
           <p className="mt-2 text-sm text-gray-600">
             공룡 선택을 완료했는지 확인해주세요.
           </p>
+
+          <div className="mt-5 flex flex-wrap justify-center gap-2">
+            <button
+              type="button"
+              onClick={() => navigate("/home")}
+              className="rounded-2xl border border-[#5F8C74] px-5 py-3 text-sm font-bold text-[#5F8C74] transition hover:bg-[#E8F2EC]"
+            >
+              홈으로 가기
+            </button>
+
+            <button
+              type="button"
+              onClick={() => navigate("/onboarding/dino")}
+              className="rounded-2xl bg-[#5F8C74] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#4d735f]"
+            >
+              공룡 선택하러 가기
+            </button>
+          </div>
         </div>
       </main>
     );
   }
 
-  // 백엔드 templateName을 프론트 DinoType으로 바꿉니다.
-  const dinoType = getDinoTypeFromTemplateName(dino.templateName);
+  const dinoType = getSafeDinoType(dino);
+  const dinoStage = getSafeDinoStage(dino.stage);
+  const dinoStageLabel = getStageLabel(dinoStage);
 
-  // EXP 진행률을 계산합니다.
-  // 예: 240 / 1000 * 100 = 24%
-  const expPercent = Math.min((dino.exp / dino.nextStageExp) * 100, 100);
+  /*
+    nextStageExp는 백엔드 응답에 따라 null일 수도 있다고 보고 방어합니다.
 
-  // 현재 화면에 보여줄 공룡 이미지입니다.
-  const currentDinoImage = dinoImagesByType[dinoType][dino.stage];
+    왜 이렇게 하냐면?
+    성룡처럼 최종 단계에 도달하면 다음 단계가 없기 때문에
+    nextStageExp가 없거나 null로 올 수 있기 때문입니다.
+  */
+  const rawNextStageExp = dino.nextStageExp as number | null | undefined;
 
-  // 공룡을 클릭했을 때 실행됩니다.
+  const isMaxStage = dinoStage === "ADULT" || rawNextStageExp == null;
+
+  const nextStageExp = isMaxStage ? dino.exp : Math.max(rawNextStageExp, 1);
+
+  const remainingExp = isMaxStage ? 0 : Math.max(nextStageExp - dino.exp, 0);
+
+  const expPercent = isMaxStage
+    ? 100
+    : Math.min((dino.exp / nextStageExp) * 100, 100);
+
+  const currentDinoImage = dinoImagesByType[dinoType][dinoStage];
+
   const handleDinoClick = () => {
     setIsHappy(true);
     setMessage(`${dino.nickname}가 기뻐해요!`);
@@ -138,31 +239,49 @@ export function DinoRoomPage() {
   return (
     <main className="min-h-screen bg-[#FAF9F5] p-6 text-[#2C3531]">
       <section className="mx-auto max-w-5xl">
-        <header className="mb-6">
-          <p className="text-sm font-bold text-[#5F8C74]">DINO ROOM</p>
+        <header className="mb-6 flex flex-col gap-4 md:flex-row md:items-end">
+          <div className="md:flex-1">
+            <p className="text-sm font-bold text-[#5F8C74]">DINO ROOM</p>
 
-          <h1 className="mt-2 text-3xl font-bold">나의 디노 룸</h1>
+            <h1 className="mt-2 text-3xl font-bold">나의 디노 룸</h1>
 
-          <p className="mt-2 text-sm text-gray-600">
-            미션을 완료하고 공룡을 성장시켜보세요.
-          </p>
+            <p className="mt-2 text-sm text-gray-600">
+              미션을 완료하고 공룡을 성장시켜보세요.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap gap-2 md:justify-end">
+            <button
+              type="button"
+              onClick={() => navigate("/home")}
+              className="rounded-2xl border border-[#5F8C74] px-5 py-3 text-sm font-bold text-[#5F8C74] transition hover:bg-[#E8F2EC]"
+            >
+              홈으로 가기
+            </button>
+
+            <button
+              type="button"
+              onClick={() => navigate("/dino-collection")}
+              className="rounded-2xl bg-[#5F8C74] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#4d735f]"
+            >
+              디노 도감 보기
+            </button>
+          </div>
         </header>
 
         <section className="grid gap-6 lg:grid-cols-[1.4fr_0.8fr]">
-          {/* 디노룸 배경 + 공룡 영역 */}
           <article className="overflow-hidden rounded-3xl bg-white shadow-sm">
             <div
-              className="relative flex min-h-[520px] items-end justify-center bg-cover bg-center p-6"
+              className="relative flex items-end justify-center bg-cover bg-center"
               style={{
                 backgroundImage: `url(${dinoRoomBg})`,
+                minHeight: "520px",
               }}
             >
-              {/* 말풍선 */}
               <div className="absolute left-1/2 top-8 -translate-x-1/2 rounded-full bg-white/90 px-5 py-3 text-sm font-bold text-[#5F8C74] shadow-sm">
                 {message}
               </div>
 
-              {/* 공룡 */}
               <button
                 type="button"
                 onClick={handleDinoClick}
@@ -179,7 +298,6 @@ export function DinoRoomPage() {
             </div>
           </article>
 
-          {/* 공룡 정보 카드 */}
           <aside className="rounded-3xl bg-white p-6 shadow-sm">
             <p className="text-sm font-bold text-[#5F8C74]">MY DINO</p>
 
@@ -190,15 +308,14 @@ export function DinoRoomPage() {
             </p>
 
             <p className="mt-1 text-sm text-gray-600">
-              현재 성장 단계: {dino.stage}
+              현재 성장 단계: {dinoStageLabel}
             </p>
 
-            {/* EXP */}
             <div className="mt-6">
               <div className="mb-2 flex justify-between text-sm font-bold">
                 <span>EXP</span>
                 <span>
-                  {dino.exp} / {dino.nextStageExp}
+                  {dino.exp} / {isMaxStage ? "MAX" : nextStageExp}
                 </span>
               </div>
 
@@ -210,11 +327,12 @@ export function DinoRoomPage() {
               </div>
 
               <p className="mt-2 text-xs text-gray-500">
-                미션을 완료하면 EXP가 올라가고 성장 단계가 바뀔 수 있어요.
+                {isMaxStage
+                  ? "최종 성장 단계에 도달했어요."
+                  : `다음 성장까지 ${remainingExp} EXP 남았어요.`}
               </p>
             </div>
 
-            {/* 친밀도 */}
             <div className="mt-6 rounded-2xl bg-[#FAF9F5] p-4">
               <p className="text-sm text-gray-600">친밀도</p>
 
@@ -223,19 +341,17 @@ export function DinoRoomPage() {
               </p>
             </div>
 
-            {/* 현재 매칭 정보 */}
             <div className="mt-4 rounded-2xl bg-[#E8F2EC] p-4">
-              <p className="text-sm font-bold text-[#5F8C74]">
-                이미지 매칭 정보
+              <p className="text-sm font-bold text-[#5F8C74]">성장 안내</p>
+
+              <p className="mt-2 text-sm text-gray-600">
+                현재 디노는 {dino.templateName}이며, {dinoStageLabel} 단계로
+                표시되고 있어요.
               </p>
 
-              <p className="mt-1 text-sm text-gray-600">
-                프론트 타입: {dinoType}
-              </p>
-
-              <p className="mt-1 text-xs text-gray-500">
-                templateCode가 추가되기 전까지 templateName을 기준으로 임시
-                매칭합니다.
+              <p className="mt-2 text-sm text-gray-600">
+                오늘의 미션을 완료하면 EXP가 쌓이고, EXP가 충분히 모이면 다음
+                성장 단계로 넘어갈 수 있어요.
               </p>
             </div>
           </aside>
