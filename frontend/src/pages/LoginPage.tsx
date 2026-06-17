@@ -67,15 +67,30 @@ export function LoginPage() {
 
       // 회원가입 모드일 때
       if (isSignupMode) {
-        const result = await signup({
+        // 1. 회원가입 API 호출
+        const signupResult = await signup({
           email: email.trim(),
           password,
         });
 
+        // 2. 회원가입 직후 자동 로그인 API 호출 (토큰 받기)
+        // 명세서 1.1에서 회원가입 응답에 accessToken이 없기 때문에,
+        // 회원가입 직후 같은 이메일/비밀번호로 로그인을 호출해
+        // accessToken을 받아옵니다.
+        const loginResult = await login({
+          email: email.trim(),
+          password,
+        });
+
+        // 3. accessToken과 role을 localStorage에 저장
+        // 이후 인증이 필요한 API 요청에 Authorization 헤더로 사용됩니다.
+        localStorage.setItem("accessToken", loginResult.accessToken);
+        localStorage.setItem("role", loginResult.role);
+
         alert("회원가입이 완료되었습니다.");
 
-        // 회원가입 응답에 onboardingRequired가 true면 온보딩으로 이동합니다.
-        if (result.onboardingRequired) {
+        // 4. 회원가입 응답에 onboardingRequired가 true면 온보딩으로 이동
+        if (signupResult.onboardingRequired) {
           navigate("/onboarding/profile");
           return;
         }
