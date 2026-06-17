@@ -190,6 +190,16 @@ export function CommunityPage() {
                         </span>
                       )}
                       <h3 className="text-base font-bold text-gray-800 truncate">{post.title}</h3>
+                      {post.chartSnapshotId && (
+                        <span className="rounded bg-sky-50 px-1.5 py-0.5 text-[9px] font-bold text-sky-600 border border-sky-100 shrink-0">
+                          📊 차트
+                        </span>
+                      )}
+                      {post.dinoSnapshot && (
+                        <span className="rounded bg-amber-50 px-1.5 py-0.5 text-[9px] font-bold text-amber-600 border border-amber-100 shrink-0">
+                          🦖 디노
+                        </span>
+                      )}
                     </div>
 
                     <div className="mt-2 flex items-center gap-3 text-xs text-gray-500">
