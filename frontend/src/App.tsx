@@ -2,21 +2,29 @@
 
 import { Navigate, Route, Routes } from "react-router-dom";
 
-import { HomePage } from "./pages/HomePage";
-import { TodayMissionPage } from "./pages/TodayMissionPage";
-import { DinoRoomPage } from "./pages/DinoRoomPage";
-import { QuizTestPage } from "./pages/QuizTestPage";
 import { LoginPage } from "./pages/LoginPage";
 import { OnboardingProfilePage } from "./pages/OnboardingProfilePage";
 import { DinoSelectionPage } from "./pages/DinoSelectionPage";
+import { HomePage } from "./pages/HomePage";
+import { TodayMissionPage } from "./pages/TodayMissionPage";
+import { DinoRoomPage } from "./pages/DinoRoomPage";
 import { DinoCollectionPage } from "./pages/DinoCollectionPage";
+import { DinoGrowthComparePage } from "./pages/DinoGrowthComparePage";
 import { MyPageMainPage } from "./pages/MyPageMainPage";
 import { ProfileEditPage } from "./pages/ProfileEditPage";
+import { MyPageBillInputPage } from "./pages/MyPageBillInputPage";
+import { MyPageTrendChartPage } from "./pages/MyPageTrendChartPage";
 import { LeaderboardPage } from "./pages/LeaderboardPage";
-import { GuildManagementPage } from "./pages/GuildManagementPage";
-import { AdminCsvUploadPage } from "./pages/AdminCsvUploadPage";
 import { RegionMapLeaderboardPage } from "./pages/RegionMapLeaderboardPage";
+import { GuildManagementPage } from "./pages/GuildManagementPage";
 import { WorldDungeonPage } from "./pages/WorldDungeonPage";
+import { AdminCsvUploadPage } from "./pages/AdminCsvUploadPage";
+import { AdminDungeonPage } from "./pages/AdminDungeonPage";
+import { RegionEnergyDashboardPage } from "./pages/RegionEnergyDashboardPage";
+import { RegionEnergyComparePage } from "./pages/RegionEnergyComparePage";
+
+// 이전 버전(main branch)에 있던 부분. 필요 없을 시 밑의 Route 부분과 함께 지우시면 됩니다!
+import { QuizTestPage } from "./pages/QuizTestPage";
 
 function App() {
   return (
@@ -38,36 +46,30 @@ function App() {
         path="/dino-selection"
         element={<Navigate to="/onboarding/dino" replace />}
       />
-
-      {/* 메인 홈 */}
       <Route path="/home" element={<HomePage />} />
-
-      {/* 오늘의 미션 */}
       <Route path="/missions" element={<TodayMissionPage />} />
-
-      {/* 디노룸 */}
       <Route path="/dino-room" element={<DinoRoomPage />} />
-
-      {/* 디노 도감 */}
       <Route path="/dino-collection" element={<DinoCollectionPage />} />
-
+      <Route path="/dino-growth" element={<DinoGrowthComparePage />} />
+      <Route path="/mypage" element={<MyPageMainPage />} />
+      <Route path="/mypage/edit" element={<ProfileEditPage />} />
+      <Route path="/mypage/bill" element={<MyPageBillInputPage />} />
+      <Route path="/mypage/trend" element={<MyPageTrendChartPage />} />
+      <Route path="/leaderboard" element={<LeaderboardPage />} />
+      <Route path="/region-ranking" element={<RegionMapLeaderboardPage />} />
+      <Route path="/guild" element={<GuildManagementPage />} />
+      <Route path="/world-dungeon" element={<WorldDungeonPage />} />
+      <Route path="/dashboard" element={<RegionEnergyDashboardPage />} />
+      <Route path="/dashboard/compare" element={<RegionEnergyComparePage />} />
+      <Route path="/admin/csv-upload" element={<AdminCsvUploadPage />} />
+      <Route path="/admin/dungeon" element={<AdminDungeonPage />} />
+      <Route path="*" element={<Navigate to="/login" replace />} />
+        
+        
+      // 이전 버전(main branch)에 있던 부분. 필요 없을 시 위의 import 부분과 함께 지우시면 됩니다!
       {/* 퀴즈 테스트 */}
       <Route path="/quiz" element={<QuizTestPage />} />
-
-      {/* 마이페이지 */}
-      <Route path="/mypage" element={<MyPageMainPage />} />
-
-      {/* 프로필 수정 */}
-      <Route path="/mypage/edit" element={<ProfileEditPage />} />
-
-      {/* 없는 주소로 들어오면 로그인으로 보냅니다.
-          이 코드는 항상 제일 마지막에 있어야 합니다. */}
-      <Route path="*" element={<Navigate to="/login" replace />} />
-      <Route path="/leaderboard" element={<LeaderboardPage />} />
-      <Route path="/guild" element={<GuildManagementPage />} />
-      <Route path="/admin/csv-upload" element={<AdminCsvUploadPage />} />
-      <Route path="/region-ranking" element={<RegionMapLeaderboardPage />} />
-      <Route path="/world-dungeon" element={<WorldDungeonPage />} />
+      
     </Routes>
   );
 }

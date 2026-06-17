@@ -13,6 +13,8 @@ import {
 
 import dinoRoomBg from "../assets/images/dinos/dino-room-bg.png";
 
+import { DinoCardShareModal } from "../components/dino/DinoCardShareModal";
+import { DinoEvolutionModal } from "../components/dino/DinoEvolutionModal";
 /*
   이 파일에서 하는 일
 
@@ -119,6 +121,17 @@ function getStageLabel(stage: DinoStage) {
 }
 
 /* =========================
+   이전 성장 단계 반환 함수
+   ========================= */
+
+function getPrevStage(stage: DinoStage): DinoStage {
+  if (stage === "HATCHLING") return "EGG";
+  if (stage === "JUVENILE") return "HATCHLING";
+  if (stage === "ADULT") return "JUVENILE";
+  return "EGG";
+}
+
+/* =========================
    디노룸 페이지
    ========================= */
 
@@ -131,6 +144,9 @@ export function DinoRoomPage() {
 
   const [message, setMessage] = useState("공룡을 클릭해보세요!");
   const [isHappy, setIsHappy] = useState(false);
+
+  const [isShareOpen, setIsShareOpen] = useState(false);
+  const [isEvolutionOpen, setIsEvolutionOpen] = useState(false);
 
   useEffect(() => {
     const fetchMyDino = async () => {
@@ -202,6 +218,8 @@ export function DinoRoomPage() {
   const dinoType = getSafeDinoType(dino);
   const dinoStage = getSafeDinoStage(dino.stage);
   const dinoStageLabel = getStageLabel(dinoStage);
+  const prevStage = getPrevStage(dinoStage);
+
 
   /*
     nextStageExp는 백엔드 응답에 따라 null일 수도 있다고 보고 방어합니다.
@@ -263,6 +281,14 @@ export function DinoRoomPage() {
               className="rounded-2xl bg-[#5F8C74] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#4d735f]"
             >
               디노 도감 보기
+            </button>
+
+            <button
+              type="button"
+              onClick={() => navigate("/dino-growth")}
+              className="rounded-2xl border border-[#5F8C74] px-5 py-3 text-sm font-bold text-[#5F8C74] transition hover:bg-[#E8F2EC]"
+            >
+              성장 비교 보기
             </button>
           </div>
         </header>
@@ -352,9 +378,47 @@ export function DinoRoomPage() {
                 성장 단계로 넘어갈 수 있어요.
               </p>
             </div>
+
+            <button
+              type="button"
+              onClick={() => setIsEvolutionOpen(true)}
+              className="mt-4 w-full rounded-2xl bg-[#5F8C74] py-3 text-sm font-bold text-white transition hover:bg-[#4d735f]"
+            >
+              🎉 진화 확인하기
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setIsShareOpen(true)}
+              className="mt-3 w-full rounded-2xl border border-[#5F8C74] py-3 text-sm font-bold text-[#5F8C74] transition hover:bg-[#E8F2EC]"
+            >
+              🦖 디노 카드 자랑하기
+            </button>
           </aside>
         </section>
       </section>
+
+      {isShareOpen && (
+        <DinoCardShareModal
+          nickname={dino.nickname}
+          dinoType={dinoType}
+          dinoStage={dinoStage}
+          templateName={dino.templateName}
+          savedCarbonKg={0}
+          guildName="해운대 에코 길드"
+          onClose={() => setIsShareOpen(false)}
+        />
+      )}
+
+      {isEvolutionOpen && (
+        <DinoEvolutionModal
+          nickname={dino.nickname}
+          dinoType={dinoType}
+          prevStage={prevStage}
+          newStage={dinoStage}
+          onClose={() => setIsEvolutionOpen(false)}
+        />
+      )}
     </main>
   );
 }

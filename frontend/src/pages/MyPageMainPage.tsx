@@ -123,17 +123,35 @@ export function MyPageMainPage() {
                 상태: {me?.status ?? "-"}
               </p>
 
-              <button
-                type="button"
-                onClick={() => navigate("/mypage/edit")}
-                className="mt-5 rounded-2xl bg-[#5F8C74] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#4d735f]"
-              >
-                프로필 수정하기
-              </button>
+              <div className="mt-5 flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  onClick={() => navigate("/mypage/edit")}
+                  className="rounded-2xl bg-[#5F8C74] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#4d735f]"
+                >
+                  프로필 수정하기
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => navigate("/mypage/bill")}
+                  className="rounded-2xl border border-[#5F8C74] px-5 py-3 text-sm font-bold text-[#5F8C74] transition hover:bg-[#E8F2EC]"
+                >
+                  고지서 입력하기
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => navigate("/mypage/trend")}
+                  className="rounded-2xl border border-[#5F8C74] px-5 py-3 text-sm font-bold text-[#5F8C74] transition hover:bg-[#E8F2EC]"
+                >
+                  에너지 트렌드 보기
+                </button>
+              </div>
             </section>
 
             <section className="mt-6 grid gap-4 md:grid-cols-3">
-              <article className="rounded-3xl bg-white p-5 shadow-sm">
+              <article className="flex min-h-48 flex-col rounded-3xl bg-white p-5 shadow-sm">
                 <p className="text-sm font-bold text-gray-500">오늘의 미션</p>
 
                 <p className="mt-2 text-3xl font-bold text-[#5F8C74]">
@@ -143,13 +161,13 @@ export function MyPageMainPage() {
                 <button
                   type="button"
                   onClick={() => navigate("/missions")}
-                  className="mt-5 w-full rounded-2xl bg-[#5F8C74] py-3 text-sm font-bold text-white transition hover:bg-[#4d735f]"
+                  className="mt-auto w-full rounded-2xl bg-[#5F8C74] py-3 text-sm font-bold text-white transition hover:bg-[#4d735f]"
                 >
                   미션 보러가기
                 </button>
               </article>
 
-              <article className="rounded-3xl bg-white p-5 shadow-sm">
+              <article className="flex min-h-48 flex-col rounded-3xl bg-white p-5 shadow-sm">
                 <p className="text-sm font-bold text-gray-500">나의 디노</p>
 
                 <p className="mt-2 text-2xl font-bold text-[#2C3531]">
@@ -163,13 +181,13 @@ export function MyPageMainPage() {
                 <button
                   type="button"
                   onClick={() => navigate("/dino-room")}
-                  className="mt-5 w-full rounded-2xl bg-[#E07A5F] py-3 text-sm font-bold text-white transition hover:bg-[#c8654d]"
+                  className="mt-auto w-full rounded-2xl bg-[#E07A5F] py-3 text-sm font-bold text-white transition hover:bg-[#c8654d]"
                 >
                   디노룸으로 이동
                 </button>
               </article>
 
-              <article className="rounded-3xl bg-white p-5 shadow-sm">
+              <article className="flex min-h-48 flex-col rounded-3xl bg-white p-5 shadow-sm">
                 <p className="text-sm font-bold text-gray-500">퀴즈</p>
 
                 <p className="mt-2 text-2xl font-bold text-[#2C3531]">
@@ -183,7 +201,7 @@ export function MyPageMainPage() {
                 <button
                   type="button"
                   onClick={() => navigate("/home")}
-                  className="mt-5 w-full rounded-2xl border border-[#5F8C74] bg-white py-3 text-sm font-bold text-[#5F8C74] transition hover:bg-[#E8F2EC]"
+                  className="mt-auto w-full rounded-2xl border border-[#5F8C74] bg-white py-3 text-sm font-bold text-[#5F8C74] transition hover:bg-[#E8F2EC]"
                 >
                   홈에서 퀴즈 풀기
                 </button>
