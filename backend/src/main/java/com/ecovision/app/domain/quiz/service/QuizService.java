@@ -13,8 +13,8 @@ import com.ecovision.app.domain.dino.entity.LevelPolicy;
 import com.ecovision.app.domain.dino.entity.UserDino;
 import com.ecovision.app.domain.dino.repository.LevelPolicyRepository;
 import com.ecovision.app.domain.dino.repository.UserDinoRepository;
-import com.ecovision.app.domain.mypage.entity.PointHistory;
-import com.ecovision.app.domain.mypage.repository.PointHistoryRepository;
+import com.ecovision.app.domain.user.entity.PointHistory;
+import com.ecovision.app.domain.user.repository.PointHistoryRepository;
 import com.ecovision.app.domain.quiz.dto.QuizDto;
 import com.ecovision.app.domain.quiz.entity.Quiz;
 import com.ecovision.app.domain.quiz.entity.UserQuizAttempt;
@@ -88,10 +88,15 @@ public class QuizService {
 
 		// 5. 정답이면 보상 처리 (오답이면 기록만)
 		if (correct) {
-			pointHistoryRepository.save(PointHistory.quizCorrect(userId, earned, attempt.getId()));
-
 			User user = userRepository.findById(userId).orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
 			user.addQuizReward(earned); // total_points/ranking_point += 30 (today_points 미반영)
+
+			pointHistoryRepository.save(PointHistory.builder()
+					.user(user)
+					.pointAmount(earned)
+					.reason("QUIZ_CORRECT")
+					.relatedQuizAttemptId(attempt.getId())
+					.build());
 
 			applyExpAndEvolve(userId, earned);
 			applyRankingScore(user, earned);
