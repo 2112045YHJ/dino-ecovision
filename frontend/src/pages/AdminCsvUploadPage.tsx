@@ -8,16 +8,60 @@ import { uploadLogsMock } from "../mocks/adminMock";
 export function AdminCsvUploadPage() {
   const navigate = useNavigate();
 
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [selectedFileName, setSelectedFileName] = useState("");
   const [uploadType, setUploadType] = useState("ENERGY_USAGE");
 
+  const [isUploading, setIsUploading] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+
   const handleFileChange = (file?: File) => {
     if (!file) {
+      setSelectedFile(null);
       setSelectedFileName("");
       return;
     }
 
+    setSelectedFile(file);
     setSelectedFileName(file.name);
+    setSuccessMessage("");
+    setErrorMessage("");
+  };
+
+  const handleUpload = async () => {
+    if (!selectedFile) return;
+
+    try {
+      setIsUploading(true);
+      setSuccessMessage("");
+      setErrorMessage("");
+
+      // TODO: 실제 업로드 API 연결 시 아래 주석을 교체하세요.
+      // const formData = new FormData();
+      // formData.append("file", selectedFile);
+      // formData.append("uploadType", uploadType);
+      // await uploadCsv(formData);
+
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      setSuccessMessage(
+        `${selectedFileName} 파일이 성공적으로 업로드되었습니다. (시뮬레이션)`,
+      );
+      setSelectedFile(null);
+      setSelectedFileName("");
+    } catch (error) {
+      console.error(error);
+      setErrorMessage("업로드에 실패했습니다. 파일 형식을 확인해주세요.");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const uploadTypeLabel: Record<string, string> = {
+    ENERGY_USAGE: "전력 사용량",
+    CARBON_EMISSION: "탄소 배출량",
+    MISSION_FACTOR: "미션 감축계수",
   };
 
   return (
@@ -35,13 +79,23 @@ export function AdminCsvUploadPage() {
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={() => navigate("/home")}
-            className="rounded-2xl border border-[#5F8C74] px-5 py-3 text-sm font-bold text-[#5F8C74] transition hover:bg-[#E8F2EC]"
-          >
-            홈으로 가기
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => navigate("/admin/dungeon")}
+              className="rounded-2xl border border-[#5F8C74] px-5 py-3 text-sm font-bold text-[#5F8C74] transition hover:bg-[#E8F2EC]"
+            >
+              시스템 제어
+            </button>
+
+            <button
+              type="button"
+              onClick={() => navigate("/home")}
+              className="rounded-2xl border border-[#5F8C74] px-5 py-3 text-sm font-bold text-[#5F8C74] transition hover:bg-[#E8F2EC]"
+            >
+              홈으로 가기
+            </button>
+          </div>
         </header>
 
         <section className="grid gap-6 lg:grid-cols-[1fr_1.2fr]">
@@ -61,7 +115,11 @@ export function AdminCsvUploadPage() {
               <select
                 id="uploadType"
                 value={uploadType}
-                onChange={(event) => setUploadType(event.target.value)}
+                onChange={(event) => {
+                  setUploadType(event.target.value);
+                  setSuccessMessage("");
+                  setErrorMessage("");
+                }}
                 className="mt-2 w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-[#5F8C74]"
               >
                 <option value="ENERGY_USAGE">전력 사용량</option>
@@ -91,17 +149,32 @@ export function AdminCsvUploadPage() {
               </p>
             </div>
 
+            {successMessage && (
+              <div className="mt-4 rounded-2xl bg-[#E8F2EC] p-4 text-sm font-bold text-[#5F8C74]">
+                {successMessage}
+              </div>
+            )}
+
+            {errorMessage && (
+              <div className="mt-4 rounded-2xl bg-[#FFF0EA] p-4 text-sm font-bold text-[#E07A5F]">
+                {errorMessage}
+              </div>
+            )}
+
             <button
               type="button"
-              disabled={!selectedFileName}
+              onClick={handleUpload}
+              disabled={!selectedFileName || isUploading}
               className="mt-5 w-full rounded-2xl bg-[#E07A5F] py-3 font-bold text-white transition hover:bg-[#c8654d] disabled:bg-gray-300"
             >
-              업로드 실행
+              {isUploading
+                ? "업로드 중..."
+                : `${uploadTypeLabel[uploadType]} 업로드 실행`}
             </button>
 
             <p className="mt-3 text-xs text-gray-500">
-              현재는 화면 뼈대입니다. 실제 업로드 API가 생기면 이 버튼에 업로드
-              요청을 연결하면 됩니다.
+              현재는 시뮬레이션 모드입니다. 실제 API 연결 시 FormData로 파일을
+              전송하면 됩니다.
             </p>
           </article>
 

@@ -34,7 +34,7 @@ export function RegionMapLeaderboardPage() {
         <section className="mb-6 rounded-3xl bg-white p-6 shadow-sm">
           <p className="text-sm font-bold text-[#5F8C74]">BUSAN MAP AREA</p>
 
-          <div className="mt-4 flex min-h-[260px] items-center justify-center rounded-3xl bg-[#E8F2EC] p-6 text-center">
+          <div className="mt-4 flex min-h-65 items-center justify-center rounded-3xl bg-[#E8F2EC] p-6 text-center">
             <div>
               <p className="text-4xl">🗺️</p>
 

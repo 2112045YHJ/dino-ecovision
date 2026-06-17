@@ -238,7 +238,7 @@ export function HomePage() {
             <button
               type="button"
               onClick={() => navigate("/leaderboard")}
-              className="rounded-2xl border border-[#5F8C74] px-4 py-2 text-sm font-bold text-[#5F8C74] transition hover:bg-[#E8F2EC]"
+              className="rounded-2xl border border-[#5F8C74] px-3 py-2 text-xs font-bold text-[#5F8C74] transition hover:bg-[#E8F2EC]"
             >
               랭킹
             </button>
@@ -246,15 +246,15 @@ export function HomePage() {
             <button
               type="button"
               onClick={() => navigate("/region-ranking")}
-              className="rounded-2xl border border-[#5F8C74] px-4 py-2 text-sm font-bold text-[#5F8C74] transition hover:bg-[#E8F2EC]"
+              className="rounded-2xl border border-[#5F8C74] px-3 py-2 text-xs font-bold text-[#5F8C74] transition hover:bg-[#E8F2EC]"
             >
-              지역랭킹
+              지역
             </button>
 
             <button
               type="button"
               onClick={() => navigate("/guild")}
-              className="rounded-2xl border border-[#5F8C74] px-4 py-2 text-sm font-bold text-[#5F8C74] transition hover:bg-[#E8F2EC]"
+              className="rounded-2xl border border-[#5F8C74] px-3 py-2 text-xs font-bold text-[#5F8C74] transition hover:bg-[#E8F2EC]"
             >
               길드
             </button>
@@ -262,23 +262,23 @@ export function HomePage() {
             <button
               type="button"
               onClick={() => navigate("/world-dungeon")}
-              className="rounded-2xl border border-[#5F8C74] px-4 py-2 text-sm font-bold text-[#5F8C74] transition hover:bg-[#E8F2EC]"
+              className="rounded-2xl border border-[#5F8C74] px-3 py-2 text-xs font-bold text-[#5F8C74] transition hover:bg-[#E8F2EC]"
             >
-              월드/던전
+              던전
             </button>
 
             <button
               type="button"
               onClick={() => navigate("/mypage")}
-              className="rounded-2xl border border-[#5F8C74] px-4 py-2 text-sm font-bold text-[#5F8C74] transition hover:bg-[#E8F2EC]"
+              className="rounded-2xl border border-[#5F8C74] px-3 py-2 text-xs font-bold text-[#5F8C74] transition hover:bg-[#E8F2EC]"
             >
-              마이페이지
+              마이
             </button>
 
             <button
               type="button"
               onClick={handleLogout}
-              className="rounded-2xl border border-[#E07A5F] px-4 py-2 text-sm font-bold text-[#E07A5F] transition hover:bg-[#FFF0EA]"
+              className="rounded-2xl border border-[#E07A5F] px-3 py-2 text-xs font-bold text-[#E07A5F] transition hover:bg-[#FFF0EA]"
             >
               로그아웃
             </button>
