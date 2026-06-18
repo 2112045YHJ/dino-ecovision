@@ -2,6 +2,7 @@ package com.ecovision.app.domain.admin.service;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -50,17 +51,24 @@ public class AdminService {
 		LocalDateTime now = LocalDateTime.now();
 		BigDecimal reserveRate = request.reserveRate() != null ? BigDecimal.valueOf(request.reserveRate()) : null;
 
-		// 기존 활성 던전이 있으면 강제 종료(단일 활성 불변식 유지).
+		// 기존 활성 던전이 있으면 모두 강제 종료(단일 활성 불변식 유지·복구).
 		// 자동 종료(DungeonScheduler.checkAndEndDungeon)와 동일하게 ENDED 처리 + 미완료 배정 EXPIRED 정리.
-		dungeonEventRepository.findFirstByStatusOrderByStartedAtDesc("ACTIVE")
-				.ifPresent(active -> {
-					active.setStatus("ENDED");
-					active.setEndedAt(now);
-					dungeonEventRepository.save(active);
-					int expired = dungeonMissionAssignmentRepository
-							.updateStatusByDungeonEventIdAndStatus(active.getId(), "ASSIGNED", "EXPIRED");
-					log.info("[ADMIN] 기존 활성 던전 강제 종료. dungeonId={}, 만료배정={}", active.getId(), expired);
-				});
+		// 주의: EXPIRED 정리 쿼리가 @Modifying(clearAutomatically=true)라 영속성 컨텍스트를 비운다.
+		//       따라서 활성 ID를 먼저 수집한 뒤, 각 던전마다 EXPIRED 정리 → 재조회 → 상태 변경 순으로 처리해
+		//       status 변경이 clear에 휩쓸려 유실되지 않게 한다.
+		List<Long> activeIds = dungeonEventRepository.findByStatus("ACTIVE").stream()
+				.map(DungeonEvent::getId)
+				.toList();
+		for (Long activeId : activeIds) {
+			int expired = dungeonMissionAssignmentRepository
+					.updateStatusByDungeonEventIdAndStatus(activeId, "ASSIGNED", "EXPIRED");
+			dungeonEventRepository.findById(activeId).ifPresent(d -> {
+				d.setStatus("ENDED");
+				d.setEndedAt(now);
+				dungeonEventRepository.save(d);
+			});
+			log.info("[ADMIN] 기존 활성 던전 강제 종료. dungeonId={}, 만료배정={}", activeId, expired);
+		}
 
 		DungeonEvent dungeon = DungeonEvent.builder()
 				.title("관리자 수동 발령 던전")
@@ -73,7 +81,7 @@ public class AdminService {
 				.build();
 		dungeon = dungeonEventRepository.save(dungeon);
 
-		// 자동 발령과 동일한 배정 로직 재사용 (대상: ACTIVE + 공룡 보유, 결정론적 2개)
+		// 자동 발령과 동일한 배정 로직 재사용 (대상: ACTIVE + 공룡 보유)
 		int issued = dungeonMissionIssueService.issueForDungeon(dungeon.getId());
 		log.info("[ADMIN] 수동 던전 발령. dungeonId={}, 배정행={}, by admin={}", dungeon.getId(), issued, adminUserId);
 
