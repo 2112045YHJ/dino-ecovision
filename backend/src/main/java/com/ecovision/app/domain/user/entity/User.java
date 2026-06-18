@@ -137,4 +137,15 @@ public class User {
     	this.rankingPoint += earnedPoint;
     	this.savedCarbonKg = this.savedCarbonKg.add(reductionKg);
     }
+    
+    // 퀴즈 정답 보상: total/ranking 에만 반영(일일 상한, today_points와는 별개)
+    public void addQuizReward(int points) {
+    	this.totalPoints += points;
+    	this.rankingPoint += points;
+    }
+    
+    // 계정 상태 변경 (관리자 제재용: ACTIVE/INACTIVE/BANNED)
+    public void changeStatus(UserStatus status) {
+        this.status = status;
+    }
 }

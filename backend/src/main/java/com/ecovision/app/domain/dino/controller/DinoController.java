@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.ecovision.app.domain.dino.dto.DinoCollectionDto;
 import com.ecovision.app.domain.dino.dto.DinoDto;
 import com.ecovision.app.domain.dino.service.DinoService;
 import com.ecovision.app.global.response.ApiResponse;
@@ -35,5 +36,12 @@ public class DinoController {
 	@GetMapping
 	public ApiResponse<DinoDto.DinoStatusResponse> getMyDino(@AuthenticationPrincipal Long userId) {
 		return ApiResponse.success(dinoService.getMyDino(userId));
+	}
+	
+	// 공룡 도감 조회 (SB-13 / FRDIN06): 보유·미보유 3종을 해금 상태와 함께 반환
+	@GetMapping("/collection")
+	public ApiResponse<DinoCollectionDto.CollectionResponse> getCollection(
+			@AuthenticationPrincipal Long userId) {
+		return ApiResponse.success(dinoService.getCollection(userId));
 	}
 }
