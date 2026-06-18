@@ -185,6 +185,28 @@ export function CommunityDetailPage() {
     }
   };
 
+  // 단순 마크다운 및 HTML 서식 안전 파싱
+  const parseMarkdownText = (text: string): React.ReactNode[] => {
+    const REGEX = /(\*\*.*?\*\*|\*.*?\*|~~.*?~~|<u>.*?<\/u>)/g;
+    const parts = text.split(REGEX);
+
+    return parts.map((part, index) => {
+      if (part.startsWith("**") && part.endsWith("**")) {
+        return <strong key={index} className="font-bold">{part.slice(2, -2)}</strong>;
+      }
+      if (part.startsWith("*") && part.endsWith("*")) {
+        return <em key={index} className="italic">{part.slice(1, -1)}</em>;
+      }
+      if (part.startsWith("~~") && part.endsWith("~~")) {
+        return <del key={index} className="line-through">{part.slice(2, -2)}</del>;
+      }
+      if (part.startsWith("<u>") && part.endsWith("</u>")) {
+        return <u key={index} className="underline">{part.slice(3, -4)}</u>;
+      }
+      return part;
+    });
+  };
+
   // 본문 안에서 차트 스냅샷 감지 및 렌더링
   const renderContent = (content: string) => {
     const EMBED_REGEX = /\/embed\/([a-zA-Z0-9-]+)/i;
@@ -194,14 +216,14 @@ export function CommunityDetailPage() {
       const parts = content.split(EMBED_REGEX);
       return (
         <>
-          <p className="whitespace-pre-wrap leading-relaxed">{parts[0]}</p>
+          <div className="whitespace-pre-wrap leading-relaxed">{parseMarkdownText(parts[0])}</div>
           <EmbedChart snapshotId={match[1]} />
-          {parts[2] && <p className="whitespace-pre-wrap leading-relaxed mt-4">{parts[2]}</p>}
+          {parts[2] && <div className="whitespace-pre-wrap leading-relaxed mt-4">{parseMarkdownText(parts[2])}</div>}
         </>
       );
     }
 
-    return <p className="whitespace-pre-wrap leading-relaxed">{content}</p>;
+    return <div className="whitespace-pre-wrap leading-relaxed">{parseMarkdownText(content)}</div>;
   };
 
   if (isLoading) {

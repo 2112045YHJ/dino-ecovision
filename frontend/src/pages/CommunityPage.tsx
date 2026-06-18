@@ -134,7 +134,7 @@ export function CommunityPage() {
               type="text"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              placeholder="검색어 입력 (2자 이상)"
+              placeholder="검색어 입력"
               className="flex-1 min-w-0 px-3 py-2 text-xs text-gray-800 focus:outline-none"
             />
             {activeSearch && (
