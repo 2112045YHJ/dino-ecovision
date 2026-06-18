@@ -30,4 +30,14 @@ public class ChartSnapshotController {
         CommunityDto.ChartSnapshotResponse response = communityService.getSnapshot(id);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
+<<<<<<< HEAD
+=======
+
+    @GetMapping("/snapshot")
+    public ResponseEntity<ApiResponse<java.util.List<CommunityDto.ChartSnapshotResponse>>> getMySnapshots(
+            @AuthenticationPrincipal Long userId) {
+        java.util.List<CommunityDto.ChartSnapshotResponse> response = communityService.getUserSnapshots(userId);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+>>>>>>> feature/community-fe-setup
 }

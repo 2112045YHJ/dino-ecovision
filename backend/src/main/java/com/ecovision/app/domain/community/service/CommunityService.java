@@ -19,11 +19,24 @@ import org.springframework.transaction.annotation.Transactional;
 
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
+<<<<<<< HEAD
+=======
+import java.time.LocalDate;
+>>>>>>> feature/community-fe-setup
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
+<<<<<<< HEAD
+=======
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.nodes.Entities;
+import org.jsoup.safety.Safelist;
+import org.jsoup.select.Elements;
+>>>>>>> feature/community-fe-setup
 
 @Service
 @RequiredArgsConstructor
@@ -35,6 +48,10 @@ public class CommunityService {
     private final ChartSnapshotRepository chartSnapshotRepository;
     private final UserRepository userRepository;
     private final PointHistoryRepository pointHistoryRepository;
+<<<<<<< HEAD
+=======
+    private final PostImageRepository postImageRepository;
+>>>>>>> feature/community-fe-setup
 
     @Transactional
     public Long createPost(CommunityDto.PostRequest request, Long userId) {
@@ -60,9 +77,17 @@ public class CommunityService {
                     .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "차트 스냅샷을 찾을 수 없습니다."));
         }
 
+<<<<<<< HEAD
         Post post = Post.builder()
                 .title(request.title())
                 .content(request.content())
+=======
+        String sanitizedContent = sanitizeHtml(request.content());
+
+        Post post = Post.builder()
+                .title(request.title())
+                .content(sanitizedContent)
+>>>>>>> feature/community-fe-setup
                 .category(category)
                 .user(author)
                 .chartSnapshot(snapshot)
@@ -70,6 +95,10 @@ public class CommunityService {
                 .build();
 
         Post saved = postRepository.save(post);
+<<<<<<< HEAD
+=======
+        mapPostImages(saved, sanitizedContent);
+>>>>>>> feature/community-fe-setup
 
         // 게시글 작성 포인트 지급 (+100점)
         rewardPoints(author, 100, "POST_WRITE");
@@ -86,6 +115,7 @@ public class CommunityService {
             }
         }
 
+<<<<<<< HEAD
         PostCategory category = null;
         if (categoryStr != null && !categoryStr.trim().isEmpty() && !categoryStr.equalsIgnoreCase("ALL")) {
             try {
@@ -101,6 +131,10 @@ public class CommunityService {
         }
 
         return postRepository.findAllWithUser(pageable).map(post -> convertToPostResponse(post, userId));
+=======
+        return postRepository.findAllByQueryDSL(categoryStr, searchType, keyword, pageable)
+                .map(post -> convertToPostResponse(post, userId));
+>>>>>>> feature/community-fe-setup
     }
 
     private Specification<Post> buildSearchSpecification(PostCategory category, String searchType, String keyword) {
@@ -163,12 +197,20 @@ public class CommunityService {
 
     @Transactional
     public CommunityDto.PostResponse getPostDetails(Long id, Long userId) {
+<<<<<<< HEAD
+=======
+        postRepository.increaseViewCount(id);
+
+>>>>>>> feature/community-fe-setup
         Post post = postRepository.findById(id)
                 .filter(p -> p.getDeletedAt() == null)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "게시글을 찾을 수 없습니다."));
 
+<<<<<<< HEAD
         post.increaseViewCount();
 
+=======
+>>>>>>> feature/community-fe-setup
         List<Comment> comments = commentRepository.findByPostIdAndDeletedAtIsNullOrderByCreatedAtAsc(id);
         List<CommunityDto.CommentResponse> commentDtos = comments.stream()
                 .map(this::convertToCommentResponse)
@@ -207,7 +249,13 @@ public class CommunityService {
                     .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "차트 스냅샷을 찾을 수 없습니다."));
         }
 
+<<<<<<< HEAD
         post.update(request.title(), request.content(), category, snapshot, request.dinoSnapshot());
+=======
+        String sanitizedContent = sanitizeHtml(request.content());
+        post.update(request.title(), sanitizedContent, category, snapshot, request.dinoSnapshot());
+        mapPostImages(post, sanitizedContent);
+>>>>>>> feature/community-fe-setup
     }
 
     @Transactional
@@ -259,7 +307,11 @@ public class CommunityService {
         if (postLikeOpt.isPresent()) {
             // 이미 좋아요를 누른 상태 -> 좋아요 취소
             postLikeRepository.delete(postLikeOpt.get());
+<<<<<<< HEAD
             post.decreaseLikeCount();
+=======
+            postRepository.decreaseLikeCount(postId);
+>>>>>>> feature/community-fe-setup
             isLiked = false;
 
             if (!isOwnPost) {
@@ -274,7 +326,11 @@ public class CommunityService {
                     .post(post)
                     .build();
             postLikeRepository.save(like);
+<<<<<<< HEAD
             post.increaseLikeCount();
+=======
+            postRepository.increaseLikeCount(postId);
+>>>>>>> feature/community-fe-setup
             isLiked = true;
 
             if (!isOwnPost) {
@@ -283,8 +339,16 @@ public class CommunityService {
                 rewardPoints(author, 5, "LIKE_RECEIVED");
             }
         }
+<<<<<<< HEAD
         postRepository.save(post);
         return new CommunityDto.LikeResponse(post.getLikeCount(), isLiked);
+=======
+        
+        // Fetch the updated post to get the correct like count
+        Post updatedPost = postRepository.findById(postId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "게시글을 찾을 수 없습니다."));
+        return new CommunityDto.LikeResponse(updatedPost.getLikeCount(), isLiked);
+>>>>>>> feature/community-fe-setup
     }
 
     @Transactional
@@ -373,14 +437,69 @@ public class CommunityService {
         return convertToChartSnapshotResponse(snapshot);
     }
 
+<<<<<<< HEAD
     private void rewardPoints(User user, int amount, String reason) {
         user.setTotalPoints(user.getTotalPoints() + amount);
         user.setRankingPoint(user.getRankingPoint() + amount);
+=======
+    @Transactional(readOnly = true)
+    public java.util.List<CommunityDto.ChartSnapshotResponse> getUserSnapshots(Long userId) {
+        return chartSnapshotRepository.findAllByUserIdOrderByCreatedAtDesc(userId).stream()
+                .map(this::convertToChartSnapshotResponse)
+                .collect(java.util.stream.Collectors.toList());
+    }
+
+    private void rewardPoints(User user, int amount, String reason) {
+        LocalDate today = LocalDate.now();
+        
+        // 날짜 변경 시 누적 포인트 초기화
+        if (user.getLastPointAccumulatedDate() == null || 
+            !user.getLastPointAccumulatedDate().isEqual(today)) {
+            user.setTodayPointsAccumulated(0);
+            user.setLastPointAccumulatedDate(today);
+        }
+
+        int finalPointsToReward = 0;
+
+        if (amount <= 0) {
+            // 차감인 경우 상한 검사 제외하고 즉시 차감
+            finalPointsToReward = amount;
+        } else {
+            // 가산인 경우
+            int currentAccumulated = user.getTodayPointsAccumulated() != null ? user.getTodayPointsAccumulated() : 0;
+            int limit = 350; // 일일 획득 상한 350점 고정
+
+            if (currentAccumulated >= limit) {
+                // 이미 한도를 채운 경우
+                finalPointsToReward = 0;
+                reason = reason + "_LIMIT_EXCEEDED";
+            } else {
+                int remainingLimit = limit - currentAccumulated;
+                if (amount > remainingLimit) {
+                    // 지급할 포인트가 남은 한도보다 많은 경우 -> 남은 한도만큼만 지급
+                    finalPointsToReward = remainingLimit;
+                    user.setTodayPointsAccumulated(limit);
+                } else {
+                    // 전체 다 지급 가능
+                    finalPointsToReward = amount;
+                    user.setTodayPointsAccumulated(currentAccumulated + finalPointsToReward);
+                }
+            }
+        }
+
+        user.setTotalPoints(user.getTotalPoints() + finalPointsToReward);
+        user.setRankingPoint(user.getRankingPoint() + finalPointsToReward);
+        user.setLastPointAccumulatedDate(today);
+>>>>>>> feature/community-fe-setup
         userRepository.save(user);
 
         PointHistory history = PointHistory.builder()
                 .user(user)
+<<<<<<< HEAD
                 .pointAmount(amount)
+=======
+                .pointAmount(finalPointsToReward)
+>>>>>>> feature/community-fe-setup
                 .reason(reason)
                 .build();
         pointHistoryRepository.save(history);
@@ -437,4 +556,57 @@ public class CommunityService {
                 snapshot.getCreatedAt()
         );
     }
+<<<<<<< HEAD
+=======
+
+    @Transactional
+    public void saveUploadedImageRecord(String imageUrl) {
+        PostImage postImage = PostImage.builder()
+                .imageUrl(imageUrl)
+                .status(PostImageStatus.UNMAPPED)
+                .build();
+        postImageRepository.save(postImage);
+    }
+
+    public String sanitizeHtml(String html) {
+        if (html == null) return null;
+        Safelist safelist = Safelist.relaxed()
+                .addTags("span", "u", "s", "del", "div")
+                .addAttributes("img", "style", "class", "src", "alt")
+                .addAttributes("span", "style", "class")
+                .addAttributes("p", "style", "class")
+                .addAttributes("div", "style", "class")
+                .addAttributes("u", "style", "class")
+                .addAttributes("s", "style", "class")
+                .addAttributes("del", "style", "class");
+
+        Document.OutputSettings outputSettings = new Document.OutputSettings()
+                .prettyPrint(false)
+                .escapeMode(Entities.EscapeMode.xhtml);
+
+        return Jsoup.clean(html, "", safelist, outputSettings);
+    }
+
+    private void mapPostImages(Post post, String sanitizedContent) {
+        if (sanitizedContent == null) return;
+
+        // 1. 기존 매핑 초기화
+        List<PostImage> existingImages = postImageRepository.findAllByPostId(post.getId());
+        for (PostImage img : existingImages) {
+            img.unmap();
+        }
+
+        // 2. 본문 내 img src 파싱 및 갱신 매핑
+        Document doc = Jsoup.parseBodyFragment(sanitizedContent);
+        Elements imgs = doc.select("img");
+        for (Element img : imgs) {
+            String src = img.attr("src");
+            if (src != null && !src.trim().isEmpty()) {
+                postImageRepository.findByImageUrl(src).ifPresent(postImage -> {
+                    postImage.mapToPost(post);
+                });
+            }
+        }
+    }
+>>>>>>> feature/community-fe-setup
 }

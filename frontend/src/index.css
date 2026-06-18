@@ -12,7 +12,7 @@
   color: #2c3531;
   background-color: #faf9f5;
 
-  font-synthesis: none;
+  font-synthesis: weight style;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -48,4 +48,88 @@ textarea {
 img {
   max-width: 100%;
   display: block;
+}
+
+/* 이탤릭 한글 폰트 강제 눕힘 지원 */
+i, em, .italic {
+  font-style: italic !important;
+  font-synthesis: style !important;
+}
+
+/* 게시글 상세 페이지 이미지 호버 링 제거 */
+.rich-content img {
+  cursor: default !important;
+  outline: none !important;
+  box-shadow: none !important;
+  --tw-ring-width: 0px !important;
+  --tw-ring-color: transparent !important;
+}
+
+/* 에디터 내 이미지 호버 링 */
+[contenteditable] img:hover {
+  outline: 2px solid #5F8C74 !important;
+  cursor: pointer !important;
+}
+
+/* 본문 영역 float 해제 및 영역 침범 해결 */
+.rich-content, [contenteditable] {
+  display: flow-root !important;
+  clear: both !important;
+}
+
+/* 인라인 이미지 배치 지원 및 Froala Editor 스타일 연동 */
+.rich-content img,
+[contenteditable] img {
+  display: inline-block;
+  vertical-align: bottom;
+  max-width: 100%;
+}
+
+.rich-content img.fr-dii,
+[contenteditable] img.fr-dii {
+  display: inline-block !important;
+  float: none !important;
+  vertical-align: bottom !important;
+  margin: 0 8px !important;
+}
+
+/* block 형 이미지 정렬 */
+.rich-content img.fr-dib,
+[contenteditable] img.fr-dib {
+  display: block !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  float: none !important;
+}
+
+/* blockquote, list, hr 커스텀 스타일링 */
+.rich-content blockquote,
+[contenteditable] blockquote {
+  border-left: 4px solid #8B5CF6 !important;
+  padding-left: 1rem !important;
+  margin: 1rem 0 !important;
+  color: #6B7280 !important;
+  font-style: italic;
+}
+
+.rich-content ul,
+[contenteditable] ul {
+  list-style-type: disc !important;
+  padding-left: 2rem !important;
+  margin: 1rem 0 !important;
+}
+
+.rich-content ol,
+[contenteditable] ol {
+  list-style-type: decimal !important;
+  padding-left: 2rem !important;
+  margin: 1rem 0 !important;
+}
+
+.rich-content hr,
+[contenteditable] hr {
+  margin: 1.5rem 0 !important;
+  border: 0 !important;
+  border-top: 1px solid #E5E7EB !important;
+  height: 0 !important;
 }

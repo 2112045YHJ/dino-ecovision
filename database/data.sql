@@ -99,3 +99,59 @@ INSERT INTO `quizzes` (`id`, `question`, `option_a`, `option_b`, `option_c`, `co
 -- 9. ranking_seasons (랭킹 시즌) 적재
 INSERT INTO `ranking_seasons` (`id`, `season_name`, `start_date`, `end_date`, `is_active`) VALUES
 (1, '2026 에코 서머 시즌 1', '2026-06-01', '2026-08-31', TRUE);
+
+-- 10. users 관리자 계정 추가
+INSERT INTO users (
+    id, email, password, nickname, avatar_url, 
+    region_id, role, status, total_points, ranking_point, 
+    today_points_accumulated, last_point_accumulated_date, saved_carbon_kg, 
+    last_region_changed_at, last_nickname_changed_at, created_at, updated_at, deleted_at
+) VALUES (
+    1, 'admin@example.com', '$2a$10$4OzfDb97/VOE2kzOCqT2IONV5an9L9rvmwKNULsaaUPttomrH2mZq', 'admin', NULL, 
+    1, 'ADMIN', 'ACTIVE', 0, 0, 
+    0, '2026-06-12', 0.0, 
+    '2026-06-12 11:54:52', '2026-06-12 11:54:52', '2026-06-12 01:57:31', '2026-06-12 03:33:52', NULL
+);
+
+-- 11. dino 관리자 공룡 추가
+INSERT INTO user_dinos (
+    id, user_id, dino_template_id, nickname, stage, 
+    exp, affinity, evolved_at, created_at, updated_at
+) VALUES (
+    1, 1, 1, 'adminDino', 'EGG', 
+    0, 0, NULL, '2026-06-12 07:41:11', '2026-06-12 07:41:11'
+);
+
+-- 12. user_dino_collections 관리자 공룡 도감 해금 추가
+INSERT INTO user_dino_collections (
+    id, user_id, dino_template_id, unlocked_at
+) VALUES (
+    1, 1, 1, '2026-06-12 07:41:11'
+);
+
+-- 13. missions - 던전 미션 적재
+INSERT INTO `missions`
+    (`id`, `mission_code`, `mission_name`, `category`, `slot_type`, `mission_type`,
+     `description`, `base_reward`, `proof_type`, `proof_guide_text`)
+VALUES
+    (101, 'DUNGEON_AC_PAUSE',      '[던전] 에어컨 사용 일시 정지하기', 'HEATING', 'ANYTIME', 'DUNGEON',
+     '전력 피크 경보! 에어컨을 잠시 꺼 피크 부하를 낮춥니다.', 50, 'SELF_REPORT',
+     '자가 신고 미션입니다. 정직하게 체크해주세요.'),
+    (102, 'DUNGEON_MAIN_LIGHT_OFF', '[던전] 불필요한 메인 전등 전체 소등', 'LIGHTING', 'ANYTIME', 'DUNGEON',
+     '전력 피크 경보! 메인 조명을 소등해 즉시 절전합니다.', 50, 'SELF_REPORT',
+     '자가 신고 미션입니다. 정직하게 체크해주세요.'),
+    (103, 'DUNGEON_STANDBY_CUT',   '[던전] 멀티탭 대기전력 일괄 차단', 'STANDBY', 'ANYTIME', 'DUNGEON',
+     '전력 피크 경보! 멀티탭 스위치를 내려 대기전력을 차단합니다.', 50, 'SELF_REPORT',
+     '자가 신고 미션입니다. 정직하게 체크해주세요.'),
+    (104, 'DUNGEON_LAUNDRY_DEFER', '[던전] 세탁기·건조기 사용 미루기', 'LAUNDRY', 'ANYTIME', 'DUNGEON',
+     '전력 피크 경보! 고출력 가전 사용을 피크 시간 이후로 미룹니다.', 50, 'SELF_REPORT',
+     '자가 신고 미션입니다. 정직하게 체크해주세요.');
+
+-- 14. mission_emission_factors - 던전 미션 감축계수 추가
+INSERT INTO `mission_emission_factors`
+    (`mission_id`, `mission_code`, `calculation_type`, `daily_reduction_value`, `reduction_unit`, `apply_status`)
+VALUES
+    (101, 'DUNGEON_AC_PAUSE',       'annual_fixed', 0.500, 'kgCO2/일', '적용 가능'),
+    (102, 'DUNGEON_MAIN_LIGHT_OFF', 'annual_fixed', 0.680, 'kgCO2/일', '적용 가능'),
+    (103, 'DUNGEON_STANDBY_CUT',    'annual_fixed', 0.300, 'kgCO2/일', '적용 가능'),
+    (104, 'DUNGEON_LAUNDRY_DEFER',  'annual_fixed', 0.450, 'kgCO2/일', '적용 가능');

@@ -80,6 +80,18 @@ export async function deletePost(id: number): Promise<void> {
   await apiRequest<void>(`/api/posts/${id}`, { method: "DELETE", token });
 }
 
+<<<<<<< HEAD
+=======
+export async function updatePost(id: number, request: { title: string; content: string; category: string; chartSnapshotId?: string | null; dinoSnapshot?: string | null }): Promise<void> {
+  const token = localStorage.getItem("accessToken");
+  await apiRequest<void>(`/api/posts/${id}`, {
+    method: "PUT",
+    body: request,
+    token,
+  });
+}
+
+>>>>>>> feature/community-fe-setup
 export async function likePost(id: number): Promise<{ likeCount: number; liked: boolean }> {
   const token = localStorage.getItem("accessToken");
   return await apiRequest<{ likeCount: number; liked: boolean }>(`/api/posts/${id}/like`, { method: "POST", token });
@@ -94,6 +106,18 @@ export async function createComment(postId: number, content: string): Promise<nu
   });
 }
 
+<<<<<<< HEAD
+=======
+export async function updateComment(commentId: number, content: string): Promise<void> {
+  const token = localStorage.getItem("accessToken");
+  await apiRequest<void>(`/api/posts/comments/${commentId}`, {
+    method: "PUT",
+    body: { content },
+    token,
+  });
+}
+
+>>>>>>> feature/community-fe-setup
 export async function deleteComment(commentId: number): Promise<void> {
   const token = localStorage.getItem("accessToken");
   await apiRequest<void>(`/api/posts/comments/${commentId}`, { method: "DELETE", token });
@@ -112,3 +136,29 @@ export async function fetchChartSnapshot(id: string): Promise<ChartSnapshotRespo
   const token = localStorage.getItem("accessToken");
   return await apiRequest<ChartSnapshotResponse>(`/api/charts/snapshot/${id}`, { token });
 }
+<<<<<<< HEAD
+=======
+
+export async function uploadPostImage(file: File): Promise<string> {
+  const token = localStorage.getItem("accessToken");
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await fetch("http://localhost:8080/api/posts/images", {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: formData,
+  });
+
+  const result = await response.json();
+
+  if (!response.ok || !result.success) {
+    throw new Error(result.error?.message ?? "이미지 업로드에 실패했습니다.");
+  }
+
+  return result.data;
+}
+>>>>>>> feature/community-fe-setup

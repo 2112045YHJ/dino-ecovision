@@ -1,10 +1,13 @@
 // src/pages/QuizTestPage.tsx
 
 import { useState } from "react";
+
 import { EcoQuizModal } from "../components/quiz/EcoQuizModal";
-import { mockTodayQuiz } from "../mocks/quizMock";
 
 export function QuizTestPage() {
+  // 퀴즈 모달이 열려 있는지 저장하는 상태입니다.
+  // false = 닫힘
+  // true = 열림
   const [isQuizOpen, setIsQuizOpen] = useState(false);
 
   return (
@@ -29,12 +32,7 @@ export function QuizTestPage() {
         </div>
       </section>
 
-      {isQuizOpen && (
-        <EcoQuizModal
-          quiz={mockTodayQuiz}
-          onClose={() => setIsQuizOpen(false)}
-        />
-      )}
+      {isQuizOpen && <EcoQuizModal onClose={() => setIsQuizOpen(false)} />}
     </main>
   );
 }

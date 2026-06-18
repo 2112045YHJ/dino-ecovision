@@ -1,66 +1,155 @@
 // src/pages/TodayMissionPage.tsx
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { MissionCard } from "../components/mission/MissionCard";
-import { MissionCompleteModal } from "../components/mission/MissionCompleteModal";
+import { completeMission, getTodayMissions } from "../api/missionApi";
 
-import { mockMissions } from "../mocks/missionMock";
-import type { Mission } from "../types/mission";
+import { MissionCard } from "../components/mission/MissionCard";
+import { MissionCompleteConfirmModal } from "../components/mission/MissionCompleteConfirmModal";
+
+import type { Mission, MissionSlot } from "../types/mission";
+
+// slot 라벨 변환
+function getSlotLabel(slot: MissionSlot) {
+  if (slot === "DAY") return "낮";
+  if (slot === "EVENING") return "저녁";
+  return "언제든";
+}
+
+// estimatedCo2Kg 기반으로 carbon weight 계산
+function getCarbonWeight(co2Kg: number): { weight: number; label: string } {
+  if (co2Kg >= 3) return { weight: 1.5, label: "높음" };
+  if (co2Kg >= 1) return { weight: 1.2, label: "보통" };
+  return { weight: 1.0, label: "낮음" };
+}
 
 export function TodayMissionPage() {
   // 다른 화면으로 이동할 때 사용하는 함수입니다.
-  // 예: navigate('/home') → 홈 화면으로 이동
+  // 예: navigate("/home") → 홈 화면으로 이동
   const navigate = useNavigate();
 
+  // 백엔드에서 받아온 오늘의 미션 목록입니다.
+  const [missions, setMissions] = useState<Mission[]>([]);
+
   // 사용자가 "완료 인증하기" 버튼을 누른 미션을 저장합니다.
-  // null이면 아직 선택한 미션이 없다는 뜻입니다.
   const [selectedMission, setSelectedMission] = useState<Mission | null>(null);
 
-  // 완료된 미션의 assignmentId 목록을 저장합니다.
-  // 예: [1, 3]이면 1번, 3번 미션이 완료된 상태입니다.
-  const [completedMissionIds, setCompletedMissionIds] = useState<number[]>([]);
+  // 미션 목록을 불러오는 중인지 저장합니다.
+  const [isLoading, setIsLoading] = useState(true);
+
+  // 미션 완료 처리 중인지 저장합니다.
+  const [isCompleting, setIsCompleting] = useState(false);
+
+  // 에러 메시지입니다.
+  const [errorMessage, setErrorMessage] = useState("");
+
+  // 페이지가 처음 열릴 때 오늘의 미션 목록을 백엔드에서 가져옵니다.
+
+  useEffect(() => {
+    const fetchTodayMissions = async () => {
+      try {
+        setIsLoading(true);
+        setErrorMessage("");
+
+        const data = await getTodayMissions();
+        setMissions(data);
+      } catch (error) {
+        console.error(error);
+
+        const message =
+          error instanceof Error
+            ? error.message
+            : "오늘의 미션 목록을 불러오지 못했습니다.";
+
+        setErrorMessage(message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchTodayMissions();
+  }, []);
 
   // 오늘 전체 미션 개수입니다.
-  const totalMissionCount = mockMissions.length;
+  const totalMissionCount = missions.length;
 
   // 오늘 완료한 미션 개수입니다.
-  const completedMissionCount = completedMissionIds.length;
+  // 백엔드에서 completed: true로 내려준 미션 개수를 셉니다.
+  const completedMissionCount = missions.filter((m) => m.completed).length;
 
   // 진행률 계산입니다.
-  // 예: 1개 완료 / 전체 3개 = 33.3%
+  // 예: 1개 완료 / 전체 3개 = 33%
   const progressPercent =
     totalMissionCount === 0
       ? 0
       : Math.round((completedMissionCount / totalMissionCount) * 100);
 
   // 미션 완료 모달에서 "완료하기" 버튼을 눌렀을 때 실행됩니다.
-  const handleConfirmComplete = () => {
-    if (!selectedMission) {
-      return;
-    }
+  const handleConfirmComplete = async () => {
+    if (!selectedMission) return;
 
-    // 이미 완료한 미션을 또 완료하지 못하게 막습니다.
-    const alreadyCompleted = completedMissionIds.includes(
-      selectedMission.assignmentId,
-    );
-
-    if (alreadyCompleted) {
+    if (selectedMission.completed) {
       alert("이미 완료한 미션입니다.");
       setSelectedMission(null);
       return;
     }
 
-    // 완료 목록에 현재 미션 ID를 추가합니다.
-    setCompletedMissionIds((prev) => [...prev, selectedMission.assignmentId]);
+    try {
+      setIsCompleting(true);
+      setErrorMessage("");
 
-    // 지금은 백엔드 API가 없으므로 alert로 임시 처리합니다.
-    alert(`${selectedMission.finalRewardPoint}P를 획득했습니다!`);
+      // 백엔드에 미션 완료 요청을 보냅니다.
+      // 오늘의 미션은 DAILY 타입입니다.
+      const result = await completeMission(selectedMission.assignmentId, {
+        type: "DAILY",
+      });
 
-    // 모달을 닫습니다.
-    setSelectedMission(null);
+      // 완료 성공 후, 화면의 미션 목록에서 해당 미션만 completed: true로 바꿉니다.
+      setMissions((prev) =>
+        prev.map((mission) =>
+          mission.assignmentId === selectedMission.assignmentId
+            ? { ...mission, completed: true }
+            : mission,
+        ),
+      );
+
+      // 백엔드가 실제 적립된 포인트를 cappedReward로 내려줍니다.
+      alert(
+        `${result.cappedReward}P를 획득했습니다!\n공룡 EXP +${result.dino.expGained}`,
+      );
+
+      // 모달을 닫습니다.
+      setSelectedMission(null);
+    } catch (error) {
+      console.error(error);
+
+      const message =
+        error instanceof Error
+          ? error.message
+          : "미션 완료 처리에 실패했습니다.";
+
+      setErrorMessage(message);
+    } finally {
+      setIsCompleting(false);
+    }
   };
+
+  if (isLoading) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-[#FAF9F5] p-6 text-[#2C3531]">
+        <div className="rounded-3xl bg-white p-6 text-center shadow-sm">
+          <p className="text-sm font-bold text-[#5F8C74]">TODAY MISSION</p>
+          <p className="mt-2 text-lg font-bold">오늘의 미션을 불러오는 중...</p>
+        </div>
+      </main>
+    );
+  }
+
+  // 선택된 미션의 carbon weight 계산
+  const carbonInfo = selectedMission
+    ? getCarbonWeight(selectedMission.estimatedCo2Kg)
+    : { weight: 1.0, label: "낮음" };
 
   return (
     <main className="min-h-screen bg-[#FAF9F5] p-6 text-[#2C3531]">
@@ -77,13 +166,18 @@ export function TodayMissionPage() {
         {/* 페이지 제목 영역 */}
         <header className="mb-6">
           <p className="text-sm font-bold text-[#5F8C74]">TODAY MISSION</p>
-
           <h1 className="mt-2 text-3xl font-bold">오늘의 미션</h1>
-
           <p className="mt-2 text-sm text-gray-600">
             오늘 할 수 있는 탄소 절감 미션을 완료하고 공룡을 성장시켜보세요.
           </p>
         </header>
+
+        {/* 에러 메시지 */}
+        {errorMessage && (
+          <section className="mb-5 rounded-3xl bg-[#FFF0EA] p-5 text-sm font-bold text-[#E07A5F] shadow-sm">
+            {errorMessage}
+          </section>
+        )}
 
         {/* 진행률 요약 카드 */}
         <section className="mb-5 rounded-3xl bg-white p-5 shadow-sm">
@@ -92,7 +186,6 @@ export function TodayMissionPage() {
               <p className="text-sm font-bold text-[#5F8C74]">
                 MISSION PROGRESS
               </p>
-
               <h2 className="mt-1 text-xl font-bold">
                 {completedMissionCount} / {totalMissionCount} 완료
               </h2>
@@ -111,29 +204,33 @@ export function TodayMissionPage() {
           </div>
 
           <p className="mt-3 text-xs text-gray-500">
-            완료한 미션은 오늘의 포인트와 공룡 EXP에 반영될 예정입니다.
+            완료한 미션은 오늘의 포인트와 공룡 EXP에 반영됩니다.
           </p>
         </section>
 
+        {/* 미션이 없을 때 */}
+        {missions.length === 0 && (
+          <section className="rounded-3xl bg-white p-6 text-center shadow-sm">
+            <p className="text-sm font-bold text-gray-500">
+              오늘 배정된 미션이 없습니다.
+            </p>
+          </section>
+        )}
+
         {/* 미션 카드 목록 */}
         <section className="grid gap-4">
-          {mockMissions.map((mission) => {
-            // 현재 미션이 완료된 미션인지 확인합니다.
-            const isCompleted = completedMissionIds.includes(
-              mission.assignmentId,
-            );
+          {missions.map((mission) => {
+            const isCompleted = mission.completed;
 
             return (
               <div key={mission.assignmentId} className="relative">
                 <MissionCard
                   mission={mission}
                   onCompleteClick={(clickedMission) => {
-                    // 이미 완료된 미션이면 다시 모달을 열지 않습니다.
-                    if (isCompleted) {
+                    if (clickedMission.completed) {
                       alert("이미 완료한 미션입니다.");
                       return;
                     }
-
                     setSelectedMission(clickedMission);
                   }}
                 />
@@ -152,11 +249,21 @@ export function TodayMissionPage() {
         </section>
       </section>
 
-      {/* 미션 완료 확인 모달 */}
+      {/* SB-07 미션 완료 자진신고 확인 모달 */}
       {selectedMission && (
-        <MissionCompleteModal
-          mission={selectedMission}
-          onClose={() => setSelectedMission(null)}
+        <MissionCompleteConfirmModal
+          category={selectedMission.category}
+          timeSlot={getSlotLabel(selectedMission.slot)}
+          title={selectedMission.title}
+          description={`예상 탄소 절감량: ${selectedMission.estimatedCo2Kg}kg`}
+          baseReward={selectedMission.baseReward}
+          carbonWeight={carbonInfo.weight}
+          carbonWeightLabel={carbonInfo.label}
+          onCancel={() => {
+            if (!isCompleting) {
+              setSelectedMission(null);
+            }
+          }}
           onConfirm={handleConfirmComplete}
         />
       )}

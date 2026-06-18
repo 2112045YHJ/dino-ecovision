@@ -2,25 +2,34 @@
 
 import { Navigate, Route, Routes } from "react-router-dom";
 
-import { HomePage } from "./pages/HomePage";
-import { TodayMissionPage } from "./pages/TodayMissionPage";
-import { DinoRoomPage } from "./pages/DinoRoomPage";
-import { QuizTestPage } from "./pages/QuizTestPage";
 import { LoginPage } from "./pages/LoginPage";
 import { OnboardingProfilePage } from "./pages/OnboardingProfilePage";
 import { DinoSelectionPage } from "./pages/DinoSelectionPage";
+import { HomePage } from "./pages/HomePage";
+import { TodayMissionPage } from "./pages/TodayMissionPage";
+import { DinoRoomPage } from "./pages/DinoRoomPage";
+import { DinoCollectionPage } from "./pages/DinoCollectionPage";
+
+// 조원 추가 페이지
+import { DinoGrowthComparePage } from "./pages/DinoGrowthComparePage";
+import { ProfileEditPage } from "./pages/ProfileEditPage";
+import { LeaderboardPage } from "./pages/LeaderboardPage";
+import { RegionMapLeaderboardPage } from "./pages/RegionMapLeaderboardPage";
+import { GuildManagementPage } from "./pages/GuildManagementPage";
+import { WorldDungeonPage } from "./pages/WorldDungeonPage";
+import { AdminCsvUploadPage } from "./pages/AdminCsvUploadPage";
+import { AdminDungeonPage } from "./pages/AdminDungeonPage";
+import { RegionEnergyComparePage } from "./pages/RegionEnergyComparePage";
+import { QuizTestPage } from "./pages/QuizTestPage";
+
+// 커뮤니티 및 고도화 대시보드/마이페이지
+import { MyPageBillInputPage } from "./pages/MyPageBillInputPage";
+import { MyPageTrendChartPage } from "./pages/MyPageTrendChartPage";
 import { CommunityPage } from "./pages/CommunityPage";
 import { CommunityDetailPage } from "./pages/CommunityDetailPage";
 import { CommunityWritePage } from "./pages/CommunityWritePage";
 import { MyPage } from "./pages/MyPage";
 import { Dashboard } from "./pages/Dashboard";
-
-import { LeaderboardPage } from "./pages/LeaderboardPage";
-import { GuildManagementPage } from "./pages/GuildManagementPage";
-import { AdminCsvUploadPage } from "./pages/AdminCsvUploadPage";
-import { RegionMapLeaderboardPage } from "./pages/RegionMapLeaderboardPage";
-import { WorldDungeonPage } from "./pages/WorldDungeonPage";
-import { DinoCollectionPage } from "./pages/DinoCollectionPage";
 
 function App() {
   return (
@@ -43,39 +52,44 @@ function App() {
         element={<Navigate to="/onboarding/dino" replace />}
       />
 
-      {/* 메인 홈 */}
+      {/* 서비스 핵심 화면 라우트 */}
       <Route path="/home" element={<HomePage />} />
-
-      {/* 오늘의 미션 */}
       <Route path="/missions" element={<TodayMissionPage />} />
-
-      {/* 디노룸 */}
       <Route path="/dino-room" element={<DinoRoomPage />} />
+      <Route path="/dino-collection" element={<DinoCollectionPage />} />
+      <Route path="/dino-growth" element={<DinoGrowthComparePage />} />
+      
+      {/* 마이페이지 */}
+      <Route path="/mypage" element={<MyPage />} />
+      <Route path="/mypage/edit" element={<ProfileEditPage />} />
+      <Route path="/mypage/bills" element={<MyPageBillInputPage />} />
+      <Route path="/mypage/trend" element={<MyPageTrendChartPage />} />
 
-      {/* 퀴즈 테스트 */}
-      <Route path="/quiz" element={<QuizTestPage />} />
+      {/* 리더보드, 길드, 던전 */}
+      <Route path="/leaderboard" element={<LeaderboardPage />} />
+      <Route path="/region-ranking" element={<RegionMapLeaderboardPage />} />
+      <Route path="/guild" element={<GuildManagementPage />} />
+      <Route path="/world-dungeon" element={<WorldDungeonPage />} />
 
       {/* 대시보드 */}
       <Route path="/dashboard" element={<Dashboard />} />
+      <Route path="/dashboard/compare" element={<RegionEnergyComparePage />} />
 
       {/* 커뮤니티 */}
       <Route path="/community" element={<CommunityPage />} />
       <Route path="/community/:id" element={<CommunityDetailPage />} />
       <Route path="/community/write" element={<CommunityWritePage />} />
+      <Route path="/community/edit/:id" element={<CommunityWritePage />} />
 
-      {/* 마이페이지 */}
-      <Route path="/mypage" element={<MyPage />} />
-
-      {/* 추가 mock 화면 */}
-      <Route path="/leaderboard" element={<LeaderboardPage />} />
-      <Route path="/guild" element={<GuildManagementPage />} />
+      {/* 관리자 페이지 */}
       <Route path="/admin/csv-upload" element={<AdminCsvUploadPage />} />
-      <Route path="/region-ranking" element={<RegionMapLeaderboardPage />} />
-      <Route path="/world-dungeon" element={<WorldDungeonPage />} />
+      <Route path="/admin/dungeon" element={<AdminDungeonPage />} />
+
+      {/* 퀴즈 테스트 */}
+      <Route path="/quiz" element={<QuizTestPage />} />
 
       {/* 없는 주소로 들어오면 로그인으로 보냅니다. */}
       <Route path="*" element={<Navigate to="/login" replace />} />
-      <Route path="/dino-collection" element={<DinoCollectionPage />} />
     </Routes>
   );
 }

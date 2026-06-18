@@ -89,28 +89,28 @@ public class MockController {
 //        return ResponseEntity.ok(buildApiResponse(true, data, null));
 //    }
 
-    /**
-     * 6.1 활성 던전 조회 MOCK API
-     */
-    @GetMapping("/dungeons/active")
-    public ResponseEntity<?> getActiveDungeon() {
-        log.info("[MOCK DUNGEON] Checking mock active dungeon...");
-
-        LocalDateTime now = LocalDateTime.now();
-        String startedAt = now.minusMinutes(25).format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
-        String endedAt = now.plusMinutes(35).format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
-
-        Map<String, Object> data = Map.of(
-                "dungeonId", 12,
-                "status", "ACTIVE",
-                "reserveRate", 8.45,
-                "dungeonMultiplier", 2.00,
-                "startedAt", startedAt,
-                "endedAt", endedAt,
-                "title", "전력 공급 예비율 비상! 탄소 절감 피크 던전 발령",
-                "carbonIntensity", 520.300
-        );
-
-        return ResponseEntity.ok(buildApiResponse(true, data, null));
-    }
+//    /**
+//     * 6.1 활성 던전 조회 MOCK API (DungeonController와 충돌로 임시 주석 처리)
+//     */
+//    @GetMapping("/dungeons/active")
+//    public ResponseEntity<?> getActiveDungeon() {
+//        log.info("[MOCK DUNGEON] Checking mock active dungeon...");
+//
+//        LocalDateTime now = LocalDateTime.now();
+//        String startedAt = now.minusMinutes(25).format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+//        String endedAt = now.plusMinutes(35).format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+//
+//        Map<String, Object> data = Map.of(
+//                "dungeonId", 12,
+//                "status", "ACTIVE",
+//                "reserveRate", 8.45,
+//                "dungeonMultiplier", 2.00,
+//                "startedAt", startedAt,
+//                "endedAt", endedAt,
+//                "title", "전력 공급 예비율 비상! 탄소 절감 피크 던전 발령",
+//                "carbonIntensity", 520.300
+//        );
+//
+//        return ResponseEntity.ok(buildApiResponse(true, data, null));
+//    }
 }
