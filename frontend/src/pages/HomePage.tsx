@@ -6,6 +6,11 @@ import { useNavigate } from "react-router-dom";
 import { logout } from "../api/authApi";
 import { getMyDino, type MyDinoResponse } from "../api/dinoApi";
 import { getTodayMissions } from "../api/missionApi";
+import { getCurrentWorld, type WorldCurrentResponse } from "../api/worldApi";
+import {
+  getActiveDungeon,
+  type ActiveDungeonResponse,
+} from "../api/dungeonApi";
 
 import { EcoQuizModal } from "../components/quiz/EcoQuizModal";
 
@@ -20,19 +25,20 @@ import type { Mission } from "../types/mission";
 /*
   HomePage에서 하는 일
 
-  현재 실제 구현된 API 기준으로만 구성합니다.
-
   1. 내 공룡 정보 조회
      GET /api/me/dino
 
   2. 오늘의 미션 목록 조회
      GET /api/missions/today
 
-  3. 퀴즈 모달 열기
-     EcoQuizModal 내부에서 GET /api/quiz/today 호출
+  3. 실시간 탄소/전력 상태 조회
+     GET /api/world/current
 
-  현재 구현 API 목록에 없는 기능은 직접 호출하지 않고,
-  "준비 중" 카드로 표시합니다.
+  4. 활성 던전 조회
+     GET /api/dungeons/active
+
+  5. 퀴즈 모달 열기
+     EcoQuizModal 내부에서 GET /api/quiz/today 호출
 */
 
 /* =========================
@@ -123,24 +129,76 @@ function getStageLabel(stage: DinoStage) {
 }
 
 /* =========================
+   탄소 상태 한글 표시 함수
+   ========================= */
+
+function getGradeStatusLabel(status: string) {
+  if (status === "PURIFIED") return "정화됨";
+  if (status === "NORMAL") return "보통";
+  if (status === "POLLUTED") return "오염됨";
+  return "측정 중";
+}
+
+function getGradeStatusColor(status: string) {
+  if (status === "PURIFIED") return "text-[#5F8C74]";
+  if (status === "NORMAL") return "text-[#E07A5F]";
+  if (status === "POLLUTED") return "text-red-600";
+  return "text-gray-500";
+}
+
+function getGradeStatusBg(status: string) {
+  if (status === "PURIFIED") return "bg-[#E8F2EC]";
+  if (status === "NORMAL") return "bg-[#FFF0EA]";
+  if (status === "POLLUTED") return "bg-red-50";
+  return "bg-gray-50";
+}
+
+/* =========================
+   남은 시간 포맷 함수
+   ========================= */
+
+function formatRemainingTime(seconds: number) {
+  if (seconds <= 0) return "곧 종료";
+
+  const minutes = Math.floor(seconds / 60);
+  const sec = seconds % 60;
+
+  if (minutes > 0) {
+    return `${minutes}분 ${sec}초`;
+  }
+
+  return `${sec}초`;
+}
+
+/* =========================
    HomePage 컴포넌트
    ========================= */
 
 export function HomePage() {
   const navigate = useNavigate();
 
-  // 퀴즈 모달 열림/닫힘 상태입니다.
+  // 퀴즈 모달 열림/닫힘 상태
   const [isQuizOpen, setIsQuizOpen] = useState(false);
 
-  // 내 공룡 상태입니다.
+  // 내 공룡 상태
   const [myDino, setMyDino] = useState<MyDinoResponse | null>(null);
   const [isDinoLoading, setIsDinoLoading] = useState(true);
   const [dinoErrorMessage, setDinoErrorMessage] = useState("");
 
-  // 오늘의 미션 상태입니다.
+  // 오늘의 미션 상태
   const [missions, setMissions] = useState<Mission[]>([]);
   const [isMissionLoading, setIsMissionLoading] = useState(true);
   const [missionErrorMessage, setMissionErrorMessage] = useState("");
+
+  // 탄소/전력 상태 (월드)
+  const [world, setWorld] = useState<WorldCurrentResponse | null>(null);
+  const [isWorldLoading, setIsWorldLoading] = useState(true);
+  const [worldErrorMessage, setWorldErrorMessage] = useState("");
+
+  // 활성 던전 상태
+  const [dungeon, setDungeon] = useState<ActiveDungeonResponse>(null);
+  const [isDungeonLoading, setIsDungeonLoading] = useState(true);
+  const [dungeonErrorMessage, setDungeonErrorMessage] = useState("");
 
   // 홈 화면이 처음 열릴 때 내 공룡 정보를 가져옵니다.
   useEffect(() => {
@@ -150,7 +208,6 @@ export function HomePage() {
         setDinoErrorMessage("");
 
         const data = await getMyDino();
-
         setMyDino(data);
       } catch (error) {
         console.error(error);
@@ -171,7 +228,6 @@ export function HomePage() {
         setMissionErrorMessage("");
 
         const data = await getTodayMissions();
-
         setMissions(data);
       } catch (error) {
         console.error(error);
@@ -182,6 +238,59 @@ export function HomePage() {
     };
 
     fetchTodayMissions();
+  }, []);
+
+  /*
+    실시간 탄소/전력 상태를 가져옵니다.
+    명세서에 따라 5초마다 폴링합니다.
+  */
+  useEffect(() => {
+    const fetchWorld = async () => {
+      try {
+        const data = await getCurrentWorld();
+        setWorld(data);
+        setWorldErrorMessage("");
+      } catch (error) {
+        console.error(error);
+        setWorldErrorMessage("탄소 상태 정보를 불러오지 못했습니다.");
+      } finally {
+        setIsWorldLoading(false);
+      }
+    };
+
+    // 첫 로드
+    fetchWorld();
+
+    // 5초마다 새로 가져오기
+    const intervalId = setInterval(fetchWorld, 5000);
+
+    // 컴포넌트가 사라질 때 폴링 정리
+    return () => clearInterval(intervalId);
+  }, []);
+
+  /*
+    활성 던전 정보를 가져옵니다.
+    던전이 발령되면 알 수 있도록 30초마다 폴링합니다.
+  */
+  useEffect(() => {
+    const fetchDungeon = async () => {
+      try {
+        const data = await getActiveDungeon();
+        setDungeon(data);
+        setDungeonErrorMessage("");
+      } catch (error) {
+        console.error(error);
+        setDungeonErrorMessage("던전 정보를 불러오지 못했습니다.");
+      } finally {
+        setIsDungeonLoading(false);
+      }
+    };
+
+    fetchDungeon();
+
+    const intervalId = setInterval(fetchDungeon, 30000);
+
+    return () => clearInterval(intervalId);
   }, []);
 
   // 로그아웃 버튼을 눌렀을 때 실행됩니다.
@@ -199,7 +308,7 @@ export function HomePage() {
     }
   };
 
-  // 미션 개수 계산입니다.
+  // 미션 개수 계산
   const totalMissionCount = missions.length;
 
   const completedMissionCount = missions.filter(
@@ -210,7 +319,7 @@ export function HomePage() {
 
   const missionProgressText = `${completedMissionCount} / ${totalMissionCount}`;
 
-  // 공룡 이미지 계산입니다.
+  // 공룡 이미지 계산
   const safeDinoType = getSafeDinoType(myDino);
   const safeDinoStage = getSafeDinoStage(myDino?.stage);
   const safeDinoStageLabel = getStageLabel(safeDinoStage);
@@ -427,38 +536,145 @@ export function HomePage() {
             )}
           </article>
 
-          {/* 탄소 / 전력 상태 준비 중 카드 */}
+          {/* 탄소 / 전력 상태 카드 (실제 데이터!) */}
           <article className="rounded-3xl bg-white p-5 shadow-sm">
             <p className="text-sm font-bold text-[#5F8C74]">CARBON STATUS</p>
 
-            <h2 className="mt-2 text-2xl font-bold">탄소 상태 준비 중</h2>
+            {isWorldLoading && (
+              <div className="mt-4 rounded-2xl bg-[#FAF9F5] p-4 text-sm font-bold text-gray-500">
+                탄소 상태 정보를 불러오는 중...
+              </div>
+            )}
 
-            <p className="mt-2 text-sm text-gray-600">
-              현재 백엔드 구현 API 목록에는 실시간 탄소/전력 상태 API가 아직
-              포함되어 있지 않아서 준비 중으로 표시합니다.
-            </p>
+            {!isWorldLoading && worldErrorMessage && (
+              <div className="mt-4 rounded-2xl bg-[#FFF0EA] p-4 text-sm font-bold text-[#E07A5F]">
+                {worldErrorMessage}
+              </div>
+            )}
 
-            <div className="mt-4 rounded-2xl bg-[#FAF9F5] p-4 text-sm text-gray-600">
-              추후 전력/탄소 데이터 API가 연결되면 이 영역에서 현재 전력
-              예비율과 탄소 상태를 보여줄 수 있어요.
-            </div>
+            {!isWorldLoading && !worldErrorMessage && world && (
+              <>
+                <h2
+                  className={`mt-2 text-2xl font-bold ${getGradeStatusColor(world.gradeStatus)}`}
+                >
+                  {getGradeStatusLabel(world.gradeStatus)}
+                </h2>
+
+                <p className="mt-2 text-sm text-gray-600">
+                  실시간 전력 데이터를 기반으로 한 우리 동네 환경 상태입니다.
+                </p>
+
+                <div
+                  className={`mt-4 rounded-2xl p-4 text-sm ${getGradeStatusBg(world.gradeStatus)}`}
+                >
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">탄소집약도</span>
+                    <span className="font-bold">
+                      {world.carbonIntensity} gCO₂/kWh
+                    </span>
+                  </div>
+
+                  <div className="mt-2 flex justify-between">
+                    <span className="text-gray-600">보상 가중치</span>
+                    <span className="font-bold text-[#E07A5F]">
+                      ×{world.carbonWeight}
+                    </span>
+                  </div>
+
+                  <div className="mt-2 flex justify-between">
+                    <span className="text-gray-600">전력 예비율</span>
+                    <span className="font-bold">
+                      {world.reserveRate.toFixed(1)}%
+                    </span>
+                  </div>
+                </div>
+
+                {world.isFallback && (
+                  <p className="mt-2 text-xs text-gray-500">
+                    ⚠️ 직전 데이터를 표시하고 있어요.
+                  </p>
+                )}
+              </>
+            )}
           </article>
 
-          {/* 던전 준비 중 카드 */}
+          {/* 던전 카드 (실제 데이터!) */}
           <article className="rounded-3xl bg-white p-5 shadow-sm">
             <p className="text-sm font-bold text-[#5F8C74]">DUNGEON</p>
 
-            <h2 className="mt-2 text-2xl font-bold">던전 기능 준비 중</h2>
+            {isDungeonLoading && (
+              <div className="mt-4 rounded-2xl bg-[#FAF9F5] p-4 text-sm font-bold text-gray-500">
+                던전 정보를 불러오는 중...
+              </div>
+            )}
 
-            <p className="mt-2 text-sm text-gray-600">
-              현재 구현된 API 목록에는 던전 조회 API가 없어서 홈에서는 준비
-              중으로 표시합니다.
-            </p>
+            {!isDungeonLoading && dungeonErrorMessage && (
+              <div className="mt-4 rounded-2xl bg-[#FFF0EA] p-4 text-sm font-bold text-[#E07A5F]">
+                {dungeonErrorMessage}
+              </div>
+            )}
 
-            <div className="mt-4 rounded-2xl bg-[#FFF0EA] p-4 text-sm text-[#E07A5F]">
-              전력 피크 상황과 연결되면 던전 미션과 보상 배율을 보여줄 수
-              있어요.
-            </div>
+            {/* 활성 던전이 있을 때 */}
+            {!isDungeonLoading && !dungeonErrorMessage && dungeon && (
+              <>
+                <h2 className="mt-2 text-2xl font-bold text-[#E07A5F]">
+                  🔥 던전 발령 중!
+                </h2>
+
+                <p className="mt-2 text-sm text-gray-600">
+                  전력 피크 상황입니다. 던전 미션을 완료하면 보상이 2배예요!
+                </p>
+
+                <div className="mt-4 rounded-2xl bg-[#FFF0EA] p-4 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">남은 시간</span>
+                    <span className="font-bold text-[#E07A5F]">
+                      {formatRemainingTime(dungeon.remainingSeconds)}
+                    </span>
+                  </div>
+
+                  <div className="mt-2 flex justify-between">
+                    <span className="text-gray-600">보상 배율</span>
+                    <span className="font-bold text-[#E07A5F]">
+                      ×{dungeon.dungeonMultiplier}
+                    </span>
+                  </div>
+
+                  <div className="mt-2 flex justify-between">
+                    <span className="text-gray-600">던전 미션</span>
+                    <span className="font-bold">
+                      {dungeon.missions.length}개
+                    </span>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  className="mt-4 w-full rounded-2xl bg-[#E07A5F] py-3 font-bold text-white transition hover:bg-[#c8654d]"
+                  onClick={() => navigate("/world-dungeon")}
+                >
+                  던전 입장하기
+                </button>
+              </>
+            )}
+
+            {/* 활성 던전이 없을 때 */}
+            {!isDungeonLoading && !dungeonErrorMessage && !dungeon && (
+              <>
+                <h2 className="mt-2 text-2xl font-bold text-[#5F8C74]">
+                  😌 평온한 상태
+                </h2>
+
+                <p className="mt-2 text-sm text-gray-600">
+                  현재 전력 상황이 안정적이에요. 평소처럼 미션을 진행해주세요.
+                </p>
+
+                <div className="mt-4 rounded-2xl bg-[#E8F2EC] p-4 text-sm text-gray-600">
+                  전력 예비율이 10% 미만으로 떨어지면 던전이 자동으로
+                  발령됩니다. 던전 발령 시 보상이 2배가 돼요!
+                </div>
+              </>
+            )}
           </article>
 
           {/* 에코 퀴즈 카드 */}
