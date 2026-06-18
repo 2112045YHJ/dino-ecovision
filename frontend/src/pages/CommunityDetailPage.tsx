@@ -277,7 +277,7 @@ export function CommunityDetailPage() {
             
             {(() => {
               const isEdited = post.updatedAt && post.createdAt &&
-                (new Date(post.updatedAt).getTime() - new Date(post.createdAt).getTime() > 1000);
+                (new Date(post.updatedAt).getTime() - new Date(post.createdAt).getTime() > 5000);
               return (
                 <div className="mt-3 flex items-center justify-between text-xs text-gray-500">
                   <div className="flex items-center gap-3 flex-wrap">

@@ -151,11 +151,11 @@ public class CommunityService {
 
     @Transactional
     public CommunityDto.PostResponse getPostDetails(Long id, Long userId) {
+        postRepository.increaseViewCount(id);
+
         Post post = postRepository.findById(id)
                 .filter(p -> p.getDeletedAt() == null)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "게시글을 찾을 수 없습니다."));
-
-        post.increaseViewCount();
 
         List<Comment> comments = commentRepository.findByPostIdAndDeletedAtIsNullOrderByCreatedAtAsc(id);
         List<CommunityDto.CommentResponse> commentDtos = comments.stream()
@@ -247,7 +247,7 @@ public class CommunityService {
         if (postLikeOpt.isPresent()) {
             // 이미 좋아요를 누른 상태 -> 좋아요 취소
             postLikeRepository.delete(postLikeOpt.get());
-            post.decreaseLikeCount();
+            postRepository.decreaseLikeCount(postId);
             isLiked = false;
 
             if (!isOwnPost) {
@@ -262,7 +262,7 @@ public class CommunityService {
                     .post(post)
                     .build();
             postLikeRepository.save(like);
-            post.increaseLikeCount();
+            postRepository.increaseLikeCount(postId);
             isLiked = true;
 
             if (!isOwnPost) {
@@ -271,8 +271,11 @@ public class CommunityService {
                 rewardPoints(author, 5, "LIKE_RECEIVED");
             }
         }
-        postRepository.save(post);
-        return new CommunityDto.LikeResponse(post.getLikeCount(), isLiked);
+        
+        // Fetch the updated post to get the correct like count
+        Post updatedPost = postRepository.findById(postId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "게시글을 찾을 수 없습니다."));
+        return new CommunityDto.LikeResponse(updatedPost.getLikeCount(), isLiked);
     }
 
     @Transactional
