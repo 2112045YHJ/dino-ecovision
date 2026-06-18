@@ -128,3 +128,30 @@ INSERT INTO user_dino_collections (
 ) VALUES (
     1, 1, 1, '2026-06-12 07:41:11'
 );
+
+-- 13. missions - 던전 미션 적재
+INSERT INTO `missions`
+    (`id`, `mission_code`, `mission_name`, `category`, `slot_type`, `mission_type`,
+     `description`, `base_reward`, `proof_type`, `proof_guide_text`)
+VALUES
+    (101, 'DUNGEON_AC_PAUSE',      '[던전] 에어컨 사용 일시 정지하기', 'HEATING', 'ANYTIME', 'DUNGEON',
+     '전력 피크 경보! 에어컨을 잠시 꺼 피크 부하를 낮춥니다.', 50, 'SELF_REPORT',
+     '자가 신고 미션입니다. 정직하게 체크해주세요.'),
+    (102, 'DUNGEON_MAIN_LIGHT_OFF', '[던전] 불필요한 메인 전등 전체 소등', 'LIGHTING', 'ANYTIME', 'DUNGEON',
+     '전력 피크 경보! 메인 조명을 소등해 즉시 절전합니다.', 50, 'SELF_REPORT',
+     '자가 신고 미션입니다. 정직하게 체크해주세요.'),
+    (103, 'DUNGEON_STANDBY_CUT',   '[던전] 멀티탭 대기전력 일괄 차단', 'STANDBY', 'ANYTIME', 'DUNGEON',
+     '전력 피크 경보! 멀티탭 스위치를 내려 대기전력을 차단합니다.', 50, 'SELF_REPORT',
+     '자가 신고 미션입니다. 정직하게 체크해주세요.'),
+    (104, 'DUNGEON_LAUNDRY_DEFER', '[던전] 세탁기·건조기 사용 미루기', 'LAUNDRY', 'ANYTIME', 'DUNGEON',
+     '전력 피크 경보! 고출력 가전 사용을 피크 시간 이후로 미룹니다.', 50, 'SELF_REPORT',
+     '자가 신고 미션입니다. 정직하게 체크해주세요.');
+
+-- 14. mission_emission_factors - 던전 미션 감축계수 추가
+INSERT INTO `mission_emission_factors`
+    (`mission_id`, `mission_code`, `calculation_type`, `daily_reduction_value`, `reduction_unit`, `apply_status`)
+VALUES
+    (101, 'DUNGEON_AC_PAUSE',       'annual_fixed', 0.500, 'kgCO2/일', '적용 가능'),
+    (102, 'DUNGEON_MAIN_LIGHT_OFF', 'annual_fixed', 0.680, 'kgCO2/일', '적용 가능'),
+    (103, 'DUNGEON_STANDBY_CUT',    'annual_fixed', 0.300, 'kgCO2/일', '적용 가능'),
+    (104, 'DUNGEON_LAUNDRY_DEFER',  'annual_fixed', 0.450, 'kgCO2/일', '적용 가능');

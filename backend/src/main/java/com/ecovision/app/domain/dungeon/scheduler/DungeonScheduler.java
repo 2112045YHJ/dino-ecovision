@@ -3,6 +3,7 @@ package com.ecovision.app.domain.dungeon.scheduler;
 import com.ecovision.app.domain.dungeon.entity.DungeonEvent;
 import com.ecovision.app.domain.dungeon.repository.DungeonEventRepository;
 import com.ecovision.app.domain.dungeon.repository.DungeonMissionAssignmentRepository;
+import com.ecovision.app.domain.dungeon.service.DungeonMissionIssueService;
 import com.ecovision.app.domain.world.entity.CarbonIntensityLog;
 import com.ecovision.app.domain.world.repository.CarbonIntensityLogRepository;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +25,7 @@ public class DungeonScheduler {
     private final CarbonIntensityLogRepository carbonIntensityLogRepository;
     private final DungeonEventRepository dungeonEventRepository;
     private final DungeonMissionAssignmentRepository dungeonMissionAssignmentRepository;
+    private final DungeonMissionIssueService dungeonMissionIssueService;
 
     /**
      * WorldScheduler가 구동된 10초 후에 전력 상황을 점검하여 던전을 발령하거나 해제합니다.
@@ -82,6 +84,11 @@ public class DungeonScheduler {
         dungeonEventRepository.save(newDungeon);
         log.info("[DUNGEON TRIGGER SUCCESS] Active dungeon generated. ID: {}, Ends at: {}", 
                 newDungeon.getId(), newDungeon.getEndedAt());
+        
+        // 발령 직후: 활성 사용자(ACTIVE + 공룡 보유)에게 던전 미션 2개 일괄 배정.
+        // 같은 manageDungeonLifecycle 트랜잭션에 참여하므로 발령+배정이 원자적으로 처리된다.
+        int issued = dungeonMissionIssueService.issueForDungeon(newDungeon.getId());
+        log.info("[DUNGEON TRIGGER] 던전 미션 배정 행 수: {} (dungeonId={})", issued, newDungeon.getId());
     }
 
     /**
