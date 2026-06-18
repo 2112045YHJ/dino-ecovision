@@ -185,7 +185,7 @@ export function CommunityDetailPage() {
               <div className="flex items-center gap-3">
                 <span className="font-semibold text-[#5F8C74]">{post.authorNickname}</span>
                 <span>•</span>
-                <span>{new Date(post.createdAt).toLocaleString()}</span>
+                <span>{post.createdAt ? new Date(post.createdAt).toLocaleString() : ""}</span>
               </div>
               <div className="flex items-center gap-2">
                 <span>조회수 {post.viewCount}</span>
@@ -235,7 +235,7 @@ export function CommunityDetailPage() {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 text-xs">
                       <span className="font-bold text-[#5F8C74]">{comment.authorNickname}</span>
-                      <span className="text-gray-400 text-[10px]">{new Date(comment.createdAt).toLocaleDateString()}</span>
+                      <span className="text-gray-400 text-[10px]">{comment.createdAt ? new Date(comment.createdAt).toLocaleDateString() : ""}</span>
                     </div>
                     <p className="text-xs text-gray-600 mt-1.5 leading-relaxed">{comment.content}</p>
                   </div>

@@ -205,7 +205,7 @@ export function CommunityPage() {
                     <div className="mt-2 flex items-center gap-3 text-xs text-gray-500">
                       <span className="font-semibold text-[#5F8C74]">{post.authorNickname}</span>
                       <span>•</span>
-                      <span>{new Date(post.createdAt).toLocaleDateString()}</span>
+                      <span>{post.createdAt ? new Date(post.createdAt).toLocaleDateString() : ""}</span>
                     </div>
                   </div>
 

@@ -76,6 +76,47 @@ public class DinoService {
 				dino.getStage().name(), dino.getExp(), nextStageExp, dino.getAffinity());
 	}
 
+	@Transactional(readOnly = true)
+	public List<DinoDto.CollectionItemResponse> getMyDinoCollection(Long userId) {
+		List<DinoTemplate> templates = dinoTemplateRepository.findAll();
+		List<UserDinoCollection> collections = collectionRepository.findAllByUserId(userId);
+		java.util.Optional<UserDino> activeDinoOpt = userDinoRepository.findByUserId(userId);
+
+		return templates.stream().map(template -> {
+			java.util.Optional<UserDinoCollection> collectionOpt = collections.stream()
+					.filter(c -> c.getDinoTemplateId().equals(template.getId()))
+					.findFirst();
+
+			boolean owned = collectionOpt.isPresent();
+			Long collectionId = collectionOpt.map(UserDinoCollection::getId).orElse(null);
+			String acquiredAt = collectionOpt.map(c -> c.getUnlockedAt() != null ? c.getUnlockedAt().toString() : null).orElse(null);
+
+			Long dinoId = null;
+			String nickname = null;
+			String stage = null;
+
+			if (activeDinoOpt.isPresent() && activeDinoOpt.get().getDinoTemplateId().equals(template.getId())) {
+				UserDino activeDino = activeDinoOpt.get();
+				dinoId = activeDino.getId();
+				nickname = activeDino.getNickname();
+				stage = activeDino.getStage().name();
+			}
+
+			return new DinoDto.CollectionItemResponse(
+					collectionId,
+					dinoId,
+					template.getId(),
+					template.getDinoCode(),
+					template.getDinoName(),
+					nickname,
+					stage,
+					owned,
+					owned,
+					acquiredAt
+			);
+		}).toList();
+	}
+
 	// 현재 단계의 다음 단계 required_exp. 마지막(ADULT)이면 null.
 	private Integer nextStageExp(String currentLevelCode) {
 		List<LevelPolicy> policies = levelPolicyRepository.findAllByOrderBySortOrderAsc();

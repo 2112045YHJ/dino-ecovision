@@ -36,4 +36,10 @@ public class DinoController {
 	public ApiResponse<DinoDto.DinoStatusResponse> getMyDino(@AuthenticationPrincipal Long userId) {
 		return ApiResponse.success(dinoService.getMyDino(userId));
 	}
+
+	@GetMapping("/collection")
+	public ApiResponse<java.util.List<DinoDto.CollectionItemResponse>> getMyDinoCollection(
+			@AuthenticationPrincipal Long userId) {
+		return ApiResponse.success(dinoService.getMyDinoCollection(userId));
+	}
 }

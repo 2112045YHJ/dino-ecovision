@@ -65,7 +65,7 @@ export const EmbedChart: React.FC<EmbedChartProps> = ({ snapshotId }) => {
       <div className="mb-6 flex items-end justify-between border-b border-gray-100 pb-4">
         <div>
           <h4 className="text-sm font-bold text-gray-800">{snapshot.title || "에너지 사용량 비교 분석"}</h4>
-          <p className="text-xs text-gray-500 mt-1">종류: {snapshot.chartType} • 생성시간: {new Date(snapshot.createdAt).toLocaleDateString()}</p>
+          <p className="text-xs text-gray-500 mt-1">종류: {snapshot.chartType} • 생성시간: {snapshot.createdAt ? new Date(snapshot.createdAt).toLocaleDateString() : ""}</p>
         </div>
         <span className="rounded-full bg-[#E8F2EC] px-3 py-1 text-[10px] font-bold text-[#5F8C74] uppercase tracking-wider border border-[#5F8C74]/10">
           Chart Snapshot

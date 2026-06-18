@@ -271,7 +271,7 @@ public class DataCollectionService {
         
         for (int m = 1; m <= 12; m++) {
             String month = m < 10 ? "0" + m : String.valueOf(m);
-            String yearMonth = year + "-" + month;
+            String yearMonth = year + month;
             
             // ELECTRICITY 계절 가중치 및 난수화
             double powerFactor;

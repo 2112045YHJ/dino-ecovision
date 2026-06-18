@@ -7,4 +7,6 @@ import com.ecovision.app.domain.dino.entity.UserDinoCollection;
 public interface UserDinoCollectionRepository extends JpaRepository<UserDinoCollection, Long> {
 
 	boolean existsByUserIdAndDinoTemplateId(Long userId, Long dinoTemplateId);
+
+	java.util.List<UserDinoCollection> findAllByUserId(Long userId);
 }
