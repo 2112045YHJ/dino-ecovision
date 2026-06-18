@@ -7,6 +7,10 @@ export type GuildRankingItem = {
   memberCount: number;
   totalPoint: number;
   reducedCarbonKg: number;
+<<<<<<< HEAD
+  mainMission: string;
+=======
+>>>>>>> feature/community-fe-setup
 };
 
 export const myGuildMock = {
@@ -16,6 +20,10 @@ export const myGuildMock = {
   totalPoint: 8420,
   reducedCarbonKg: 126.5,
   myContributionPoint: 320,
+<<<<<<< HEAD
+  myRankInGuild: 7,
+=======
+>>>>>>> feature/community-fe-setup
 };
 
 export const guildRankingMock: GuildRankingItem[] = [
@@ -26,6 +34,10 @@ export const guildRankingMock: GuildRankingItem[] = [
     memberCount: 24,
     totalPoint: 8420,
     reducedCarbonKg: 126.5,
+<<<<<<< HEAD
+    mainMission: "대기전력 차단",
+=======
+>>>>>>> feature/community-fe-setup
   },
   {
     rank: 2,
@@ -34,6 +46,10 @@ export const guildRankingMock: GuildRankingItem[] = [
     memberCount: 19,
     totalPoint: 7350,
     reducedCarbonKg: 103.7,
+<<<<<<< HEAD
+    mainMission: "조명 끄기",
+=======
+>>>>>>> feature/community-fe-setup
   },
   {
     rank: 3,
@@ -42,5 +58,9 @@ export const guildRankingMock: GuildRankingItem[] = [
     memberCount: 21,
     totalPoint: 6910,
     reducedCarbonKg: 95.2,
+<<<<<<< HEAD
+    mainMission: "샤워 시간 줄이기",
+=======
+>>>>>>> feature/community-fe-setup
   },
 ];

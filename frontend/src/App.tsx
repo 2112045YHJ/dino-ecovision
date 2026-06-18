@@ -9,22 +9,27 @@ import { HomePage } from "./pages/HomePage";
 import { TodayMissionPage } from "./pages/TodayMissionPage";
 import { DinoRoomPage } from "./pages/DinoRoomPage";
 import { DinoCollectionPage } from "./pages/DinoCollectionPage";
+
+// 조원 추가 페이지
 import { DinoGrowthComparePage } from "./pages/DinoGrowthComparePage";
-import { MyPageMainPage } from "./pages/MyPageMainPage";
 import { ProfileEditPage } from "./pages/ProfileEditPage";
-import { MyPageBillInputPage } from "./pages/MyPageBillInputPage";
-import { MyPageTrendChartPage } from "./pages/MyPageTrendChartPage";
 import { LeaderboardPage } from "./pages/LeaderboardPage";
 import { RegionMapLeaderboardPage } from "./pages/RegionMapLeaderboardPage";
 import { GuildManagementPage } from "./pages/GuildManagementPage";
 import { WorldDungeonPage } from "./pages/WorldDungeonPage";
 import { AdminCsvUploadPage } from "./pages/AdminCsvUploadPage";
 import { AdminDungeonPage } from "./pages/AdminDungeonPage";
-import { RegionEnergyDashboardPage } from "./pages/RegionEnergyDashboardPage";
 import { RegionEnergyComparePage } from "./pages/RegionEnergyComparePage";
-
-// 이전 버전(main branch)에 있던 부분. 필요 없을 시 밑의 Route 부분과 함께 지우시면 됩니다!
 import { QuizTestPage } from "./pages/QuizTestPage";
+
+// 커뮤니티 및 고도화 대시보드/마이페이지
+import { MyPageBillInputPage } from "./pages/MyPageBillInputPage";
+import { MyPageTrendChartPage } from "./pages/MyPageTrendChartPage";
+import { CommunityPage } from "./pages/CommunityPage";
+import { CommunityDetailPage } from "./pages/CommunityDetailPage";
+import { CommunityWritePage } from "./pages/CommunityWritePage";
+import { MyPage } from "./pages/MyPage";
+import { Dashboard } from "./pages/Dashboard";
 
 function App() {
   return (
@@ -46,30 +51,45 @@ function App() {
         path="/dino-selection"
         element={<Navigate to="/onboarding/dino" replace />}
       />
+
+      {/* 서비스 핵심 화면 라우트 */}
       <Route path="/home" element={<HomePage />} />
       <Route path="/missions" element={<TodayMissionPage />} />
       <Route path="/dino-room" element={<DinoRoomPage />} />
       <Route path="/dino-collection" element={<DinoCollectionPage />} />
       <Route path="/dino-growth" element={<DinoGrowthComparePage />} />
-      <Route path="/mypage" element={<MyPageMainPage />} />
+      
+      {/* 마이페이지 */}
+      <Route path="/mypage" element={<MyPage />} />
       <Route path="/mypage/edit" element={<ProfileEditPage />} />
-      <Route path="/mypage/bill" element={<MyPageBillInputPage />} />
+      <Route path="/mypage/bills" element={<MyPageBillInputPage />} />
       <Route path="/mypage/trend" element={<MyPageTrendChartPage />} />
+
+      {/* 리더보드, 길드, 던전 */}
       <Route path="/leaderboard" element={<LeaderboardPage />} />
       <Route path="/region-ranking" element={<RegionMapLeaderboardPage />} />
       <Route path="/guild" element={<GuildManagementPage />} />
       <Route path="/world-dungeon" element={<WorldDungeonPage />} />
-      <Route path="/dashboard" element={<RegionEnergyDashboardPage />} />
+
+      {/* 대시보드 */}
+      <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/dashboard/compare" element={<RegionEnergyComparePage />} />
+
+      {/* 커뮤니티 */}
+      <Route path="/community" element={<CommunityPage />} />
+      <Route path="/community/:id" element={<CommunityDetailPage />} />
+      <Route path="/community/write" element={<CommunityWritePage />} />
+      <Route path="/community/edit/:id" element={<CommunityWritePage />} />
+
+      {/* 관리자 페이지 */}
       <Route path="/admin/csv-upload" element={<AdminCsvUploadPage />} />
       <Route path="/admin/dungeon" element={<AdminDungeonPage />} />
-      <Route path="*" element={<Navigate to="/login" replace />} />
-        
-        
-      // 이전 버전(main branch)에 있던 부분. 필요 없을 시 위의 import 부분과 함께 지우시면 됩니다!
+
       {/* 퀴즈 테스트 */}
       <Route path="/quiz" element={<QuizTestPage />} />
-      
+
+      {/* 없는 주소로 들어오면 로그인으로 보냅니다. */}
+      <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
   );
 }

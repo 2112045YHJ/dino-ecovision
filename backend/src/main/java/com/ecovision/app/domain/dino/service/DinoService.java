@@ -122,7 +122,6 @@ public class DinoService {
 		return new DinoCollectionDto.CollectionResponse(
 				unlockedTemplateIds.size(), templates.size(), items);
 	}
-	
 	// 현재 단계의 다음 단계 required_exp. 마지막(ADULT)이면 null.
 	private Integer nextStageExp(String currentLevelCode) {
 		List<LevelPolicy> policies = levelPolicyRepository.findAllByOrderBySortOrderAsc();

@@ -37,7 +37,6 @@ public class DinoController {
 	public ApiResponse<DinoDto.DinoStatusResponse> getMyDino(@AuthenticationPrincipal Long userId) {
 		return ApiResponse.success(dinoService.getMyDino(userId));
 	}
-	
 	// 공룡 도감 조회 (SB-13 / FRDIN06): 보유·미보유 3종을 해금 상태와 함께 반환
 	@GetMapping("/collection")
 	public ApiResponse<DinoCollectionDto.CollectionResponse> getCollection(

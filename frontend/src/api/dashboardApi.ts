@@ -1,5 +1,62 @@
 // src/api/dashboardApi.ts
-// 명세서 v0.8 - 10. dashboard 도메인
+
+import { apiRequest } from "./apiClient";
+
+export interface EnergyUsageSumResponse {
+  usageYearMonth: string;
+  energyType: "ELECTRICITY" | "GAS";
+  sumUsageAmount: number;
+  sumCarbonEmissionKg: number;
+}
+
+<<<<<<< HEAD
+export interface ChartSnapshotResponse {
+=======
+export interface DashboardChartSnapshotResponse {
+>>>>>>> feature/community-fe-setup
+  id: string;
+  title: string;
+  chartType: string;
+  chartMetadata: string; // JSON String
+  createdAt: string;
+}
+
+// 1. 대시보드 월별 전력/탄소 통계 데이터 조회
+export async function fetchEnergySummary(year: string, regionCode: string): Promise<EnergyUsageSumResponse[]> {
+  const token = localStorage.getItem("accessToken");
+  return await apiRequest<EnergyUsageSumResponse[]>(
+    `/api/data/summary?year=${year}&regionCode=${encodeURIComponent(regionCode)}`,
+    {
+      method: "GET",
+      token,
+    }
+  );
+}
+
+// 2. 대시보드 차트 스냅샷 생성 API
+export async function createDashboardSnapshot(request: {
+  title: string;
+  chartType: string;
+  chartMetadata: string;
+<<<<<<< HEAD
+}): Promise<ChartSnapshotResponse> {
+  const token = localStorage.getItem("accessToken");
+  return await apiRequest<ChartSnapshotResponse>("/api/charts/snapshot", {
+=======
+}): Promise<DashboardChartSnapshotResponse> {
+  const token = localStorage.getItem("accessToken");
+  return await apiRequest<DashboardChartSnapshotResponse>("/api/charts/snapshot", {
+>>>>>>> feature/community-fe-setup
+    method: "POST",
+    body: request,
+    token,
+  });
+}
+<<<<<<< HEAD
+=======
+
+// -------------------------------------------------------------
+// 조원 추가 API (명세서 v0.8 - 10. dashboard 도메인)
 
 const API_BASE_URL = "http://localhost:8080";
 
@@ -38,7 +95,7 @@ export type EnergyCompareResponse = {
   insight: string | null;
 };
 
-export type ChartSnapshotResponse = {
+export type CompareChartSnapshotResponse = {
   snapshotUuid: string;
   embedUrl: string;
 };
@@ -131,7 +188,7 @@ export async function createChartSnapshot(request: {
   year: number;
   month?: number;
   type: "ELECTRICITY" | "GAS";
-}): Promise<ChartSnapshotResponse> {
+}): Promise<CompareChartSnapshotResponse> {
   const response = await fetch(`${API_BASE_URL}/api/charts/snapshot`, {
     method: "POST",
     credentials: "include",
@@ -139,7 +196,7 @@ export async function createChartSnapshot(request: {
     body: JSON.stringify(request),
   });
 
-  return readApiResponse<ChartSnapshotResponse>(
+  return readApiResponse<CompareChartSnapshotResponse>(
     response,
     "차트 스냅샷 생성에 실패했습니다.",
   );
@@ -160,3 +217,13 @@ export async function getChartSnapshot(
     "차트 스냅샷 조회에 실패했습니다.",
   );
 }
+
+// 10.5 사용자의 저장된 차트 스냅샷 목록 조회 API
+export async function fetchMyChartSnapshots(): Promise<DashboardChartSnapshotResponse[]> {
+  const token = localStorage.getItem("accessToken");
+  return await apiRequest<DashboardChartSnapshotResponse[]>("/api/charts/snapshot", {
+    method: "GET",
+    token,
+  });
+}
+>>>>>>> feature/community-fe-setup

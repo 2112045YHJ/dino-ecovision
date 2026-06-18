@@ -44,7 +44,9 @@ public class SecurityConfig {
 			.cors(Customizer.withDefaults())
 			.sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 			.authorizeHttpRequests(auth -> auth
-					.requestMatchers("/api/auth/**").permitAll()
+					.requestMatchers("/api/auth/**", "/api/dungeons/active", "/api/regions", "/swagger-ui/**", "/v3/api-docs/**", "/uploads/**").permitAll()
+					.requestMatchers(org.springframework.http.HttpMethod.GET, "/api/posts/**").permitAll()
+					.requestMatchers(org.springframework.http.HttpMethod.GET, "/api/charts/snapshot/**").permitAll()
 					.requestMatchers("/api/admin/**").hasRole("ADMIN")
 					.anyRequest().authenticated())
 			.exceptionHandling(e -> e

@@ -104,9 +104,22 @@ INSERT INTO `ranking_seasons` (`id`, `season_name`, `start_date`, `end_date`, `i
 INSERT INTO `users` (`id`, `email`, `password`, `nickname`, `avatar_url`, `region_id`, `role`, `status`, `total_points`, `ranking_point`, `today_points_accumulated`, `last_point_accumulated_date`, `saved_carbon_kg`, `last_region_changed_at`, `last_nickname_changed_at`, `created_at`, `updated_at`, `deleted_at`) VALUES (1, 'admin@example.com', '$2a$10$4OzfDb97/VOE2kzOCqT2IONV5an9L9rvmwKNULsaaUPttomrH2mZq', 'admin', NULL, 1, 'ADMIN', 'ACTIVE', 0, 0, 0, '2026-06-12', 0.0, '2026-06-12 11:54:52', '2026-06-12 11:54:52', '2026-06-12 01:57:31', '2026-06-12 03:33:52', NULL);
 
 -- 11. dino 관리자 공룡 추가
-INSERT INTO `user_dinos` (`id`, `user_id`, `dino_template_id`, `nickname`, `stage`, `exp`, `affinity`, `evolved_at`, `created_at`, `updated_at`) VALUES (1, 1, 1, 'adminDino', 'EGG', 0, 0, NULL, '2026-06-12 07:41:11', '2026-06-12 07:41:11');
+INSERT INTO user_dinos (
+    id, user_id, dino_template_id, nickname, stage, 
+    exp, affinity, evolved_at, created_at, updated_at
+) VALUES (
+    1, 1, 1, 'adminDino', 'EGG', 
+    0, 0, NULL, '2026-06-12 07:41:11', '2026-06-12 07:41:11'
+);
 
--- 12. missions - 던전 미션 적재
+-- 12. user_dino_collections 관리자 공룡 도감 해금 추가
+INSERT INTO user_dino_collections (
+    id, user_id, dino_template_id, unlocked_at
+) VALUES (
+    1, 1, 1, '2026-06-12 07:41:11'
+);
+
+-- 13. missions - 던전 미션 적재
 INSERT INTO `missions`
     (`id`, `mission_code`, `mission_name`, `category`, `slot_type`, `mission_type`,
      `description`, `base_reward`, `proof_type`, `proof_guide_text`)
@@ -124,7 +137,7 @@ VALUES
      '전력 피크 경보! 고출력 가전 사용을 피크 시간 이후로 미룹니다.', 50, 'SELF_REPORT',
      '자가 신고 미션입니다. 정직하게 체크해주세요.');
 
--- 13. mission_emission_factors - 던전 미션 감축계수 추가
+-- 14. mission_emission_factors - 던전 미션 감축계수 추가
 INSERT INTO `mission_emission_factors`
     (`mission_id`, `mission_code`, `calculation_type`, `daily_reduction_value`, `reduction_unit`, `apply_status`)
 VALUES
@@ -132,4 +145,3 @@ VALUES
     (102, 'DUNGEON_MAIN_LIGHT_OFF', 'annual_fixed', 0.680, 'kgCO2/일', '적용 가능'),
     (103, 'DUNGEON_STANDBY_CUT',    'annual_fixed', 0.300, 'kgCO2/일', '적용 가능'),
     (104, 'DUNGEON_LAUNDRY_DEFER',  'annual_fixed', 0.450, 'kgCO2/일', '적용 가능');
-

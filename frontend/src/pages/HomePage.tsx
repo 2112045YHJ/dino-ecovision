@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { logout } from "../api/authApi";
+import { Header } from "../components/layout/Header";
 import { getMyDino, type MyDinoResponse } from "../api/dinoApi";
 import { getTodayMissions } from "../api/missionApi";
 import { getCurrentWorld, type WorldCurrentResponse } from "../api/worldApi";
@@ -22,25 +22,6 @@ import {
 
 import type { Mission } from "../types/mission";
 
-/*
-  HomePage에서 하는 일
-
-  1. 내 공룡 정보 조회
-     GET /api/me/dino
-
-  2. 오늘의 미션 목록 조회
-     GET /api/missions/today
-
-  3. 실시간 탄소/전력 상태 조회
-     GET /api/world/current
-
-  4. 활성 던전 조회
-     GET /api/dungeons/active
-
-  5. 퀴즈 모달 열기
-     EcoQuizModal 내부에서 GET /api/quiz/today 호출
-*/
-
 /* =========================
    공룡 안전 처리 함수
    ========================= */
@@ -49,22 +30,10 @@ function getSafeDinoType(dino?: MyDinoResponse | null): DinoType {
   const templateCode = String(dino?.templateCode ?? "").toUpperCase();
   const templateName = String(dino?.templateName ?? "").toUpperCase();
 
-  if (templateCode === "TYRANO") {
-    return "TYRANO";
-  }
-
-  if (templateCode === "SAURO" || templateCode === "BRACHIO") {
-    return "SAURO";
-  }
-
-  if (templateCode === "CERATO" || templateCode === "TRICERA") {
-    return "CERATO";
-  }
-
-  if (templateName.includes("티라노") || templateName.includes("TYRANO")) {
-    return "TYRANO";
-  }
-
+  if (templateCode === "TYRANO") return "TYRANO";
+  if (templateCode === "SAURO" || templateCode === "BRACHIO") return "SAURO";
+  if (templateCode === "CERATO" || templateCode === "TRICERA") return "CERATO";
+  if (templateName.includes("티라노") || templateName.includes("TYRANO")) return "TYRANO";
   if (
     templateName.includes("용각") ||
     templateName.includes("브라키오") ||
@@ -73,7 +42,6 @@ function getSafeDinoType(dino?: MyDinoResponse | null): DinoType {
   ) {
     return "SAURO";
   }
-
   if (
     templateName.includes("각룡") ||
     templateName.includes("트리케라") ||
@@ -82,49 +50,23 @@ function getSafeDinoType(dino?: MyDinoResponse | null): DinoType {
   ) {
     return "CERATO";
   }
-
   return "TYRANO";
 }
 
 function getSafeDinoStage(stage?: string | null): DinoStage {
   const safeStage = String(stage ?? "").toUpperCase();
-
-  if (safeStage === "EGG") {
-    return "EGG";
-  }
-
-  if (safeStage === "HATCHLING") {
-    return "HATCHLING";
-  }
-
-  if (safeStage === "JUVENILE") {
-    return "JUVENILE";
-  }
-
-  if (safeStage === "ADULT") {
-    return "ADULT";
-  }
-
+  if (safeStage === "EGG") return "EGG";
+  if (safeStage === "HATCHLING") return "HATCHLING";
+  if (safeStage === "JUVENILE") return "JUVENILE";
+  if (safeStage === "ADULT") return "ADULT";
   return "EGG";
 }
 
 function getStageLabel(stage: DinoStage) {
-  if (stage === "EGG") {
-    return "알";
-  }
-
-  if (stage === "HATCHLING") {
-    return "유아기";
-  }
-
-  if (stage === "JUVENILE") {
-    return "청소년기";
-  }
-
-  if (stage === "ADULT") {
-    return "성룡";
-  }
-
+  if (stage === "EGG") return "알";
+  if (stage === "HATCHLING") return "유아기";
+  if (stage === "JUVENILE") return "청소년기";
+  if (stage === "ADULT") return "성룡";
   return "알";
 }
 
@@ -159,20 +101,13 @@ function getGradeStatusBg(status: string) {
 
 function formatRemainingTime(seconds: number) {
   if (seconds <= 0) return "곧 종료";
-
   const minutes = Math.floor(seconds / 60);
   const sec = seconds % 60;
-
   if (minutes > 0) {
     return `${minutes}분 ${sec}초`;
   }
-
   return `${sec}초`;
 }
-
-/* =========================
-   HomePage 컴포넌트
-   ========================= */
 
 export function HomePage() {
   const navigate = useNavigate();
@@ -200,144 +135,94 @@ export function HomePage() {
   const [isDungeonLoading, setIsDungeonLoading] = useState(true);
   const [dungeonErrorMessage, setDungeonErrorMessage] = useState("");
 
-  // 홈 화면이 처음 열릴 때 내 공룡 정보를 가져옵니다.
   useEffect(() => {
-    const fetchMyDino = async () => {
+    // 1. 공룡 데이터 가져오기
+    async function fetchDino() {
       try {
         setIsDinoLoading(true);
-        setDinoErrorMessage("");
-
         const data = await getMyDino();
         setMyDino(data);
-      } catch (error) {
-        console.error(error);
-        setDinoErrorMessage("내 공룡 정보를 불러오지 못했습니다.");
+      } catch (err) {
+        console.error(err);
+        setDinoErrorMessage("공룡 정보를 불러오는 데 실패했습니다.");
       } finally {
         setIsDinoLoading(false);
       }
-    };
+    }
 
-    fetchMyDino();
-  }, []);
-
-  // 홈 화면이 처음 열릴 때 오늘의 미션 목록을 가져옵니다.
-  useEffect(() => {
-    const fetchTodayMissions = async () => {
+    // 2. 오늘의 미션 가져오기
+    async function fetchMissions() {
       try {
         setIsMissionLoading(true);
-        setMissionErrorMessage("");
-
         const data = await getTodayMissions();
         setMissions(data);
-      } catch (error) {
-        console.error(error);
-        setMissionErrorMessage("오늘의 미션 정보를 불러오지 못했습니다.");
+      } catch (err) {
+        console.error(err);
+        setMissionErrorMessage("오늘의 미션 정보를 불러오는 데 실패했습니다.");
       } finally {
         setIsMissionLoading(false);
       }
-    };
+    }
 
-    fetchTodayMissions();
-  }, []);
-
-  /*
-    실시간 탄소/전력 상태를 가져옵니다.
-    명세서에 따라 5초마다 폴링합니다.
-  */
-  useEffect(() => {
-    const fetchWorld = async () => {
+    // 3. 월드 탄소 상태 가져오기
+    async function fetchWorld() {
       try {
+        setIsWorldLoading(true);
         const data = await getCurrentWorld();
         setWorld(data);
-        setWorldErrorMessage("");
-      } catch (error) {
-        console.error(error);
-        setWorldErrorMessage("탄소 상태 정보를 불러오지 못했습니다.");
+      } catch (err) {
+        console.error(err);
+        setWorldErrorMessage("실시간 탄소/전력 상태 정보를 불러오는 데 실패했습니다.");
       } finally {
         setIsWorldLoading(false);
       }
-    };
+    }
 
-    // 첫 로드
+    fetchDino();
+    fetchMissions();
     fetchWorld();
-
-    // 5초마다 새로 가져오기
-    const intervalId = setInterval(fetchWorld, 5000);
-
-    // 컴포넌트가 사라질 때 폴링 정리
-    return () => clearInterval(intervalId);
   }, []);
 
-  /*
-    활성 던전 정보를 가져옵니다.
-    던전이 발령되면 알 수 있도록 30초마다 폴링합니다.
-  */
   useEffect(() => {
-    const fetchDungeon = async () => {
+    // 4. 던전 정보 30초마다 갱신
+    async function fetchDungeon() {
       try {
         const data = await getActiveDungeon();
         setDungeon(data);
-        setDungeonErrorMessage("");
       } catch (error) {
         console.error(error);
         setDungeonErrorMessage("던전 정보를 불러오지 못했습니다.");
       } finally {
         setIsDungeonLoading(false);
       }
-    };
+    }
 
     fetchDungeon();
-
     const intervalId = setInterval(fetchDungeon, 30000);
-
     return () => clearInterval(intervalId);
   }, []);
 
-  // 로그아웃 버튼을 눌렀을 때 실행됩니다.
-  const handleLogout = async () => {
-    try {
-      await logout();
-    } catch (error) {
-      console.error(error);
-    } finally {
-      localStorage.removeItem("accessToken");
-      localStorage.removeItem("role");
-      localStorage.removeItem("myDino");
-
-      navigate("/login");
-    }
-  };
-
   // 미션 개수 계산
   const totalMissionCount = missions.length;
-
-  const completedMissionCount = missions.filter(
-    (mission) => mission.completed,
-  ).length;
-
+  const completedMissionCount = missions.filter((mission) => mission.completed).length;
   const remainingMissionCount = totalMissionCount - completedMissionCount;
-
-  const missionProgressText = `${completedMissionCount} / ${totalMissionCount}`;
 
   // 공룡 이미지 계산
   const safeDinoType = getSafeDinoType(myDino);
   const safeDinoStage = getSafeDinoStage(myDino?.stage);
   const safeDinoStageLabel = getStageLabel(safeDinoStage);
-
-  const myDinoImage = myDino
-    ? dinoImagesByType[safeDinoType][safeDinoStage]
-    : null;
+  const myDinoImage = myDino ? dinoImagesByType[safeDinoType][safeDinoStage] : null;
 
   return (
-    <main className="min-h-screen bg-[#FAF9F5] p-6 text-[#2C3531]">
-      <section className="mx-auto max-w-5xl">
+    <div className="min-h-screen bg-[#FAF9F5] text-[#2C3531]">
+      <Header />
+      
+      <main className="mx-auto max-w-5xl p-6">
         {/* 상단 제목 영역 */}
         <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <p className="text-sm font-bold text-[#5F8C74]">ECOVISION</p>
-
             <h1 className="mt-2 text-3xl font-bold">오늘의 탄소 절감 현황</h1>
-
             <p className="mt-2 text-sm text-gray-600">
               미션과 퀴즈를 완료하고 나의 디노를 성장시켜보세요.
             </p>
@@ -347,57 +232,45 @@ export function HomePage() {
             <button
               type="button"
               onClick={() => navigate("/leaderboard")}
-              className="rounded-2xl border border-[#5F8C74] px-3 py-2 text-xs font-bold text-[#5F8C74] transition hover:bg-[#E8F2EC]"
+              className="rounded-2xl border border-[#5F8C74] px-4 py-2.5 text-xs font-bold text-[#5F8C74] bg-white transition hover:bg-[#E8F2EC] cursor-pointer shadow-sm"
             >
-              랭킹
+              📊 랭킹 보드
             </button>
-
             <button
               type="button"
               onClick={() => navigate("/region-ranking")}
-              className="rounded-2xl border border-[#5F8C74] px-3 py-2 text-xs font-bold text-[#5F8C74] transition hover:bg-[#E8F2EC]"
+              className="rounded-2xl border border-[#5F8C74] px-4 py-2.5 text-xs font-bold text-[#5F8C74] bg-white transition hover:bg-[#E8F2EC] cursor-pointer shadow-sm"
             >
-              지역
+              🗺️ 지역 랭킹
             </button>
-
             <button
               type="button"
               onClick={() => navigate("/guild")}
-              className="rounded-2xl border border-[#5F8C74] px-3 py-2 text-xs font-bold text-[#5F8C74] transition hover:bg-[#E8F2EC]"
+              className="rounded-2xl border border-[#5F8C74] px-4 py-2.5 text-xs font-bold text-[#5F8C74] bg-white transition hover:bg-[#E8F2EC] cursor-pointer shadow-sm"
             >
-              길드
+              🛡️ 길드 관리
             </button>
-
             <button
               type="button"
               onClick={() => navigate("/world-dungeon")}
-              className="rounded-2xl border border-[#5F8C74] px-3 py-2 text-xs font-bold text-[#5F8C74] transition hover:bg-[#E8F2EC]"
+              className="rounded-2xl border border-[#5F8C74] px-4 py-2.5 text-xs font-bold text-[#5F8C74] bg-white transition hover:bg-[#E8F2EC] cursor-pointer shadow-sm"
             >
-              던전
+              🚨 비상 던전
             </button>
-
             <button
               type="button"
-              onClick={() => navigate("/mypage")}
-              className="rounded-2xl border border-[#5F8C74] px-3 py-2 text-xs font-bold text-[#5F8C74] transition hover:bg-[#E8F2EC]"
+              onClick={() => navigate("/community")}
+              className="rounded-2xl border border-[#5F8C74] px-4 py-2.5 text-xs font-bold text-[#5F8C74] bg-white transition hover:bg-[#E8F2EC] cursor-pointer shadow-sm"
             >
-              마이
-            </button>
-
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="rounded-2xl border border-[#E07A5F] px-3 py-2 text-xs font-bold text-[#E07A5F] transition hover:bg-[#FFF0EA]"
-            >
-              로그아웃
+              🌿 커뮤니티
             </button>
           </div>
         </header>
 
         {/* 카드 그리드 영역 */}
-        <section className="grid gap-4 md:grid-cols-2">
+        <section className="grid gap-6 md:grid-cols-2">
           {/* 내 공룡 요약 카드 */}
-          <article className="rounded-3xl bg-white p-5 shadow-sm">
+          <article className="rounded-3xl bg-white p-6 shadow-sm border border-[#E8F2EC]">
             <p className="text-sm font-bold text-[#5F8C74]">MY DINO</p>
 
             {isDinoLoading && (
@@ -409,15 +282,12 @@ export function HomePage() {
             {!isDinoLoading && dinoErrorMessage && (
               <div className="mt-4 rounded-2xl bg-[#FFF0EA] p-4 text-sm font-bold text-[#E07A5F]">
                 {dinoErrorMessage}
-
                 <p className="mt-1 text-xs font-normal text-gray-500">
-                  공룡 선택을 아직 완료하지 않았다면 공룡 선택 화면으로
-                  이동해주세요.
+                  공룡 선택을 아직 완료하지 않았다면 공룡 선택 화면으로 이동해주세요.
                 </p>
-
                 <button
                   type="button"
-                  className="mt-4 w-full rounded-2xl bg-[#5F8C74] py-3 font-bold text-white transition hover:bg-[#4d735f]"
+                  className="mt-4 w-full rounded-2xl bg-[#5F8C74] py-3 font-bold text-white transition hover:bg-[#4d735f] cursor-pointer"
                   onClick={() => navigate("/onboarding/dino")}
                 >
                   공룡 선택하러 가기
@@ -438,40 +308,26 @@ export function HomePage() {
 
                   <div className="min-w-0">
                     <h2 className="text-xl font-bold">{myDino.nickname}</h2>
-
+                    <p className="mt-1 text-sm text-gray-600">종류: {myDino.templateName}</p>
+                    <p className="mt-1 text-sm text-gray-600">성장 단계: {safeDinoStageLabel}</p>
                     <p className="mt-1 text-sm text-gray-600">
-                      종류: {myDino.templateName}
+                      EXP {myDino.exp} / {myDino.nextStageExp === null ? "MAX" : myDino.nextStageExp}
                     </p>
-
-                    <p className="mt-1 text-sm text-gray-600">
-                      성장 단계: {safeDinoStageLabel}
-                    </p>
-
-                    <p className="mt-1 text-sm text-gray-600">
-                      EXP {myDino.exp} /{" "}
-                      {myDino.nextStageExp === null
-                        ? "MAX"
-                        : myDino.nextStageExp}
-                    </p>
-
-                    <p className="mt-1 text-sm text-gray-600">
-                      친밀도 {myDino.affinity}%
-                    </p>
+                    <p className="mt-1 text-sm text-gray-600">친밀도 {myDino.affinity}%</p>
                   </div>
                 </div>
 
                 <div className="mt-4 grid gap-2 sm:grid-cols-2">
                   <button
                     type="button"
-                    className="rounded-2xl bg-[#5F8C74] py-3 font-bold text-white transition hover:bg-[#4d735f]"
+                    className="rounded-2xl bg-[#5F8C74] py-3 font-bold text-white transition hover:bg-[#4d735f] cursor-pointer"
                     onClick={() => navigate("/dino-room")}
                   >
                     디노룸 가기
                   </button>
-
                   <button
                     type="button"
-                    className="rounded-2xl border border-[#5F8C74] bg-white py-3 font-bold text-[#5F8C74] transition hover:bg-[#E8F2EC]"
+                    className="rounded-2xl border border-[#5F8C74] bg-white py-3 font-bold text-[#5F8C74] transition hover:bg-[#E8F2EC] cursor-pointer"
                     onClick={() => navigate("/dino-collection")}
                   >
                     디노도감 보기
@@ -482,7 +338,7 @@ export function HomePage() {
           </article>
 
           {/* 오늘의 미션 요약 카드 */}
-          <article className="rounded-3xl bg-white p-5 shadow-sm">
+          <article className="rounded-3xl bg-white p-6 shadow-sm border border-[#E8F2EC]">
             <p className="text-sm font-bold text-[#5F8C74]">TODAY MISSION</p>
 
             {isMissionLoading && (
@@ -499,26 +355,15 @@ export function HomePage() {
 
             {!isMissionLoading && !missionErrorMessage && (
               <>
-                <h2 className="mt-2 text-2xl font-bold">
-                  오늘의 미션 {missionProgressText}
-                </h2>
-
-                <p className="mt-2 text-sm text-gray-600">
-                  오늘 배정된 탄소 절감 미션을 완료하고 포인트와 EXP를
-                  얻어보세요.
-                </p>
-
-                <div className="mt-4 rounded-2xl bg-[#FAF9F5] p-4 text-sm">
+                <div className="mt-4 rounded-2xl bg-[#FAF9F5] p-4 text-sm text-gray-700">
                   <div className="flex justify-between">
                     <span>전체 미션</span>
                     <span>{totalMissionCount}개</span>
                   </div>
-
                   <div className="mt-1 flex justify-between">
                     <span>완료한 미션</span>
                     <span>{completedMissionCount}개</span>
                   </div>
-
                   <div className="mt-1 flex justify-between font-bold text-[#E07A5F]">
                     <span>남은 미션</span>
                     <span>{remainingMissionCount}개</span>
@@ -527,7 +372,7 @@ export function HomePage() {
 
                 <button
                   type="button"
-                  className="mt-4 w-full rounded-2xl bg-[#5F8C74] py-3 font-bold text-white transition hover:bg-[#4d735f]"
+                  className="mt-4 w-full rounded-2xl bg-[#5F8C74] py-3 font-bold text-white transition hover:bg-[#4d735f] cursor-pointer"
                   onClick={() => navigate("/missions")}
                 >
                   미션 보러가기
@@ -536,8 +381,8 @@ export function HomePage() {
             )}
           </article>
 
-          {/* 탄소 / 전력 상태 카드 (실제 데이터!) */}
-          <article className="rounded-3xl bg-white p-5 shadow-sm">
+          {/* 탄소 / 전력 상태 카드 */}
+          <article className="rounded-3xl bg-white p-6 shadow-sm border border-[#E8F2EC]">
             <p className="text-sm font-bold text-[#5F8C74]">CARBON STATUS</p>
 
             {isWorldLoading && (
@@ -554,52 +399,37 @@ export function HomePage() {
 
             {!isWorldLoading && !worldErrorMessage && world && (
               <>
-                <h2
-                  className={`mt-2 text-2xl font-bold ${getGradeStatusColor(world.gradeStatus)}`}
-                >
+                <h2 className={`mt-2 text-2xl font-bold ${getGradeStatusColor(world.gradeStatus)}`}>
                   {getGradeStatusLabel(world.gradeStatus)}
                 </h2>
-
                 <p className="mt-2 text-sm text-gray-600">
                   실시간 전력 데이터를 기반으로 한 우리 동네 환경 상태입니다.
                 </p>
 
-                <div
-                  className={`mt-4 rounded-2xl p-4 text-sm ${getGradeStatusBg(world.gradeStatus)}`}
-                >
+                <div className={`mt-4 rounded-2xl p-4 text-sm ${getGradeStatusBg(world.gradeStatus)}`}>
                   <div className="flex justify-between">
                     <span className="text-gray-600">탄소집약도</span>
-                    <span className="font-bold">
-                      {world.carbonIntensity} gCO₂/kWh
-                    </span>
+                    <span className="font-bold">{world.carbonIntensity} gCO₂/kWh</span>
                   </div>
-
                   <div className="mt-2 flex justify-between">
                     <span className="text-gray-600">보상 가중치</span>
-                    <span className="font-bold text-[#E07A5F]">
-                      ×{world.carbonWeight}
-                    </span>
+                    <span className="font-bold text-[#E07A5F]">×{world.carbonWeight}</span>
                   </div>
-
                   <div className="mt-2 flex justify-between">
                     <span className="text-gray-600">전력 예비율</span>
-                    <span className="font-bold">
-                      {world.reserveRate.toFixed(1)}%
-                    </span>
+                    <span className="font-bold">{world.reserveRate.toFixed(1)}%</span>
                   </div>
                 </div>
 
                 {world.isFallback && (
-                  <p className="mt-2 text-xs text-gray-500">
-                    ⚠️ 직전 데이터를 표시하고 있어요.
-                  </p>
+                  <p className="mt-2 text-xs text-gray-500">⚠️ 직전 데이터를 표시하고 있어요.</p>
                 )}
               </>
             )}
           </article>
 
-          {/* 던전 카드 (실제 데이터!) */}
-          <article className="rounded-3xl bg-white p-5 shadow-sm">
+          {/* 던전 카드 */}
+          <article className="rounded-3xl bg-white p-6 shadow-sm border border-[#E8F2EC]">
             <p className="text-sm font-bold text-[#5F8C74]">DUNGEON</p>
 
             {isDungeonLoading && (
@@ -617,10 +447,7 @@ export function HomePage() {
             {/* 활성 던전이 있을 때 */}
             {!isDungeonLoading && !dungeonErrorMessage && dungeon && (
               <>
-                <h2 className="mt-2 text-2xl font-bold text-[#E07A5F]">
-                  🔥 던전 발령 중!
-                </h2>
-
+                <h2 className="mt-2 text-2xl font-bold text-[#E07A5F]">🔥 던전 발령 중!</h2>
                 <p className="mt-2 text-sm text-gray-600">
                   전력 피크 상황입니다. 던전 미션을 완료하면 보상이 2배예요!
                 </p>
@@ -632,25 +459,19 @@ export function HomePage() {
                       {formatRemainingTime(dungeon.remainingSeconds)}
                     </span>
                   </div>
-
                   <div className="mt-2 flex justify-between">
                     <span className="text-gray-600">보상 배율</span>
-                    <span className="font-bold text-[#E07A5F]">
-                      ×{dungeon.dungeonMultiplier}
-                    </span>
+                    <span className="font-bold text-[#E07A5F]">×{dungeon.dungeonMultiplier}</span>
                   </div>
-
                   <div className="mt-2 flex justify-between">
                     <span className="text-gray-600">던전 미션</span>
-                    <span className="font-bold">
-                      {dungeon.missions.length}개
-                    </span>
+                    <span className="font-bold">{(dungeon.missions || []).length}개</span>
                   </div>
                 </div>
 
                 <button
                   type="button"
-                  className="mt-4 w-full rounded-2xl bg-[#E07A5F] py-3 font-bold text-white transition hover:bg-[#c8654d]"
+                  className="mt-4 w-full rounded-2xl bg-[#E07A5F] py-3 font-bold text-white transition hover:bg-[#c8654d] cursor-pointer"
                   onClick={() => navigate("/world-dungeon")}
                 >
                   던전 입장하기
@@ -661,37 +482,27 @@ export function HomePage() {
             {/* 활성 던전이 없을 때 */}
             {!isDungeonLoading && !dungeonErrorMessage && !dungeon && (
               <>
-                <h2 className="mt-2 text-2xl font-bold text-[#5F8C74]">
-                  😌 평온한 상태
-                </h2>
-
+                <h2 className="mt-2 text-2xl font-bold text-[#5F8C74]">😌 평온한 상태</h2>
                 <p className="mt-2 text-sm text-gray-600">
                   현재 전력 상황이 안정적이에요. 평소처럼 미션을 진행해주세요.
                 </p>
-
                 <div className="mt-4 rounded-2xl bg-[#E8F2EC] p-4 text-sm text-gray-600">
-                  전력 예비율이 10% 미만으로 떨어지면 던전이 자동으로
-                  발령됩니다. 던전 발령 시 보상이 2배가 돼요!
+                  전력 예비율이 10% 미만으로 떨어지면 던전이 자동으로 발령됩니다. 던전 발령 시 보상이 2배가 돼요!
                 </div>
               </>
             )}
           </article>
 
           {/* 에코 퀴즈 카드 */}
-          <article className="rounded-3xl bg-white p-5 shadow-sm md:col-span-2">
+          <article className="rounded-3xl bg-white p-6 shadow-sm border border-[#E8F2EC] md:col-span-2">
             <p className="text-sm font-bold text-[#5F8C74]">ECO QUIZ</p>
-
             <h2 className="mt-2 text-2xl font-bold">오늘의 에코 퀴즈</h2>
-
             <p className="mt-2 text-sm text-gray-600">
               하루 한 번 퀴즈를 풀고 보상을 받을 수 있어요.
             </p>
 
             <div className="mt-4 rounded-2xl bg-[#FAF9F5] p-4 text-sm">
-              <p className="font-bold text-[#5F8C74]">
-                퀴즈 API가 연결되어 있습니다.
-              </p>
-
+              <p className="font-bold text-[#5F8C74]">퀴즈 API가 연결되어 있습니다.</p>
               <p className="mt-1 text-xs text-gray-500">
                 버튼을 누르면 오늘의 퀴즈를 불러오고 정답을 제출할 수 있어요.
               </p>
@@ -699,17 +510,17 @@ export function HomePage() {
 
             <button
               type="button"
-              className="mt-4 w-full rounded-2xl bg-[#E07A5F] py-3 font-bold text-white transition hover:bg-[#c8654d]"
+              className="mt-4 w-full rounded-2xl bg-[#E07A5F] py-3 font-bold text-white transition hover:bg-[#c8654d] cursor-pointer"
               onClick={() => setIsQuizOpen(true)}
             >
               퀴즈 풀기
             </button>
           </article>
         </section>
-      </section>
+      </main>
 
       {/* 퀴즈 모달 */}
       {isQuizOpen && <EcoQuizModal onClose={() => setIsQuizOpen(false)} />}
-    </main>
+    </div>
   );
 }
