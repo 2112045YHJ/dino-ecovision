@@ -185,45 +185,32 @@ export function CommunityDetailPage() {
     }
   };
 
-  // 단순 마크다운 및 HTML 서식 안전 파싱
-  const parseMarkdownText = (text: string): React.ReactNode[] => {
-    const REGEX = /(\*\*.*?\*\*|\*.*?\*|~~.*?~~|<u>.*?<\/u>)/g;
-    const parts = text.split(REGEX);
-
-    return parts.map((part, index) => {
-      if (part.startsWith("**") && part.endsWith("**")) {
-        return <strong key={index} className="font-bold">{part.slice(2, -2)}</strong>;
-      }
-      if (part.startsWith("*") && part.endsWith("*")) {
-        return <em key={index} className="italic">{part.slice(1, -1)}</em>;
-      }
-      if (part.startsWith("~~") && part.endsWith("~~")) {
-        return <del key={index} className="line-through">{part.slice(2, -2)}</del>;
-      }
-      if (part.startsWith("<u>") && part.endsWith("</u>")) {
-        return <u key={index} className="underline">{part.slice(3, -4)}</u>;
-      }
-      return part;
-    });
+  // XSS 방어용 클라이언트 사이드 HTML 새니타이즈
+  const sanitizeHtml = (html: string): string => {
+    if (!html) return "";
+    return html
+      .replace(/<script[^>]*>([\s\S]*?)<\/script>/gi, "") // 스크립트 태그 제거
+      .replace(/on\w+\s*=\s*(['"][^'"]*['"]|[^\s>]*)/gi, ""); // 인라인 이벤트 핸들러 제거
   };
 
-  // 본문 안에서 차트 스냅샷 감지 및 렌더링
+  // 본문 안에서 차트 스냅샷 감지 및 렌더링 (HTML 지원)
   const renderContent = (content: string) => {
     const EMBED_REGEX = /\/embed\/([a-zA-Z0-9-]+)/i;
     const match = content.match(EMBED_REGEX);
+    const sanitized = sanitizeHtml(content);
 
     if (match) {
-      const parts = content.split(EMBED_REGEX);
+      const parts = sanitized.split(EMBED_REGEX);
       return (
         <>
-          <div className="whitespace-pre-wrap leading-relaxed">{parseMarkdownText(parts[0])}</div>
+          <div dangerouslySetInnerHTML={{ __html: parts[0] }} className="rich-content leading-relaxed" />
           <EmbedChart snapshotId={match[1]} />
-          {parts[2] && <div className="whitespace-pre-wrap leading-relaxed mt-4">{parseMarkdownText(parts[2])}</div>}
+          {parts[2] && <div dangerouslySetInnerHTML={{ __html: parts[2] }} className="rich-content leading-relaxed mt-4" />}
         </>
       );
     }
 
-    return <div className="whitespace-pre-wrap leading-relaxed">{parseMarkdownText(content)}</div>;
+    return <div dangerouslySetInnerHTML={{ __html: sanitized }} className="rich-content leading-relaxed" />;
   };
 
   if (isLoading) {

@@ -32,6 +32,7 @@ public class PostController {
     public ResponseEntity<ApiResponse<String>> uploadImage(
             @RequestParam("file") MultipartFile file) {
         String imageUrl = imageUploadService.uploadImage(file);
+        communityService.saveUploadedImageRecord(imageUrl);
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(imageUrl));
     }
 

@@ -130,3 +130,26 @@ export async function fetchChartSnapshot(id: string): Promise<ChartSnapshotRespo
   const token = localStorage.getItem("accessToken");
   return await apiRequest<ChartSnapshotResponse>(`/api/charts/snapshot/${id}`, { token });
 }
+
+export async function uploadPostImage(file: File): Promise<string> {
+  const token = localStorage.getItem("accessToken");
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await fetch("http://localhost:8080/api/posts/images", {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: formData,
+  });
+
+  const result = await response.json();
+
+  if (!response.ok || !result.success) {
+    throw new Error(result.error?.message ?? "이미지 업로드에 실패했습니다.");
+  }
+
+  return result.data;
+}

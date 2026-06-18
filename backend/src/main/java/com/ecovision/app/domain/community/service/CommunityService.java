@@ -25,6 +25,12 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.nodes.Entities;
+import org.jsoup.safety.Safelist;
+import org.jsoup.select.Elements;
 
 @Service
 @RequiredArgsConstructor
@@ -36,6 +42,7 @@ public class CommunityService {
     private final ChartSnapshotRepository chartSnapshotRepository;
     private final UserRepository userRepository;
     private final PointHistoryRepository pointHistoryRepository;
+    private final PostImageRepository postImageRepository;
 
     @Transactional
     public Long createPost(CommunityDto.PostRequest request, Long userId) {
@@ -61,9 +68,11 @@ public class CommunityService {
                     .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "차트 스냅샷을 찾을 수 없습니다."));
         }
 
+        String sanitizedContent = sanitizeHtml(request.content());
+
         Post post = Post.builder()
                 .title(request.title())
-                .content(request.content())
+                .content(sanitizedContent)
                 .category(category)
                 .user(author)
                 .chartSnapshot(snapshot)
@@ -71,6 +80,7 @@ public class CommunityService {
                 .build();
 
         Post saved = postRepository.save(post);
+        mapPostImages(saved, sanitizedContent);
 
         // 게시글 작성 포인트 지급 (+100점)
         rewardPoints(author, 100, "POST_WRITE");
@@ -195,7 +205,9 @@ public class CommunityService {
                     .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "차트 스냅샷을 찾을 수 없습니다."));
         }
 
-        post.update(request.title(), request.content(), category, snapshot, request.dinoSnapshot());
+        String sanitizedContent = sanitizeHtml(request.content());
+        post.update(request.title(), sanitizedContent, category, snapshot, request.dinoSnapshot());
+        mapPostImages(post, sanitizedContent);
     }
 
     @Transactional
@@ -465,5 +477,55 @@ public class CommunityService {
                 snapshot.getChartMetadata(),
                 snapshot.getCreatedAt()
         );
+    }
+
+    @Transactional
+    public void saveUploadedImageRecord(String imageUrl) {
+        PostImage postImage = PostImage.builder()
+                .imageUrl(imageUrl)
+                .status(PostImageStatus.UNMAPPED)
+                .build();
+        postImageRepository.save(postImage);
+    }
+
+    public String sanitizeHtml(String html) {
+        if (html == null) return null;
+        Safelist safelist = Safelist.relaxed()
+                .addTags("span", "u", "s", "del", "div")
+                .addAttributes("img", "style", "class", "src", "alt")
+                .addAttributes("span", "style", "class")
+                .addAttributes("p", "style", "class")
+                .addAttributes("div", "style", "class")
+                .addAttributes("u", "style", "class")
+                .addAttributes("s", "style", "class")
+                .addAttributes("del", "style", "class");
+
+        Document.OutputSettings outputSettings = new Document.OutputSettings()
+                .prettyPrint(false)
+                .escapeMode(Entities.EscapeMode.xhtml);
+
+        return Jsoup.clean(html, "", safelist, outputSettings);
+    }
+
+    private void mapPostImages(Post post, String sanitizedContent) {
+        if (sanitizedContent == null) return;
+
+        // 1. 기존 매핑 초기화
+        List<PostImage> existingImages = postImageRepository.findAllByPostId(post.getId());
+        for (PostImage img : existingImages) {
+            img.unmap();
+        }
+
+        // 2. 본문 내 img src 파싱 및 갱신 매핑
+        Document doc = Jsoup.parseBodyFragment(sanitizedContent);
+        Elements imgs = doc.select("img");
+        for (Element img : imgs) {
+            String src = img.attr("src");
+            if (src != null && !src.trim().isEmpty()) {
+                postImageRepository.findByImageUrl(src).ifPresent(postImage -> {
+                    postImage.mapToPost(post);
+                });
+            }
+        }
     }
 }
