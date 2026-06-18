@@ -15,10 +15,17 @@ export function CommunityWritePage() {
   const [content, setContent] = useState("");
   const [category, setCategory] = useState("GENERAL");
   const [attachDino, setAttachDino] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isInitialLoading, setIsInitialLoading] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
 
   // 에디터 모드 관리 (showSource: 소스코드 보기 활성화)
   const [showSource, setShowSource] = useState(false);
+
+  // B, i, U, S 활성화 상태 피드백
+  const [isBold, setIsBold] = useState(false);
+  const [isItalic, setIsItalic] = useState(false);
+  const [isUnderline, setIsUnderline] = useState(false);
+  const [isStrike, setIsStrike] = useState(false);
 
   // 이미지 컨텍스트 툴바 대상 이미지 엘리먼트
   const [activeImage, setActiveImage] = useState<HTMLImageElement | null>(null);
@@ -38,7 +45,7 @@ export function CommunityWritePage() {
     if (isEditMode && id) {
       const loadPost = async () => {
         try {
-          setIsLoading(true);
+          setIsInitialLoading(true);
           const post = await fetchPostDetails(parseInt(id));
           setTitle(post.title);
           setContent(post.content);
@@ -49,7 +56,7 @@ export function CommunityWritePage() {
           alert("수정할 게시글 정보를 불러오는 데 실패했습니다.");
           navigate("/community");
         } finally {
-          setIsLoading(false);
+          setIsInitialLoading(false);
         }
       };
       loadPost();
@@ -99,6 +106,14 @@ export function CommunityWritePage() {
     return () => clearInterval(timer);
   }, [title, content, category, isEditMode]);
 
+  const checkActiveFormats = () => {
+    if (showSource) return;
+    setIsBold(document.queryCommandState("bold"));
+    setIsItalic(document.queryCommandState("italic"));
+    setIsUnderline(document.queryCommandState("underline"));
+    setIsStrike(document.queryCommandState("strikeThrough"));
+  };
+
   // 4. selection 스팬 스타일 삽입 헬퍼
   const applySpanStyle = (styleName: string, value: string) => {
     if (showSource) return;
@@ -129,6 +144,7 @@ export function CommunityWritePage() {
     if (editorRef.current) {
       setContent(editorRef.current.innerHTML);
     }
+    checkActiveFormats();
   };
 
   // 5. 기본 서식 명령(Bold, Italic 등) 처리
@@ -137,11 +153,12 @@ export function CommunityWritePage() {
     if (editorRef.current) {
       editorRef.current.focus();
     }
-    document.execCommand("styleWithCSS", false, "true");
+    document.execCommand("styleWithCSS", false, "false");
     document.execCommand(command, false, value);
     if (editorRef.current) {
       setContent(editorRef.current.innerHTML);
     }
+    checkActiveFormats();
   };
 
   // 6. 이미지 삽입 처리 (캐럿 기준)
@@ -187,13 +204,13 @@ export function CommunityWritePage() {
     const file = e.target.files?.[0];
     if (!file) return;
     try {
-      setIsLoading(true);
+      setIsUploadingImage(true);
       const url = await uploadPostImage(file);
       insertImageAtCursor(url);
     } catch (err: any) {
       alert(`이미지 업로드 실패: ${err.message}`);
     } finally {
-      setIsLoading(false);
+      setIsUploadingImage(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
@@ -208,13 +225,13 @@ export function CommunityWritePage() {
         if (file) {
           e.preventDefault();
           try {
-            setIsLoading(true);
+            setIsUploadingImage(true);
             const url = await uploadPostImage(file);
             insertImageAtCursor(url);
           } catch (err: any) {
             alert(`이미지 붙여넣기 업로드 실패: ${err.message}`);
           } finally {
-            setIsLoading(false);
+            setIsUploadingImage(false);
           }
         }
       }
@@ -229,13 +246,13 @@ export function CommunityWritePage() {
       for (let i = 0; i < files.length; i++) {
         if (files[i].type.startsWith("image/")) {
           try {
-            setIsLoading(true);
+            setIsUploadingImage(true);
             const url = await uploadPostImage(files[i]);
             insertImageAtCursor(url);
           } catch (err: any) {
             alert(`이미지 드롭 업로드 실패: ${err.message}`);
           } finally {
-            setIsLoading(false);
+            setIsUploadingImage(false);
           }
         }
       }
@@ -375,7 +392,7 @@ export function CommunityWritePage() {
     }
   };
 
-  if (isLoading) {
+  if (isInitialLoading) {
     return (
       <div className="min-h-screen bg-[#FAF9F5] text-[#2C3531]">
         <Header />
@@ -385,6 +402,21 @@ export function CommunityWritePage() {
       </div>
     );
   }
+
+  // B, I, U 상태 기반 활성화 버튼 스타일 피드백 헬퍼
+  const getToolbarBtnClass = (isActive: boolean, hasEffect: boolean) => {
+    const base = "p-1.5 px-2.5 rounded transition-all flex items-center justify-center text-xs cursor-pointer select-none font-bold";
+    if (showSource) {
+      return `${base} text-gray-300 opacity-40 pointer-events-none`;
+    }
+    if (hasEffect) {
+      // 웜 파스텔 블루 톤의 포커스 상태 피드백
+      return `${base} bg-[#E6F0FA] text-[#2B6CB0] border border-[#BEE3F8]`;
+    }
+    return isActive 
+      ? `${base} hover:bg-[#E8F2EC] hover:text-[#5F8C74] text-gray-500` 
+      : `${base} bg-[#E8F2EC] text-[#5F8C74]`;
+  };
 
   // 툴바 비활성 스타일 클래스
   const btnClass = (isActive: boolean = true) => 
@@ -463,41 +495,46 @@ export function CommunityWritePage() {
               <div className="bg-[#FAF9F5] border-b border-gray-300 p-2 flex flex-wrap gap-0.5 items-center select-none relative">
                 <button
                   type="button"
+                  onMouseDown={(e) => e.preventDefault()}
                   onClick={() => handleCommand("bold")}
-                  className={btnClass()}
+                  className={getToolbarBtnClass(true, isBold)}
                   title="굵게"
                 >
-                  B
+                  <span className="font-extrabold text-sm">B</span>
                 </button>
                 <button
                   type="button"
+                  onMouseDown={(e) => e.preventDefault()}
                   onClick={() => handleCommand("italic")}
-                  className={btnClass()}
+                  className={getToolbarBtnClass(true, isItalic)}
                   title="기울임"
                 >
-                  i
+                  <span className="italic font-serif font-extrabold text-sm">i</span>
                 </button>
                 <button
                   type="button"
+                  onMouseDown={(e) => e.preventDefault()}
                   onClick={() => handleCommand("underline")}
-                  className={btnClass()}
+                  className={getToolbarBtnClass(true, isUnderline)}
                   title="밑줄"
                 >
-                  U
+                  <span className="underline text-sm font-bold">U</span>
                 </button>
                 <button
                   type="button"
+                  onMouseDown={(e) => e.preventDefault()}
                   onClick={() => handleCommand("strikeThrough")}
-                  className={btnClass()}
+                  className={getToolbarBtnClass(true, isStrike)}
                   title="취소선"
                 >
-                  S
+                  <span className="line-through text-sm font-bold">S</span>
                 </button>
 
                 {/* Aa 글자 크기 */}
                 <div className="relative">
                   <button
                     type="button"
+                    onMouseDown={(e) => e.preventDefault()}
                     onClick={() => !showSource && setFontSizeOpen(!fontSizeOpen)}
                     className={btnClass()}
                     title="글자 크기"
@@ -510,11 +547,12 @@ export function CommunityWritePage() {
                         <button
                           key={size}
                           type="button"
+                          onMouseDown={(e) => e.preventDefault()}
                           onClick={() => {
                             applySpanStyle("font-size", size);
                             setFontSizeOpen(false);
                           }}
-                          className="px-2 py-1 text-left hover:bg-[#E8F2EC] hover:text-[#5F8C74] rounded cursor-pointer"
+                          className="px-2 py-1 text-left hover:bg-[#E8F2EC] hover:text-[#5F8C74] rounded cursor-pointer font-medium"
                         >
                           {size}
                         </button>
@@ -525,6 +563,7 @@ export function CommunityWritePage() {
 
                 <button
                   type="button"
+                  onMouseDown={(e) => e.preventDefault()}
                   onClick={() => handleCommand("insertUnorderedList")}
                   className={btnClass()}
                   title="리스트"
@@ -536,6 +575,7 @@ export function CommunityWritePage() {
                 <div className="relative">
                   <button
                     type="button"
+                    onMouseDown={(e) => e.preventDefault()}
                     onClick={() => !showSource && setColorOpen(!colorOpen)}
                     className={btnClass()}
                     title="글자 색상"
@@ -548,6 +588,7 @@ export function CommunityWritePage() {
                         <button
                           key={c}
                           type="button"
+                          onMouseDown={(e) => e.preventDefault()}
                           onClick={() => {
                             applySpanStyle("color", c);
                             setColorOpen(false);
@@ -565,6 +606,7 @@ export function CommunityWritePage() {
                 <div className="relative">
                   <button
                     type="button"
+                    onMouseDown={(e) => e.preventDefault()}
                     onClick={() => !showSource && setHighlightOpen(!highlightOpen)}
                     className={btnClass()}
                     title="형광펜 배경색"
@@ -577,6 +619,7 @@ export function CommunityWritePage() {
                         <button
                           key={c}
                           type="button"
+                          onMouseDown={(e) => e.preventDefault()}
                           onClick={() => {
                             applySpanStyle("background-color", c);
                             setHighlightOpen(false);
@@ -592,6 +635,7 @@ export function CommunityWritePage() {
 
                 <button
                   type="button"
+                  onMouseDown={(e) => e.preventDefault()}
                   onClick={() => handleCommand("removeFormat")}
                   className={btnClass()}
                   title="서식 지우기"
@@ -622,6 +666,7 @@ export function CommunityWritePage() {
 
                 <button
                   type="button"
+                  onMouseDown={(e) => e.preventDefault()}
                   onClick={() => handleCommand("formatBlock", "p")}
                   className={btnClass()}
                   title="문단 형식"
@@ -630,6 +675,7 @@ export function CommunityWritePage() {
                 </button>
                 <button
                   type="button"
+                  onMouseDown={(e) => e.preventDefault()}
                   onClick={() => handleCommand("insertHorizontalRule")}
                   className={btnClass()}
                   title="구분선"
@@ -638,6 +684,7 @@ export function CommunityWritePage() {
                 </button>
                 <button
                   type="button"
+                  onMouseDown={(e) => e.preventDefault()}
                   onClick={() => alert("이모지 추가 기능은 다음 버전에 출시될 예정입니다! 😊")}
                   className={btnClass()}
                   title="이모지 (다음 버전)"
@@ -646,6 +693,7 @@ export function CommunityWritePage() {
                 </button>
                 <button
                   type="button"
+                  onMouseDown={(e) => e.preventDefault()}
                   onClick={() => alert("📊 차트 공유 안내\n\n에너지 대시보드 페이지에서 '🔗 공유하기' 또는 '🔗 차트 스냅샷 공유하기'를 눌러 복사한 차트 공유 URL(예: /embed/...)을 본문에 붙여넣어주세요.\n\n그러면 게시글 목록과 상세 화면에 실시간 라이브 차트 위젯이 자동으로 마운트됩니다.")}
                   className={btnClass()}
                   title="대시보드 차트 안내"
@@ -657,6 +705,7 @@ export function CommunityWritePage() {
 
                 <button
                   type="button"
+                  onMouseDown={(e) => e.preventDefault()}
                   onClick={() => handleCommand("undo")}
                   className={btnClass()}
                   title="실행 취소"
@@ -665,6 +714,7 @@ export function CommunityWritePage() {
                 </button>
                 <button
                   type="button"
+                  onMouseDown={(e) => e.preventDefault()}
                   onClick={() => handleCommand("redo")}
                   className={btnClass()}
                   title="다시 실행"
@@ -675,6 +725,7 @@ export function CommunityWritePage() {
                 {/* 소스 보기 토글 */}
                 <button
                   type="button"
+                  onMouseDown={(e) => e.preventDefault()}
                   onClick={() => {
                     setActiveImage(null);
                     setShowSource(!showSource);
@@ -688,9 +739,15 @@ export function CommunityWritePage() {
                 >
                   &lt;&gt;
                 </button>
-                <span className="p-1.5 px-2 text-gray-300 cursor-pointer font-bold text-xs select-none">
+                <span className="p-1.5 px-2 text-gray-300 font-bold text-xs select-none">
                   ⋮
                 </span>
+
+                {isUploadingImage && (
+                  <span className="text-[10px] text-[#5F8C74] font-bold animate-pulse ml-2 flex items-center gap-1">
+                    ⏳ 이미지 업로드 중...
+                  </span>
+                )}
               </div>
               
               {/* Rich Editor / Textarea Display */}
@@ -709,7 +766,13 @@ export function CommunityWritePage() {
                   onInput={handleInput}
                   onPaste={handlePaste}
                   onDrop={handleDrop}
-                  onClick={handleEditorClick}
+                  onClick={(e) => {
+                    handleEditorClick(e);
+                    checkActiveFormats();
+                  }}
+                  onKeyUp={checkActiveFormats}
+                  onMouseUp={checkActiveFormats}
+                  onFocus={checkActiveFormats}
                   className="w-full min-h-[300px] p-4 text-xs text-gray-700 outline-none overflow-y-auto leading-relaxed bg-white border-0 focus:ring-0 cursor-text"
                   style={{ maxHeight: "500px" }}
                 />
