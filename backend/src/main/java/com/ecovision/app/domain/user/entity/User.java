@@ -143,4 +143,9 @@ public class User {
     	this.totalPoints += points;
     	this.rankingPoint += points;
     }
+    
+    // 계정 상태 변경 (관리자 제재용: ACTIVE/INACTIVE/BANNED)
+    public void changeStatus(UserStatus status) {
+        this.status = status;
+    }
 }

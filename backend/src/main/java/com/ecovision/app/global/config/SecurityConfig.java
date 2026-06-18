@@ -24,7 +24,7 @@ import lombok.RequiredArgsConstructor;
 
 //	Spring Security 설정 (Stateless + JWT)
 //	- 세션 미사용, CSRF 비활성(JWT/REST)
-//	- 공개 경로: 회원가입·로그인·토큰 재발급, 던전 상태 조회, 어드민 업로드. 그 외 전부 인증 필요
+//	- 공개 경로: 회원가입·로그인·토큰 재발급 외 전부 인증 필요, 관리자 기능은 ADMIN 권한 필요
 //	- 필터 단계 인증/인가 실패는 EntryPoint(401)/AccessDeniedHandler(403)로 공통 포맷 응답
 //	- CORS: 쿠키(Refresh Token) 전송을 위해 allowCredentials=true + 구체적 Origin 지정
 
@@ -44,9 +44,10 @@ public class SecurityConfig {
 			.cors(Customizer.withDefaults())
 			.sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 			.authorizeHttpRequests(auth -> auth
-					.requestMatchers("/api/auth/**", "/api/dungeons/active", "/api/admin/**", "/api/regions", "/swagger-ui/**", "/v3/api-docs/**", "/uploads/**").permitAll()
+					.requestMatchers("/api/auth/**", "/api/dungeons/active", "/api/regions", "/swagger-ui/**", "/v3/api-docs/**", "/uploads/**").permitAll()
 					.requestMatchers(org.springframework.http.HttpMethod.GET, "/api/posts/**").permitAll()
 					.requestMatchers(org.springframework.http.HttpMethod.GET, "/api/charts/snapshot/**").permitAll()
+					.requestMatchers("/api/admin/**").hasRole("ADMIN")
 					.anyRequest().authenticated())
 			.exceptionHandling(e -> e
 					.authenticationEntryPoint(authenticationEntryPoint)
