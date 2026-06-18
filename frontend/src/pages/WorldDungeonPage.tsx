@@ -239,7 +239,7 @@ export function WorldDungeonPage() {
                   <div className="rounded-2xl bg-[#FAF9F5] p-4">
                     <p className="text-sm text-gray-600">미션 수</p>
                     <p className="mt-1 text-2xl font-bold">
-                      {dungeon.missions.length}개
+                      {(dungeon.missions || []).length}개
                     </p>
                   </div>
 
@@ -257,14 +257,14 @@ export function WorldDungeonPage() {
                 </div>
 
                 {/* 던전 미션 목록 */}
-                {dungeon.missions.length > 0 && (
+                {(dungeon.missions || []).length > 0 && (
                   <div className="mt-5 rounded-2xl bg-[#E8F2EC] p-4">
                     <p className="text-sm font-bold text-[#5F8C74]">
                       던전 미션 목록
                     </p>
 
                     <ul className="mt-3 space-y-2 text-sm text-gray-700">
-                      {dungeon.missions.map((mission) => (
+                      {(dungeon.missions || []).map((mission) => (
                         <li key={mission.assignmentId}>
                           • {mission.title}
                           <span className="ml-2 text-xs text-[#E07A5F]">

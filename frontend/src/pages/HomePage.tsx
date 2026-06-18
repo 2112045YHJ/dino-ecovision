@@ -465,7 +465,7 @@ export function HomePage() {
                   </div>
                   <div className="mt-2 flex justify-between">
                     <span className="text-gray-600">던전 미션</span>
-                    <span className="font-bold">{dungeon.missions.length}개</span>
+                    <span className="font-bold">{(dungeon.missions || []).length}개</span>
                   </div>
                 </div>
 
