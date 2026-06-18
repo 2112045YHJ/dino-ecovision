@@ -10,8 +10,42 @@ import {
   type Region,
 } from "../api/meApi";
 
+/*
+  이 페이지에서 하는 일
+
+  1. 닉네임을 입력합니다.
+  2. 닉네임 중복 확인을 합니다.
+  3. 활동 지역을 선택합니다.
+  4. 닉네임/지역을 백엔드에 저장합니다.
+  5. 저장 성공 후 공룡 선택 화면으로 이동합니다.
+
+  사용하는 API
+
+  GET /api/regions
+  GET /api/me/nickname/check
+  POST /api/me/onboarding
+*/
+
+// 에러 객체에서 화면에 보여줄 메시지를 안전하게 꺼내는 함수입니다.
+function getErrorMessage(error: unknown, fallbackMessage: string) {
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  return fallbackMessage;
+}
+
+// 이미 온보딩이 끝난 상태인지 확인하는 함수입니다.
+function isAlreadyOnboardedError(message: string) {
+  return (
+    message.includes("이미 온보딩을 완료했습니다") ||
+    message.includes("ALREADY_ONBOARDED") ||
+    message.includes("already onboarded") ||
+    message.includes("409")
+  );
+}
+
 export function OnboardingProfilePage() {
-  // 페이지 이동을 도와주는 함수입니다.
   const navigate = useNavigate();
 
   // 사용자가 입력한 닉네임입니다.
@@ -72,7 +106,7 @@ export function OnboardingProfilePage() {
   const handleNicknameChange = (value: string) => {
     setNickname(value);
 
-    // 닉네임이 바뀌면 이전 중복확인 결과는 의미가 없어집니다.
+    // 닉네임이 바뀌면 이전 중복 확인 결과는 더 이상 믿으면 안 됩니다.
     setIsNicknameAvailable(false);
     setNicknameMessage("");
     setErrorMessage("");
@@ -127,6 +161,11 @@ export function OnboardingProfilePage() {
       return;
     }
 
+    if (trimmedNickname.length < 2) {
+      setErrorMessage("닉네임은 2자 이상 입력해주세요.");
+      return;
+    }
+
     if (!isNicknameAvailable) {
       setErrorMessage("닉네임 중복 확인을 먼저 해주세요.");
       return;
@@ -146,22 +185,25 @@ export function OnboardingProfilePage() {
         regionCode,
       });
 
-      // 닉네임/지역 저장 후에는 공룡 선택 화면으로 이동합니다.
+      // 닉네임/지역 저장 후 공룡 선택 화면으로 이동합니다.
       navigate("/onboarding/dino");
     } catch (error) {
       console.error(error);
 
-      const message =
-        error instanceof Error
-          ? error.message
-          : "온보딩 정보를 저장하지 못했습니다.";
+      const message = getErrorMessage(
+        error,
+        "온보딩 정보를 저장하지 못했습니다.",
+      );
 
-      // 백엔드 수정 전/후 테스트 중 이미 프로필이 저장된 상태라면
-      // 공룡 선택 단계로 넘겨줍니다.
-      if (
-        message.includes("이미 온보딩을 완료했습니다") ||
-        message.includes("ALREADY_ONBOARDED")
-      ) {
+      /*
+        이미 온보딩이 완료된 계정이면,
+        프로필 단계에 계속 머물게 하지 않고 공룡 선택 단계로 넘깁니다.
+
+        이유:
+        발표/테스트 중에 같은 계정으로 다시 들어왔을 때
+        여기서 막히면 흐름이 끊겨 보이기 때문입니다.
+      */
+      if (isAlreadyOnboardedError(message)) {
         navigate("/onboarding/dino");
         return;
       }
@@ -275,6 +317,14 @@ export function OnboardingProfilePage() {
             className="mt-6 w-full rounded-2xl bg-[#5F8C74] py-3 font-bold text-white transition hover:bg-[#4d735f] disabled:bg-gray-300"
           >
             {isSaving ? "저장 중..." : "다음으로"}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => navigate("/home")}
+            className="mt-3 w-full rounded-2xl border border-[#5F8C74] py-3 font-bold text-[#5F8C74] transition hover:bg-[#E8F2EC]"
+          >
+            홈으로 돌아가기
           </button>
         </div>
       </section>
