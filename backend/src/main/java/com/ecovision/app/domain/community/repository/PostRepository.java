@@ -13,11 +13,7 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-<<<<<<< HEAD
-public interface PostRepository extends JpaRepository<Post, Long>, JpaSpecificationExecutor<Post> {
-=======
 public interface PostRepository extends JpaRepository<Post, Long>, JpaSpecificationExecutor<Post>, PostRepositoryCustom {
->>>>>>> feature/community-fe-setup
 
     @Query(value = "SELECT p FROM Post p JOIN FETCH p.user WHERE p.deletedAt IS NULL ORDER BY p.createdAt DESC",
            countQuery = "SELECT COUNT(p) FROM Post p WHERE p.deletedAt IS NULL")
@@ -28,8 +24,6 @@ public interface PostRepository extends JpaRepository<Post, Long>, JpaSpecificat
     Page<Post> findAllByCategoryWithUser(@Param("category") PostCategory category, Pageable pageable);
 
     List<Post> findAllByUserIdAndDeletedAtIsNullOrderByCreatedAtDesc(Long userId);
-<<<<<<< HEAD
-=======
 
     @org.springframework.data.jpa.repository.Modifying(clearAutomatically = true)
     @Query("UPDATE Post p SET p.viewCount = p.viewCount + 1 WHERE p.id = :id")
@@ -42,5 +36,4 @@ public interface PostRepository extends JpaRepository<Post, Long>, JpaSpecificat
     @org.springframework.data.jpa.repository.Modifying(clearAutomatically = true)
     @Query("UPDATE Post p SET p.likeCount = CASE WHEN p.likeCount > 0 THEN p.likeCount - 1 ELSE 0 END WHERE p.id = :id")
     void decreaseLikeCount(@Param("id") Long id);
->>>>>>> feature/community-fe-setup
 }
