@@ -3,18 +3,41 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+import { triggerDungeon, changeUserStatus } from "../api/adminApi";
+
+type UserStatusType = "ACTIVE" | "INACTIVE" | "BANNED";
+
 export function AdminDungeonPage() {
   const navigate = useNavigate();
 
+  // 던전 발령
   const [reserveRate, setReserveRate] = useState("7.5");
+  const [durationMinutes, setDurationMinutes] = useState("60");
   const [isLaunching, setIsLaunching] = useState(false);
   const [launchMessage, setLaunchMessage] = useState("");
+  const [launchSuccess, setLaunchSuccess] = useState(false);
+
+  // 사용자 상태 변경
+  const [userId, setUserId] = useState("");
+  const [newStatus, setNewStatus] = useState<UserStatusType>("BANNED");
+  const [statusReason, setStatusReason] = useState("");
+  const [isChangingStatus, setIsChangingStatus] = useState(false);
+  const [statusMessage, setStatusMessage] = useState("");
+  const [statusSuccess, setStatusSuccess] = useState(false);
 
   const handleLaunchDungeon = async () => {
     const rate = Number(reserveRate);
+    const duration = Number(durationMinutes);
 
     if (isNaN(rate) || rate < 0 || rate >= 10) {
       setLaunchMessage("예비율은 0 이상 10 미만으로 입력해주세요.");
+      setLaunchSuccess(false);
+      return;
+    }
+
+    if (isNaN(duration) || duration < 1) {
+      setLaunchMessage("지속 시간은 1분 이상 입력해주세요.");
+      setLaunchSuccess(false);
       return;
     }
 
@@ -22,36 +45,64 @@ export function AdminDungeonPage() {
       setIsLaunching(true);
       setLaunchMessage("");
 
-      // TODO: 실제 API 연결 시 아래 주석을 교체하세요.
-      // await launchDungeon({ reserveRate: rate });
-
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await triggerDungeon(rate, duration);
 
       setLaunchMessage(
-        `예비율 ${rate}% 기준으로 60분 던전이 발령되었습니다. (시뮬레이션)`,
+        `✅ 예비율 ${rate}% 기준 ${duration}분 던전이 발령되었습니다!`,
       );
+      setLaunchSuccess(true);
     } catch (error) {
       console.error(error);
-      setLaunchMessage("던전 발령에 실패했습니다.");
+      const message =
+        error instanceof Error ? error.message : "던전 발령에 실패했습니다.";
+      setLaunchMessage(message);
+      setLaunchSuccess(false);
     } finally {
       setIsLaunching(false);
     }
   };
 
-  const userList = [
-    {
-      id: 1,
-      nickname: "bad_user",
-      reason: "허위 신고 유도",
-      status: "BANNED",
-    },
-    {
-      id: 2,
-      nickname: "spammer",
-      reason: "불건전 도배",
-      status: "INACTIVE",
-    },
-  ];
+  const handleChangeUserStatus = async () => {
+    const userIdNum = Number(userId);
+
+    if (isNaN(userIdNum) || userIdNum <= 0) {
+      setStatusMessage("올바른 사용자 ID를 입력해주세요.");
+      setStatusSuccess(false);
+      return;
+    }
+
+    if (!statusReason.trim()) {
+      setStatusMessage("사유를 입력해주세요.");
+      setStatusSuccess(false);
+      return;
+    }
+
+    try {
+      setIsChangingStatus(true);
+      setStatusMessage("");
+
+      const result = await changeUserStatus(userIdNum, newStatus, statusReason);
+
+      setStatusMessage(
+        `✅ 사용자 ${result.userId}의 상태가 ${result.status}로 변경되었습니다.`,
+      );
+      setStatusSuccess(true);
+
+      // 입력 초기화
+      setUserId("");
+      setStatusReason("");
+    } catch (error) {
+      console.error(error);
+      const message =
+        error instanceof Error
+          ? error.message
+          : "회원 상태 변경에 실패했습니다.";
+      setStatusMessage(message);
+      setStatusSuccess(false);
+    } finally {
+      setIsChangingStatus(false);
+    }
+  };
 
   return (
     <main className="min-h-screen bg-[#FAF9F5] p-6 text-[#2C3531]">
@@ -127,13 +178,34 @@ export function AdminDungeonPage() {
               </p>
             </div>
 
+            <div className="mt-4">
+              <label
+                htmlFor="durationMinutes"
+                className="block text-sm font-bold text-[#2C3531]"
+              >
+                지속 시간 (분)
+              </label>
+
+              <input
+                id="durationMinutes"
+                type="number"
+                value={durationMinutes}
+                onChange={(e) => {
+                  setDurationMinutes(e.target.value);
+                  setLaunchMessage("");
+                }}
+                min="1"
+                step="1"
+                className="mt-2 w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-[#E07A5F]"
+              />
+            </div>
+
             {launchMessage && (
               <div
                 className={`mt-4 rounded-2xl p-4 text-sm font-bold ${
-                  launchMessage.includes("실패") ||
-                  launchMessage.includes("입력")
-                    ? "bg-[#FFF0EA] text-[#E07A5F]"
-                    : "bg-[#E8F2EC] text-[#5F8C74]"
+                  launchSuccess
+                    ? "bg-[#E8F2EC] text-[#5F8C74]"
+                    : "bg-[#FFF0EA] text-[#E07A5F]"
                 }`}
               >
                 {launchMessage}
@@ -146,12 +218,11 @@ export function AdminDungeonPage() {
               disabled={isLaunching}
               className="mt-5 w-full rounded-2xl bg-[#E07A5F] py-3 font-bold text-white transition hover:bg-[#c8654d] disabled:bg-gray-300"
             >
-              {isLaunching ? "발령 중..." : "60분 던전 강제 발령 시작 →"}
+              {isLaunching ? "발령 중..." : "🔥 던전 강제 발령 시작"}
             </button>
 
             <p className="mt-3 text-xs text-gray-500">
-              현재는 시뮬레이션 모드입니다. 실제 API 연결 시 dungeon_events
-              테이블에 활성 레코드가 생성됩니다.
+              ⚠️ 관리자 권한이 필요한 작업입니다.
             </p>
           </article>
 
@@ -159,41 +230,100 @@ export function AdminDungeonPage() {
           <article className="rounded-3xl bg-white p-6 shadow-sm">
             <p className="text-sm font-bold text-[#5F8C74]">USER MANAGEMENT</p>
 
-            <h2 className="mt-2 text-xl font-bold">어뷰징 유저 계정 단속</h2>
+            <h2 className="mt-2 text-xl font-bold">회원 계정 상태 변경</h2>
 
             <p className="mt-2 text-sm text-gray-600">
-              허위 신고 또는 불건전 활동 유저의 계정 상태를 관리합니다.
+              어뷰징 또는 불건전 활동 유저의 계정 상태를 관리합니다.
             </p>
 
-            <div className="mt-5 space-y-3">
-              {userList.map((user) => (
-                <div
-                  key={user.id}
-                  className="rounded-2xl bg-[#FAF9F5] p-4 text-sm"
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <p className="font-bold">{user.nickname}</p>
-                      <p className="mt-1 text-gray-600">{user.reason}</p>
-                    </div>
+            <div className="mt-5">
+              <label
+                htmlFor="userId"
+                className="block text-sm font-bold text-[#2C3531]"
+              >
+                사용자 ID
+              </label>
 
-                    <span
-                      className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold ${
-                        user.status === "BANNED"
-                          ? "bg-[#FFF0EA] text-[#E07A5F]"
-                          : "bg-gray-100 text-gray-500"
-                      }`}
-                    >
-                      {user.status}
-                    </span>
-                  </div>
-                </div>
-              ))}
+              <input
+                id="userId"
+                type="number"
+                value={userId}
+                onChange={(e) => {
+                  setUserId(e.target.value);
+                  setStatusMessage("");
+                }}
+                placeholder="예: 1"
+                className="mt-2 w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-[#5F8C74]"
+              />
             </div>
 
-            <p className="mt-4 text-xs text-gray-500">
-              현재는 더미데이터 기준 화면입니다. 실제 유저 관리 API가 연결되면
-              users.status를 INACTIVE 또는 BANNED로 변경할 수 있습니다.
+            <div className="mt-4">
+              <label
+                htmlFor="newStatus"
+                className="block text-sm font-bold text-[#2C3531]"
+              >
+                변경할 상태
+              </label>
+
+              <select
+                id="newStatus"
+                value={newStatus}
+                onChange={(e) => {
+                  setNewStatus(e.target.value as UserStatusType);
+                  setStatusMessage("");
+                }}
+                className="mt-2 w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-[#5F8C74]"
+              >
+                <option value="ACTIVE">ACTIVE (활성화)</option>
+                <option value="INACTIVE">INACTIVE (비활성화)</option>
+                <option value="BANNED">BANNED (영구 차단)</option>
+              </select>
+            </div>
+
+            <div className="mt-4">
+              <label
+                htmlFor="statusReason"
+                className="block text-sm font-bold text-[#2C3531]"
+              >
+                사유
+              </label>
+
+              <textarea
+                id="statusReason"
+                value={statusReason}
+                onChange={(e) => {
+                  setStatusReason(e.target.value);
+                  setStatusMessage("");
+                }}
+                placeholder="예: 허위 신고 유도, 불건전 도배"
+                rows={3}
+                className="mt-2 w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-[#5F8C74]"
+              />
+            </div>
+
+            {statusMessage && (
+              <div
+                className={`mt-4 rounded-2xl p-4 text-sm font-bold ${
+                  statusSuccess
+                    ? "bg-[#E8F2EC] text-[#5F8C74]"
+                    : "bg-[#FFF0EA] text-[#E07A5F]"
+                }`}
+              >
+                {statusMessage}
+              </div>
+            )}
+
+            <button
+              type="button"
+              onClick={handleChangeUserStatus}
+              disabled={isChangingStatus}
+              className="mt-5 w-full rounded-2xl bg-[#5F8C74] py-3 font-bold text-white transition hover:bg-[#4d735f] disabled:bg-gray-300"
+            >
+              {isChangingStatus ? "변경 중..." : "상태 변경 실행"}
+            </button>
+
+            <p className="mt-3 text-xs text-gray-500">
+              ⚠️ 관리자 권한이 필요한 작업입니다.
             </p>
           </article>
         </section>

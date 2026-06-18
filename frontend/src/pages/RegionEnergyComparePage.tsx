@@ -1,6 +1,6 @@
 // src/pages/RegionEnergyComparePage.tsx
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   CartesianGrid,
@@ -13,37 +13,110 @@ import {
   YAxis,
 } from "recharts";
 
-const compareDataMock = [
-  { month: "1월", 우동: 145, 좌동: 168, 중동: 152 },
-  { month: "2월", 우동: 140, 좌동: 162, 중동: 148 },
-  { month: "3월", 우동: 126, 좌동: 148, 중동: 135 },
-  { month: "4월", 우동: 108, 좌동: 128, 중동: 118 },
-  { month: "5월", 우동: 99, 좌동: 122, 중동: 110 },
-  { month: "6월", 우동: 117, 좌동: 138, 중동: 125 },
-  { month: "7월", 우동: 153, 좌동: 178, 중동: 165 },
+import {
+  getEnergyCompare,
+  type EnergyCompareResponse,
+} from "../api/dashboardApi";
+
+// 비교 가능한 지역 코드 매핑
+const REGION_OPTIONS = [
+  { code: "26350", name: "부산 해운대구 우동", isMyRegion: true },
+  { code: "26351", name: "부산 해운대구 좌동", isMyRegion: false },
+  { code: "26352", name: "부산 해운대구 중동", isMyRegion: false },
+  { code: "26353", name: "부산 해운대구 송정동", isMyRegion: false },
 ];
+
+const COLORS = ["#5F8C74", "#E07A5F", "#F2CC8F", "#81B29A"];
 
 export function RegionEnergyComparePage() {
   const navigate = useNavigate();
 
-  const [compareRegions, setCompareRegions] = useState<string[]>([
-    "우동",
-    "좌동",
+  const [compareRegionCodes, setCompareRegionCodes] = useState<string[]>([
+    "26350", // 내 거주지 (우동) 기본 선택
+    "26351", // 좌동
   ]);
 
-  const availableRegions = ["우동", "좌동", "중동", "송정동"];
+  const [selectedYear, setSelectedYear] = useState(2026);
+  const [selectedEnergy, setSelectedEnergy] = useState<"ELECTRICITY" | "GAS">(
+    "ELECTRICITY",
+  );
 
-  const toggleRegion = (region: string) => {
-    if (region === "우동") return; // 내 거주지는 고정
+  const [compareData, setCompareData] = useState<EnergyCompareResponse | null>(
+    null,
+  );
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState("");
 
-    setCompareRegions((prev) =>
-      prev.includes(region)
-        ? prev.filter((r) => r !== region)
-        : [...prev, region],
-    );
+  // 지역 토글 (내 거주지는 고정)
+  const toggleRegion = (code: string) => {
+    const region = REGION_OPTIONS.find((r) => r.code === code);
+    if (region?.isMyRegion) return; // 내 거주지는 못 빼게
+
+    setCompareRegionCodes((prev) => {
+      if (prev.includes(code)) {
+        return prev.filter((c) => c !== code);
+      } else {
+        // 최대 4개까지
+        if (prev.length >= 4) {
+          alert("최대 4개 지역까지 비교 가능합니다.");
+          return prev;
+        }
+        return [...prev, code];
+      }
+    });
   };
 
-  const colors = ["#5F8C74", "#E07A5F", "#F2CC8F", "#81B29A"];
+  // 비교 데이터 가져오기
+  useEffect(() => {
+    const fetchCompareData = async () => {
+      try {
+        setIsLoading(true);
+        setErrorMessage("");
+
+        if (compareRegionCodes.length === 0) {
+          setCompareData(null);
+          return;
+        }
+
+        const data = await getEnergyCompare(
+          compareRegionCodes,
+          selectedYear,
+          selectedEnergy,
+        );
+        setCompareData(data);
+      } catch (error) {
+        console.error(error);
+        setErrorMessage("지역 비교 정보를 불러오지 못했습니다.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchCompareData();
+  }, [compareRegionCodes, selectedYear, selectedEnergy]);
+
+  // 차트용 데이터 변환 (월별로 합치기)
+  const chartData = (() => {
+    if (!compareData || compareData.regions.length === 0) return [];
+
+    // 모든 period(월) 수집
+    const allPeriods = new Set<string>();
+    compareData.regions.forEach((region) => {
+      region.series.forEach((s) => allPeriods.add(s.period));
+    });
+
+    // 월별로 각 지역 데이터 합치기
+    return Array.from(allPeriods)
+      .sort()
+      .map((period) => {
+        const row: Record<string, string | number> = { period };
+        compareData.regions.forEach((region) => {
+          const found = region.series.find((s) => s.period === period);
+          row[region.regionName] = found?.co2Kg ?? 0;
+        });
+        return row;
+      });
+  })();
 
   return (
     <main className="min-h-screen bg-[#FAF9F5] p-6 text-[#2C3531]">
@@ -53,7 +126,7 @@ export function RegionEnergyComparePage() {
             <p className="text-sm font-bold text-[#5F8C74]">COMPARE</p>
             <h1 className="mt-2 text-3xl font-bold">지역간 탄소 배출량 비교</h1>
             <p className="mt-2 text-sm text-gray-600">
-              내 거주지와 다른 지역의 에너지 소비를 비교해보세요.
+              내 거주지와 다른 지역의 에너지 소비를 비교해보세요. (최대 4개)
             </p>
           </div>
 
@@ -66,74 +139,150 @@ export function RegionEnergyComparePage() {
           </button>
         </header>
 
+        {/* 필터 */}
+        <section className="mb-6 rounded-3xl bg-white p-5 shadow-sm">
+          <p className="text-sm font-bold text-[#5F8C74]">FILTER</p>
+
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-bold">연도:</span>
+              <select
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(Number(e.target.value))}
+                className="rounded-xl border border-[#E8F2EC] bg-white px-3 py-2 text-sm"
+              >
+                <option value={2026}>2026</option>
+                <option value={2025}>2025</option>
+                <option value={2024}>2024</option>
+              </select>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-bold">에너지:</span>
+              <button
+                type="button"
+                onClick={() => setSelectedEnergy("ELECTRICITY")}
+                className={`rounded-xl px-3 py-2 text-sm font-bold transition ${
+                  selectedEnergy === "ELECTRICITY"
+                    ? "bg-[#5F8C74] text-white"
+                    : "border border-[#E8F2EC] bg-white text-gray-600"
+                }`}
+              >
+                전기
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedEnergy("GAS")}
+                className={`rounded-xl px-3 py-2 text-sm font-bold transition ${
+                  selectedEnergy === "GAS"
+                    ? "bg-[#5F8C74] text-white"
+                    : "border border-[#E8F2EC] bg-white text-gray-600"
+                }`}
+              >
+                가스
+              </button>
+            </div>
+          </div>
+        </section>
+
         {/* 지역 선택 */}
         <section className="mb-6 rounded-3xl bg-white p-5 shadow-sm">
-          <p className="text-sm font-bold text-[#5F8C74]">비교 지역군</p>
+          <p className="text-sm font-bold text-[#5F8C74]">비교 지역</p>
 
           <div className="mt-3 flex flex-wrap gap-2">
-            {availableRegions.map((region) => {
-              const isSelected = compareRegions.includes(region);
-              const isMyRegion = region === "우동";
+            {REGION_OPTIONS.map((region) => {
+              const isSelected = compareRegionCodes.includes(region.code);
 
               return (
                 <button
-                  key={region}
+                  key={region.code}
                   type="button"
-                  onClick={() => toggleRegion(region)}
+                  onClick={() => toggleRegion(region.code)}
                   className={`rounded-full px-4 py-2 text-sm font-bold transition ${
                     isSelected
-                      ? isMyRegion
+                      ? region.isMyRegion
                         ? "bg-[#E8F2EC] text-[#5F8C74] ring-2 ring-[#5F8C74]"
                         : "bg-[#5F8C74] text-white"
                       : "bg-gray-100 text-gray-500"
                   }`}
                 >
-                  부산 해운대구 {region}
-                  {isMyRegion && " (내 거주지)"}
+                  {region.name}
+                  {region.isMyRegion && " (내 거주지)"}
                 </button>
               );
             })}
           </div>
         </section>
 
-        {/* 비교 차트 */}
-        <section className="mb-6 rounded-3xl bg-white p-6 shadow-sm">
-          <p className="text-sm font-bold text-[#5F8C74]">MULTI LINE CHART</p>
-          <h2 className="mt-2 text-xl font-bold">월별 탄소 배출량 비교 (kg)</h2>
-
-          <div className="mt-4 h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={compareDataMock}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#E8F2EC" />
-                <XAxis dataKey="month" stroke="#5F8C74" />
-                <YAxis stroke="#5F8C74" />
-                <Tooltip />
-                <Legend />
-                {compareRegions.map((region, idx) => (
-                  <Line
-                    key={region}
-                    type="monotone"
-                    dataKey={region}
-                    stroke={colors[idx % colors.length]}
-                    strokeWidth={2}
-                    dot={{ r: 4 }}
-                  />
-                ))}
-              </LineChart>
-            </ResponsiveContainer>
+        {/* 로딩 / 에러 / 데이터 없음 */}
+        {isLoading && (
+          <div className="rounded-3xl bg-white p-8 text-center text-sm font-bold text-gray-500 shadow-sm">
+            지역 비교 정보를 불러오는 중...
           </div>
-        </section>
+        )}
 
-        {/* 분석 피드백 */}
-        <section className="rounded-3xl bg-[#E8F2EC] p-6 shadow-sm">
-          <p className="text-sm font-bold text-[#5F8C74]">💡 분석 피드백</p>
+        {!isLoading && errorMessage && (
+          <div className="rounded-3xl bg-[#FFF0EA] p-6 text-sm font-bold text-[#E07A5F] shadow-sm">
+            {errorMessage}
+          </div>
+        )}
 
-          <p className="mt-3 text-sm text-[#2C3531] leading-relaxed">
-            현재 <strong>우동</strong>의 1인당 가스 소비량 탄소 배출이 인접한{" "}
-            <strong>좌동</strong> 대비 약 <strong>14.2% 적게</strong> 배출되고
-            있습니다. 우수한 성과입니다!
-          </p>
-        </section>
+        {!isLoading && !errorMessage && chartData.length === 0 && (
+          <div className="rounded-3xl bg-white p-8 text-center text-sm font-bold text-gray-500 shadow-sm">
+            선택한 조건에 해당하는 데이터가 없습니다.
+          </div>
+        )}
+
+        {!isLoading && !errorMessage && chartData.length > 0 && compareData && (
+          <>
+            {/* 비교 차트 */}
+            <section className="mb-6 rounded-3xl bg-white p-6 shadow-sm">
+              <p className="text-sm font-bold text-[#5F8C74]">
+                MULTI LINE CHART
+              </p>
+              <h2 className="mt-2 text-xl font-bold">
+                {selectedYear}년{" "}
+                {selectedEnergy === "ELECTRICITY" ? "전기" : "가스"} 탄소 배출량
+                비교 (kg)
+              </h2>
+
+              <div className="mt-4 h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#E8F2EC" />
+                    <XAxis dataKey="period" stroke="#5F8C74" />
+                    <YAxis stroke="#5F8C74" />
+                    <Tooltip />
+                    <Legend />
+                    {compareData.regions.map((region, idx) => (
+                      <Line
+                        key={region.regionCode}
+                        type="monotone"
+                        dataKey={region.regionName}
+                        stroke={COLORS[idx % COLORS.length]}
+                        strokeWidth={2}
+                        dot={{ r: 4 }}
+                      />
+                    ))}
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </section>
+
+            {/* 분석 피드백 */}
+            {compareData.insight && (
+              <section className="rounded-3xl bg-[#E8F2EC] p-6 shadow-sm">
+                <p className="text-sm font-bold text-[#5F8C74]">
+                  💡 분석 피드백
+                </p>
+
+                <p className="mt-3 text-sm text-[#2C3531] leading-relaxed">
+                  {compareData.insight}
+                </p>
+              </section>
+            )}
+          </>
+        )}
       </section>
     </main>
   );

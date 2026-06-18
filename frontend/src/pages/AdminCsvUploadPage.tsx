@@ -3,7 +3,11 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { uploadLogsMock } from "../mocks/adminMock";
+import { uploadCsv, type AdminUploadResponse } from "../api/adminApi";
+
+type UploadHistory = AdminUploadResponse & {
+  uploadedAt: string;
+};
 
 export function AdminCsvUploadPage() {
   const navigate = useNavigate();
@@ -15,6 +19,9 @@ export function AdminCsvUploadPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+
+  // 업로드 이력 (세션 동안만 유지)
+  const [uploadHistory, setUploadHistory] = useState<UploadHistory[]>([]);
 
   const handleFileChange = (file?: File) => {
     if (!file) {
@@ -37,22 +44,45 @@ export function AdminCsvUploadPage() {
       setSuccessMessage("");
       setErrorMessage("");
 
-      // TODO: 실제 업로드 API 연결 시 아래 주석을 교체하세요.
-      // const formData = new FormData();
-      // formData.append("file", selectedFile);
-      // formData.append("uploadType", uploadType);
-      // await uploadCsv(formData);
+      const result = await uploadCsv(selectedFile);
 
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      if (result.status === "SUCCESS") {
+        setSuccessMessage(
+          `${result.fileName} 파일 업로드 성공! (${result.insertedRows}개 행 처리)`,
+        );
 
-      setSuccessMessage(
-        `${selectedFileName} 파일이 성공적으로 업로드되었습니다. (시뮬레이션)`,
-      );
-      setSelectedFile(null);
-      setSelectedFileName("");
+        // 업로드 이력에 추가
+        setUploadHistory((prev) => [
+          {
+            ...result,
+            uploadedAt: new Date().toLocaleString("ko-KR"),
+          },
+          ...prev,
+        ]);
+
+        setSelectedFile(null);
+        setSelectedFileName("");
+      } else {
+        setErrorMessage(
+          `업로드 실패: ${result.failReason ?? "알 수 없는 오류"}`,
+        );
+
+        // 실패한 것도 이력에 추가
+        setUploadHistory((prev) => [
+          {
+            ...result,
+            uploadedAt: new Date().toLocaleString("ko-KR"),
+          },
+          ...prev,
+        ]);
+      }
     } catch (error) {
       console.error(error);
-      setErrorMessage("업로드에 실패했습니다. 파일 형식을 확인해주세요.");
+      const message =
+        error instanceof Error
+          ? error.message
+          : "업로드에 실패했습니다. 파일 형식을 확인해주세요.";
+      setErrorMessage(message);
     } finally {
       setIsUploading(false);
     }
@@ -173,49 +203,62 @@ export function AdminCsvUploadPage() {
             </button>
 
             <p className="mt-3 text-xs text-gray-500">
-              현재는 시뮬레이션 모드입니다. 실제 API 연결 시 FormData로 파일을
-              전송하면 됩니다.
+              ⚠️ 관리자 권한이 필요한 작업입니다.
             </p>
           </article>
 
           <article className="rounded-3xl bg-white p-6 shadow-sm">
             <p className="text-sm font-bold text-[#5F8C74]">UPLOAD LOG</p>
 
-            <h2 className="mt-2 text-xl font-bold">업로드 이력</h2>
+            <h2 className="mt-2 text-xl font-bold">
+              업로드 이력 ({uploadHistory.length}건)
+            </h2>
 
-            <div className="mt-4 space-y-3">
-              {uploadLogsMock.map((log) => (
-                <div
-                  key={log.id}
-                  className="rounded-2xl bg-[#FAF9F5] p-4 text-sm"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="font-bold">{log.fileName}</p>
-                      <p className="mt-1 text-gray-600">
-                        {log.uploadType} · {log.uploadedAt}
-                      </p>
+            {uploadHistory.length === 0 ? (
+              <div className="mt-4 rounded-2xl bg-[#FAF9F5] p-6 text-center text-sm font-bold text-gray-500">
+                아직 업로드 이력이 없습니다.
+              </div>
+            ) : (
+              <div className="mt-4 max-h-96 space-y-3 overflow-y-auto">
+                {uploadHistory.map((log) => (
+                  <div
+                    key={log.uploadId}
+                    className="rounded-2xl bg-[#FAF9F5] p-4 text-sm"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="font-bold">{log.fileName}</p>
+                        <p className="mt-1 text-gray-600">{log.uploadedAt}</p>
+                      </div>
+
+                      <span
+                        className={`rounded-full px-3 py-1 text-xs font-bold ${
+                          log.status === "SUCCESS"
+                            ? "bg-[#E8F2EC] text-[#5F8C74]"
+                            : "bg-[#FFF0EA] text-[#E07A5F]"
+                        }`}
+                      >
+                        {log.status}
+                      </span>
                     </div>
 
-                    <span
-                      className={`rounded-full px-3 py-1 text-xs font-bold ${
-                        log.status === "SUCCESS"
-                          ? "bg-[#E8F2EC] text-[#5F8C74]"
-                          : log.status === "FAILED"
-                            ? "bg-[#FFF0EA] text-[#E07A5F]"
-                            : "bg-gray-100 text-gray-500"
-                      }`}
-                    >
-                      {log.status}
-                    </span>
-                  </div>
+                    <p className="mt-2 text-gray-600">
+                      처리 행 수: {log.insertedRows}
+                    </p>
 
-                  <p className="mt-2 text-gray-600">
-                    처리 행 수: {log.rowCount}
-                  </p>
-                </div>
-              ))}
-            </div>
+                    {log.failReason && (
+                      <p className="mt-1 text-xs text-[#E07A5F]">
+                        사유: {log.failReason}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <p className="mt-4 text-xs text-gray-500">
+              💡 업로드 이력은 현재 세션에서만 유지됩니다.
+            </p>
           </article>
         </section>
       </section>
