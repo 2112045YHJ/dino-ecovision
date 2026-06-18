@@ -24,16 +24,16 @@ public class RankingController {
 	@GetMapping("/personal")
 	public ApiResponse<RankingDto.PersonalRankingResponse> getPersonalRanking(
 			@AuthenticationPrincipal Long userId,
-			@RequestParam(defaultValue = "national") String scope,
-			@RequestParam(defaultValue = "0") int page,
-			@RequestParam(defaultValue = "20") int size) {
+			@RequestParam(name = "scope", defaultValue = "national") String scope,
+			@RequestParam(name = "page", defaultValue = "0") int page,
+			@RequestParam(name = "size", defaultValue = "20") int size) {
 		return ApiResponse.success(rankingService.getPersonalRanking(userId, scope, page, size));
 	}
 
 	//	8.2 지역 맵. scope=national|sido (기본 national).
 	@GetMapping("/region-map")
 	public ApiResponse<RankingDto.RegionMapResponse> getRegionMap(
-			@RequestParam(defaultValue = "national") String scope) {
+			@RequestParam(name = "scope", defaultValue = "national") String scope) {
 		return ApiResponse.success(rankingService.getRegionMap(scope));
 	}
 

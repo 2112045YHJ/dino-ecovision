@@ -38,8 +38,8 @@ public class GuildController {
 	//	7.3 길드 전국 랭킹 (점수 내림차순, 페이징)
 	@GetMapping("/ranking")
 	public ApiResponse<List<GuildDto.GuildRankEntry>> getGuildRanking(
-			@RequestParam(defaultValue = "0") int page,
-			@RequestParam(defaultValue = "20") int size) {
+			@RequestParam(name = "page", defaultValue = "0") int page,
+			@RequestParam(name = "size", defaultValue = "20") int size) {
 		return ApiResponse.success(guildQueryService.getGuildRanking(page, size));
 	}
 }
