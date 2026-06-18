@@ -1,18 +1,43 @@
 // src/pages/CommunityWritePage.tsx
 
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { Header } from "../components/layout/Header";
-import { createPost } from "../api/communityApi";
+import { createPost, fetchPostDetails, updatePost } from "../api/communityApi";
 import { EmbedChart } from "../components/charts/EmbedChart";
 
 export function CommunityWritePage() {
   const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
+  const isEditMode = !!id;
 
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [category, setCategory] = useState("GENERAL");
   const [attachDino, setAttachDino] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (isEditMode && id) {
+      const loadPost = async () => {
+        try {
+          setIsLoading(true);
+          const post = await fetchPostDetails(parseInt(id));
+          setTitle(post.title);
+          setContent(post.content);
+          setCategory(post.category);
+          setAttachDino(!!post.dinoSnapshot);
+        } catch (err: any) {
+          console.error("Failed to load post for edit:", err);
+          alert("수정할 게시글 정보를 불러오는 데 실패했습니다.");
+          navigate("/community");
+        } finally {
+          setIsLoading(false);
+        }
+      };
+      loadPost();
+    }
+  }, [id, isEditMode, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,7 +51,7 @@ export function CommunityWritePage() {
       return;
     }
 
-    // 작성할 공룡 스냅샷 데이터 취득
+    // 작성/수정할 공룡 스냅샷 데이터 취득 (수정 시점의 최신 상태 반영)
     let dinoSnapshot: string | null = null;
     if (attachDino) {
       const localDino = localStorage.getItem("myDino");
@@ -49,20 +74,44 @@ export function CommunityWritePage() {
     const chartSnapshotId = match ? match[1] : null;
 
     try {
-      const id = await createPost({
-        title,
-        content,
-        category,
-        chartSnapshotId,
-        dinoSnapshot,
-      });
-      alert("글이 성공적으로 등록되었습니다!");
-      navigate(`/community/${id}`);
-    } catch (err) {
-      console.error("Failed to write post:", err);
-      alert("글 등록에 실패했습니다.");
+      if (isEditMode && id) {
+        await updatePost(parseInt(id), {
+          title,
+          content,
+          category,
+          chartSnapshotId,
+          dinoSnapshot,
+        });
+        alert("글이 성공적으로 수정되었습니다!");
+        navigate(`/community/${id}`);
+      } else {
+        const newId = await createPost({
+          title,
+          content,
+          category,
+          chartSnapshotId,
+          dinoSnapshot,
+        });
+        alert("글이 성공적으로 등록되었습니다!");
+        navigate(`/community/${newId}`);
+      }
+    } catch (err: any) {
+      console.error("Failed to submit post:", err);
+      const errorMsg = err?.message || "오류가 발생했습니다.";
+      alert(isEditMode ? `글 수정에 실패했습니다: ${errorMsg}` : `글 등록에 실패했습니다: ${errorMsg}`);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-[#FAF9F5] text-[#2C3531]">
+        <Header />
+        <div className="flex justify-center items-center h-[500px]">
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-[#5F8C74] border-t-transparent"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#FAF9F5] text-[#2C3531]">
@@ -72,16 +121,20 @@ export function CommunityWritePage() {
         {/* 뒤로 가기 */}
         <button
           type="button"
-          onClick={() => navigate("/community")}
+          onClick={() => navigate(isEditMode ? `/community/${id}` : "/community")}
           className="mb-5 rounded-2xl border border-[#E8F2EC] bg-white px-4 py-2 text-xs font-bold text-[#5F8C74] transition hover:bg-[#E8F2EC] cursor-pointer shadow-sm"
         >
-          ← 목록으로 돌아가기
+          {isEditMode ? "← 게시글로 돌아가기" : "← 목록으로 돌아가기"}
         </button>
 
         {/* 폼 본체 */}
         <section className="rounded-3xl border border-[#E8F2EC] bg-white p-6 shadow-sm">
-          <p className="text-xs font-bold text-[#5F8C74] tracking-wider mb-2">CREATE NEW POST</p>
-          <h2 className="text-2xl font-bold text-gray-800 mb-6">커뮤니티 글 작성</h2>
+          <p className="text-xs font-bold text-[#5F8C74] tracking-wider mb-2">
+            {isEditMode ? "EDIT POST" : "CREATE NEW POST"}
+          </p>
+          <h2 className="text-2xl font-bold text-gray-800 mb-6">
+            {isEditMode ? "커뮤니티 글 수정" : "커뮤니티 글 작성"}
+          </h2>
 
           <form onSubmit={handleSubmit} className="grid gap-5">
             {/* 카테고리 선택 */}
@@ -174,7 +227,7 @@ export function CommunityWritePage() {
               type="submit"
               className="mt-4 w-full rounded-2xl bg-[#5F8C74] py-3 text-sm font-bold text-white transition hover:bg-[#4d735f] cursor-pointer shadow-sm"
             >
-              글 등록하기
+              {isEditMode ? "글 수정하기" : "글 등록하기"}
             </button>
           </form>
         </section>

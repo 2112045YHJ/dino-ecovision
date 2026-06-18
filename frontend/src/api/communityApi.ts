@@ -80,6 +80,15 @@ export async function deletePost(id: number): Promise<void> {
   await apiRequest<void>(`/api/posts/${id}`, { method: "DELETE", token });
 }
 
+export async function updatePost(id: number, request: { title: string; content: string; category: string; chartSnapshotId?: string | null; dinoSnapshot?: string | null }): Promise<void> {
+  const token = localStorage.getItem("accessToken");
+  await apiRequest<void>(`/api/posts/${id}`, {
+    method: "PUT",
+    body: request,
+    token,
+  });
+}
+
 export async function likePost(id: number): Promise<{ likeCount: number; liked: boolean }> {
   const token = localStorage.getItem("accessToken");
   return await apiRequest<{ likeCount: number; liked: boolean }>(`/api/posts/${id}/like`, { method: "POST", token });
@@ -89,6 +98,15 @@ export async function createComment(postId: number, content: string): Promise<nu
   const token = localStorage.getItem("accessToken");
   return await apiRequest<number>(`/api/posts/${postId}/comments`, {
     method: "POST",
+    body: { content },
+    token,
+  });
+}
+
+export async function updateComment(commentId: number, content: string): Promise<void> {
+  const token = localStorage.getItem("accessToken");
+  await apiRequest<void>(`/api/posts/comments/${commentId}`, {
+    method: "PUT",
     body: { content },
     token,
   });

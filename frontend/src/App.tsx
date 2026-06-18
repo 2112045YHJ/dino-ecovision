@@ -79,6 +79,7 @@ function App() {
       <Route path="/community" element={<CommunityPage />} />
       <Route path="/community/:id" element={<CommunityDetailPage />} />
       <Route path="/community/write" element={<CommunityWritePage />} />
+      <Route path="/community/edit/:id" element={<CommunityWritePage />} />
 
       {/* 관리자 페이지 */}
       <Route path="/admin/csv-upload" element={<AdminCsvUploadPage />} />

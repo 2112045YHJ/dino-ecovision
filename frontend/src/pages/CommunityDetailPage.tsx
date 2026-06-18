@@ -8,9 +8,12 @@ import {
   fetchPostDetails,
   likePost,
   createComment,
+  updateComment,
   deleteComment,
+  deletePost,
   type PostResponse,
 } from "../api/communityApi";
+import { getMe, type MeProfile } from "../api/meApi";
 
 export function CommunityDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -19,10 +22,24 @@ export function CommunityDetailPage() {
   const [post, setPost] = useState<PostResponse | null>(null);
   const [commentInput, setCommentInput] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState<MeProfile | null>(null);
+  
+  const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
+  const [editingCommentContent, setEditingCommentContent] = useState("");
 
   useEffect(() => {
     loadPostDetails();
+    loadUser();
   }, [id]);
+
+  async function loadUser() {
+    try {
+      const user = await getMe();
+      setCurrentUser(user);
+    } catch (err) {
+      console.error("Failed to load current user:", err);
+    }
+  }
 
   async function loadPostDetails() {
     if (!id) return;
@@ -38,6 +55,21 @@ export function CommunityDetailPage() {
       setIsLoading(false);
     }
   }
+
+  const handleDeletePost = async () => {
+    if (!post) return;
+    if (!window.confirm("정말로 이 게시글을 삭제하시겠습니까?")) return;
+
+    try {
+      await deletePost(post.id);
+      alert("게시글이 삭제되었습니다.");
+      navigate("/community");
+    } catch (err: any) {
+      console.error("Failed to delete post:", err);
+      const errorMsg = err?.message || "오류가 발생했습니다.";
+      alert(`게시글 삭제에 실패했습니다: ${errorMsg}`);
+    }
+  };
 
   const handleLike = async () => {
     if (!post) return;
@@ -68,8 +100,39 @@ export function CommunityDetailPage() {
       // 다시 불러오기
       const updated = await fetchPostDetails(post.id);
       setPost(updated);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to submit comment:", err);
+      const errorMsg = err?.message || "오류가 발생했습니다.";
+      alert(`댓글 등록에 실패했습니다: ${errorMsg}`);
+    }
+  };
+
+  const handleCommentEditStart = (commentId: number, content: string) => {
+    setEditingCommentId(commentId);
+    setEditingCommentContent(content);
+  };
+
+  const handleCommentEditCancel = () => {
+    setEditingCommentId(null);
+    setEditingCommentContent("");
+  };
+
+  const handleCommentEditSave = async (commentId: number) => {
+    if (!editingCommentContent.trim()) {
+      alert("댓글 내용을 입력해주세요.");
+      return;
+    }
+    try {
+      await updateComment(commentId, editingCommentContent);
+      setEditingCommentId(null);
+      setEditingCommentContent("");
+      // 다시 불러오기
+      const updated = await fetchPostDetails(post!.id);
+      setPost(updated);
+    } catch (err: any) {
+      console.error("Failed to edit comment:", err);
+      const errorMsg = err?.message || "오류가 발생했습니다.";
+      alert(`댓글 수정에 실패했습니다: ${errorMsg}`);
     }
   };
 
@@ -82,8 +145,10 @@ export function CommunityDetailPage() {
       // 다시 불러오기
       const updated = await fetchPostDetails(post.id);
       setPost(updated);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to delete comment:", err);
+      const errorMsg = err?.message || "오류가 발생했습니다.";
+      alert(`댓글 삭제에 실패했습니다: ${errorMsg}`);
     }
   };
 
@@ -170,7 +235,7 @@ export function CommunityDetailPage() {
         <article className="rounded-3xl border border-[#E8F2EC] bg-white p-6 shadow-sm">
           {/* 머리말 */}
           <header className="border-b border-[#E8F2EC] pb-4 mb-6">
-            <div className="flex items-center gap-2 mb-2">
+            <div className="flex items-center justify-between mb-2">
               <span className={`rounded px-2.5 py-0.5 text-[10px] font-bold border ${
                 post.category === "NOTICE" 
                   ? "bg-red-50 text-red-600 border-red-200" 
@@ -179,7 +244,36 @@ export function CommunityDetailPage() {
                 {post.category === "NOTICE" ? "공지" : post.category === "INFO_SHARE" ? "정보공유" : "일반"}
               </span>
             </div>
-            <h2 className="text-2xl font-bold text-gray-800">{post.title}</h2>
+            
+            <div className="flex justify-between items-start gap-4">
+              <h2 className="text-2xl font-bold text-gray-800 flex-1">{post.title}</h2>
+              {/* 게시글 수정/삭제 버튼 */}
+              {currentUser && (
+                <div className="flex items-center gap-2 shrink-0 mt-1.5">
+                  {post.authorId === currentUser.userId && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => navigate(`/community/edit/${post.id}`)}
+                        className="text-xs font-bold text-[#5F8C74] hover:text-[#4d735f] cursor-pointer"
+                      >
+                        수정
+                      </button>
+                      <span className="text-xs text-gray-300">|</span>
+                    </>
+                  )}
+                  {(post.authorId === currentUser.userId || currentUser.role === "ADMIN") && (
+                    <button
+                      type="button"
+                      onClick={handleDeletePost}
+                      className="text-xs font-bold text-red-400 hover:text-red-600 cursor-pointer"
+                    >
+                      삭제
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
             
             <div className="mt-3 flex items-center justify-between text-xs text-gray-500">
               <div className="flex items-center gap-3">
@@ -235,19 +329,62 @@ export function CommunityDetailPage() {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 text-xs">
                       <span className="font-bold text-[#5F8C74]">{comment.authorNickname}</span>
-                      <span className="text-gray-400 text-[10px]">{comment.createdAt ? new Date(comment.createdAt).toLocaleDateString() : ""}</span>
+                      <span className="text-gray-400 text-[10px]">
+                        {comment.createdAt ? new Date(comment.createdAt).toLocaleDateString() : ""}
+                      </span>
                     </div>
-                    <p className="text-xs text-gray-600 mt-1.5 leading-relaxed">{comment.content}</p>
+                    {editingCommentId === comment.id ? (
+                      <div className="mt-2 flex gap-2">
+                        <input
+                          type="text"
+                          value={editingCommentContent}
+                          onChange={(e) => setEditingCommentContent(e.target.value)}
+                          className="flex-1 rounded-xl border border-[#E8F2EC] bg-[#FAF9F5] px-3 py-1.5 text-xs outline-none focus:border-[#5F8C74]"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleCommentEditSave(comment.id)}
+                          className="bg-[#5F8C74] hover:bg-[#4d735f] text-white px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer"
+                        >
+                          저장
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleCommentEditCancel}
+                          className="border border-[#E8F2EC] hover:bg-gray-50 text-gray-500 px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer"
+                        >
+                          취소
+                        </button>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-gray-600 mt-1.5 leading-relaxed">{comment.content}</p>
+                    )}
                   </div>
                   
-                  {/* 삭제 버튼 */}
-                  <button
-                    type="button"
-                    onClick={() => handleCommentDelete(comment.id)}
-                    className="text-[10px] font-bold text-red-400 hover:text-red-600 shrink-0 cursor-pointer"
-                  >
-                    삭제
-                  </button>
+                  {/* 댓글 수정/삭제 버튼 */}
+                  {currentUser && (comment.authorId === currentUser.userId || currentUser.role === "ADMIN") && (
+                    <div className="flex items-center gap-2 shrink-0 mt-1">
+                      {comment.authorId === currentUser.userId && editingCommentId !== comment.id && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => handleCommentEditStart(comment.id, comment.content)}
+                            className="text-[10px] font-bold text-[#5F8C74] hover:text-[#4d735f] cursor-pointer"
+                          >
+                            수정
+                          </button>
+                          <span className="text-[10px] text-gray-200">|</span>
+                        </>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => handleCommentDelete(comment.id)}
+                        className="text-[10px] font-bold text-red-400 hover:text-red-600 cursor-pointer"
+                      >
+                        삭제
+                      </button>
+                    </div>
+                  )}
                 </li>
               ))
             )}
