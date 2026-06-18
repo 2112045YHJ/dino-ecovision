@@ -5,6 +5,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { Header } from "../components/layout/Header";
 import { createPost, fetchPostDetails, updatePost, uploadPostImage } from "../api/communityApi";
 import { EmbedChart } from "../components/charts/EmbedChart";
+import { fetchMyChartSnapshots } from "../api/dashboardApi";
 
 export function CommunityWritePage() {
   const navigate = useNavigate();
@@ -36,6 +37,16 @@ export function CommunityWritePage() {
   const [fontSizeOpen, setFontSizeOpen] = useState(false);
   const [colorOpen, setColorOpen] = useState(false);
   const [highlightOpen, setHighlightOpen] = useState(false);
+
+  // 플러스 메뉴 및 테이블/차트 추가 제어 상태
+  const [plusMenuOpen, setPlusMenuOpen] = useState(false);
+  const [hoveredGrid, setHoveredGrid] = useState<{ r: number; c: number } | null>(null);
+  const [mySnapshots, setMySnapshots] = useState<any[]>([]);
+  const [chartModalOpen, setChartModalOpen] = useState(false);
+  const [isLoadingSnapshots, setIsLoadingSnapshots] = useState(false);
+
+  // 문단 서식 및 서브 툴바 토글 제어 상태
+  const [isBlockMenuOpen, setIsBlockMenuOpen] = useState(false);
 
   const editorRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -172,7 +183,7 @@ export function CommunityWritePage() {
     const absoluteUrl = url.startsWith("/") ? `http://localhost:8080${url}` : url;
 
     if (showSource) {
-      setContent((prev) => prev + `<p><img src="${absoluteUrl}" style="max-width: 100%; display: block; margin: 10px 0;" /></p>`);
+      setContent((prev) => prev + `<img src="${absoluteUrl}" class="fr-fic fr-dii" style="width: 250px; display: inline-block; vertical-align: bottom; margin: 0 8px;" />`);
       return;
     }
     if (editorRef.current) {
@@ -185,10 +196,12 @@ export function CommunityWritePage() {
 
       const img = document.createElement("img");
       img.src = absoluteUrl;
+      img.style.width = "250px";
       img.style.maxWidth = "100%";
-      img.style.display = "block";
-      img.style.margin = "10px 0";
-      img.className = "editable-image cursor-pointer";
+      img.style.display = "inline-block";
+      img.style.verticalAlign = "bottom";
+      img.style.margin = "0 8px";
+      img.className = "editable-image cursor-pointer fr-fic fr-dii";
 
       range.insertNode(img);
 
@@ -203,7 +216,7 @@ export function CommunityWritePage() {
         setContent(editorRef.current.innerHTML);
       }
     } else {
-      setContent((prev) => prev + `<p><img src="${absoluteUrl}" style="max-width: 100%; display: block; margin: 10px 0;" /></p>`);
+      setContent((prev) => prev + `<img src="${absoluteUrl}" class="fr-fic fr-dii" style="width: 250px; display: inline-block; vertical-align: bottom; margin: 0 8px;" />`);
     }
   };
 
@@ -267,14 +280,31 @@ export function CommunityWritePage() {
     }
   };
 
+  // 9.5 이미지 상대 좌표 계산 헬퍼 (getBoundingClientRect 활용)
+  const getImageCoordinates = (img: HTMLImageElement) => {
+    const container = editorRef.current?.parentElement;
+    if (!container) {
+      return {
+        top: img.offsetTop,
+        left: img.offsetLeft,
+        width: img.offsetWidth,
+        height: img.offsetHeight
+      };
+    }
+    const containerRect = container.getBoundingClientRect();
+    const imgRect = img.getBoundingClientRect();
+    return {
+      top: imgRect.top - containerRect.top + container.scrollTop,
+      left: imgRect.left - containerRect.left + container.scrollLeft,
+      width: imgRect.width,
+      height: imgRect.height
+    };
+  };
+
   // 10. contenteditable 클릭 시 이미지 감지 (컨텍스트 툴바 및 리사이즈 박스 트리거)
   const updateResizeBox = (img: HTMLImageElement) => {
-    setImageResizeBox({
-      top: img.offsetTop,
-      left: img.offsetLeft,
-      width: img.offsetWidth,
-      height: img.offsetHeight
-    });
+    const coords = getImageCoordinates(img);
+    setImageResizeBox(coords);
   };
 
   const handleEditorClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -285,10 +315,10 @@ export function CommunityWritePage() {
       updateResizeBox(img);
       
       // 이미지 상단에 툴바 띄우기
-      const rect = img.getBoundingClientRect();
+      const coords = getImageCoordinates(img);
       setImageToolbarPos({
-        top: img.offsetTop - 40,
-        left: img.offsetLeft + (rect.width / 2) - 130
+        top: coords.top - 40,
+        left: coords.left + (coords.width / 2) - 130
       });
     } else {
       setActiveImage(null);
@@ -316,27 +346,36 @@ export function CommunityWritePage() {
 
   const alignImage = (align: "left" | "center" | "right") => {
     if (activeImage) {
+      let cleanClass = activeImage.className
+        .replace(/\b(fr-dii|fr-dib|fr-fic)\b/g, "")
+        .replace(/\s+/g, " ")
+        .trim();
+
       if (align === "left") {
         activeImage.style.float = "left";
         activeImage.style.margin = "10px 15px 10px 0";
         activeImage.style.display = "inline";
+        activeImage.className = `${cleanClass} fr-fic`.trim();
       } else if (align === "center") {
         activeImage.style.float = "none";
         activeImage.style.margin = "10px auto";
         activeImage.style.display = "block";
+        activeImage.className = `${cleanClass} fr-dib`.trim();
       } else if (align === "right") {
         activeImage.style.float = "right";
         activeImage.style.margin = "10px 0 10px 15px";
         activeImage.style.display = "inline";
+        activeImage.className = `${cleanClass} fr-fic`.trim();
       }
       if (editorRef.current) {
         setContent(editorRef.current.innerHTML);
       }
       setTimeout(() => updateResizeBox(activeImage), 50);
       setTimeout(() => {
+        const coords = getImageCoordinates(activeImage);
         setImageToolbarPos({
-          top: activeImage.offsetTop - 40,
-          left: activeImage.offsetLeft + (activeImage.offsetWidth / 2) - 130
+          top: coords.top - 40,
+          left: coords.left + (coords.width / 2) - 130
         });
       }, 60);
     }
@@ -373,9 +412,10 @@ export function CommunityWritePage() {
       } : null);
 
       // 툴바 위치 갱신
+      const coords = getImageCoordinates(activeImage);
       setImageToolbarPos({
-        top: activeImage.offsetTop - 40,
-        left: activeImage.offsetLeft + (newWidth / 2) - 130
+        top: coords.top - 40,
+        left: coords.left + (newWidth / 2) - 130
       });
     };
 
@@ -391,6 +431,151 @@ export function CommunityWritePage() {
 
     document.addEventListener("mousemove", handleMouseMove);
     document.addEventListener("mouseup", handleMouseUp);
+  };
+
+  // 11.6 테이블 및 저장한 차트 에디터 삽입 함수군
+  const openChartModal = async () => {
+    setPlusMenuOpen(false);
+    setChartModalOpen(true);
+    try {
+      setIsLoadingSnapshots(true);
+      const data = await fetchMyChartSnapshots();
+      setMySnapshots(data);
+    } catch (err: any) {
+      console.error("Failed to load my snapshots:", err);
+      alert("저장된 차트 목록을 불러오지 못했습니다.");
+    } finally {
+      setIsLoadingSnapshots(false);
+    }
+  };
+
+  const insertChartToEditor = (uuid: string) => {
+    if (showSource) {
+      setContent((prev) => prev + `\n/embed/${uuid}\n`);
+      setChartModalOpen(false);
+      return;
+    }
+    if (editorRef.current) {
+      editorRef.current.focus();
+    }
+    const selection = window.getSelection();
+    if (selection && selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0);
+      range.deleteContents();
+
+      const textNode = document.createTextNode(`/embed/${uuid}`);
+      range.insertNode(textNode);
+
+      const newRange = document.createRange();
+      newRange.setStartAfter(textNode);
+      newRange.collapse(true);
+      selection.removeAllRanges();
+      selection.addRange(newRange);
+
+      if (editorRef.current) {
+        setContent(editorRef.current.innerHTML);
+      }
+    } else {
+      setContent((prev) => prev + `<p>/embed/${uuid}</p>`);
+    }
+    setChartModalOpen(false);
+  };
+
+  const insertTableToEditor = (rows: number, cols: number) => {
+    const colWidth = (100 / cols).toFixed(1) + "%";
+    let tableHtml = `<table style="width: 100%; table-layout: fixed; border-collapse: collapse; margin: 12px 0; border: 1px solid #E8F2EC;"><tbody>`;
+    for (let r = 0; r < rows; r++) {
+      tableHtml += `<tr>`;
+      for (let c = 0; c < cols; c++) {
+        tableHtml += `<td style="border: 1px solid #E8F2EC; padding: 8px; width: ${colWidth}; min-width: 30px; word-break: break-all;">&nbsp;</td>`;
+      }
+      tableHtml += `</tr>`;
+    }
+    tableHtml += `</tbody></table><p><br></p>`;
+
+    if (showSource) {
+      setContent((prev) => prev + tableHtml);
+      setPlusMenuOpen(false);
+      return;
+    }
+    if (editorRef.current) {
+      editorRef.current.focus();
+    }
+    const selection = window.getSelection();
+    if (selection && selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0);
+      range.deleteContents();
+
+      const tempDiv = document.createElement("div");
+      tempDiv.innerHTML = tableHtml;
+      const fragment = document.createDocumentFragment();
+      let child;
+      while ((child = tempDiv.firstChild)) {
+        fragment.appendChild(child);
+      }
+      range.insertNode(fragment);
+      
+      if (editorRef.current) {
+        setContent(editorRef.current.innerHTML);
+      }
+    } else {
+      setContent((prev) => prev + tableHtml);
+    }
+    setPlusMenuOpen(false);
+  };
+
+  // 11.7 테이블 열 너비 드래그 리사이징 마우스 이벤트 핸들러
+  const handleEditorMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (showSource) return;
+    const target = e.target as HTMLElement;
+    const cell = target.closest("td, th") as HTMLTableCellElement;
+    if (cell) {
+      const rect = cell.getBoundingClientRect();
+      // 셀의 오른쪽 경계선 8px 이내인지 감지
+      if (rect.right - e.clientX < 8) {
+        cell.style.cursor = "col-resize";
+      } else {
+        cell.style.cursor = "text";
+      }
+    }
+  };
+
+  const handleEditorMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (showSource) return;
+    const target = e.target as HTMLElement;
+    const cell = target.closest("td, th") as HTMLTableCellElement;
+    if (!cell) return;
+
+    const rect = cell.getBoundingClientRect();
+    const mouseX = e.clientX;
+
+    // 셀의 오른쪽 경계선 8px 이내인지 감지 시 리사이즈 동작 시작
+    if (rect.right - mouseX < 8) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const startWidth = cell.offsetWidth;
+      const startX = mouseX;
+
+      const handleMouseMove = (moveEvent: MouseEvent) => {
+        const deltaX = moveEvent.clientX - startX;
+        const newWidth = Math.max(30, startWidth + deltaX);
+        cell.style.width = `${newWidth}px`;
+
+        // HTML 본문 동기화
+        if (editorRef.current) {
+          setContent(editorRef.current.innerHTML);
+        }
+      };
+
+      const handleMouseUp = () => {
+        document.removeEventListener("mousemove", handleMouseMove);
+        document.removeEventListener("mouseup", handleMouseUp);
+      };
+
+      document.addEventListener("mousemove", handleMouseMove);
+      document.addEventListener("mouseup", handleMouseUp);
+    }
   };
 
   // 12. 에디터 입력 동기화
@@ -553,56 +738,6 @@ export function CommunityWritePage() {
             {/* Rich Editor Container */}
             <div className="relative rounded-md border border-gray-300 bg-white overflow-visible focus-within:ring-2 focus-within:ring-[#5F8C74]/20 transition-all flex flex-col">
               
-              {/* 이미지 오버레이 컨텍스트 툴바 */}
-              {activeImage && imageToolbarPos && (
-                <div 
-                  style={{ top: `${imageToolbarPos.top}px`, left: `${imageToolbarPos.left}px` }}
-                  className="absolute z-20 flex items-center gap-1 bg-gray-800 text-white rounded-lg p-1 shadow-md text-[10px] animate-fadeIn"
-                >
-                  <button type="button" onClick={() => resizeImage("25%")} className="p-1 px-1.5 hover:bg-gray-700 rounded cursor-pointer font-bold">25%</button>
-                  <button type="button" onClick={() => resizeImage("50%")} className="p-1 px-1.5 hover:bg-gray-700 rounded cursor-pointer font-bold">50%</button>
-                  <button type="button" onClick={() => resizeImage("100%")} className="p-1 px-1.5 hover:bg-gray-700 rounded cursor-pointer font-bold">100%</button>
-                  <span className="text-gray-500 mx-0.5">|</span>
-                  <button type="button" onClick={() => alignImage("left")} className="p-1 px-1.5 hover:bg-gray-700 rounded cursor-pointer" title="좌측 정렬">◀</button>
-                  <button type="button" onClick={() => alignImage("center")} className="p-1 px-1.5 hover:bg-gray-700 rounded cursor-pointer" title="가운데 정렬">■</button>
-                  <button type="button" onClick={() => alignImage("right")} className="p-1 px-1.5 hover:bg-gray-700 rounded cursor-pointer" title="우측 정렬">▶</button>
-                </div>
-              )}
-
-              {/* 이미지 드래그 리사이즈 오버레이 바운딩 박스 */}
-              {activeImage && imageResizeBox && (
-                <div 
-                  style={{
-                    position: "absolute",
-                    top: `${imageResizeBox.top}px`,
-                    left: `${imageResizeBox.left}px`,
-                    width: `${imageResizeBox.width}px`,
-                    height: `${imageResizeBox.height}px`,
-                    border: "2px dashed #5F8C74",
-                    pointerEvents: "none",
-                    zIndex: 10
-                  }}
-                >
-                  {/* 우측 하단 리사이즈 드래그 핸들 꼭짓점 점 */}
-                  <div 
-                    onMouseDown={handleResizeStart}
-                    style={{
-                      position: "absolute",
-                      bottom: "-6px",
-                      right: "-6px",
-                      width: "12px",
-                      height: "12px",
-                      backgroundColor: "#5F8C74",
-                      border: "1px solid white",
-                      borderRadius: "50%",
-                      cursor: "se-resize",
-                      pointerEvents: "auto",
-                      zIndex: 11
-                    }}
-                  />
-                </div>
-              )}
-
               {/* Toolbar */}
               <div className="bg-[#FAF9F5] border-b border-gray-300 p-2 flex flex-wrap gap-0.5 items-center select-none relative">
                 <button
@@ -673,15 +808,7 @@ export function CommunityWritePage() {
                   )}
                 </div>
 
-                <button
-                  type="button"
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => handleCommand("insertUnorderedList")}
-                  className={btnClass()}
-                  title="리스트"
-                >
-                  ☰
-                </button>
+
 
                 {/* foreColor 물방울 */}
                 <div className="relative">
@@ -776,24 +903,73 @@ export function CommunityWritePage() {
 
                 <span className="text-gray-300 mx-1 text-xs select-none">|</span>
 
+                {/* 단락/포맷 토글 버튼 */}
                 <button
                   type="button"
                   onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => handleCommand("formatBlock", "p")}
-                  className={btnClass()}
-                  title="문단 형식"
+                  onClick={() => !showSource && setIsBlockMenuOpen(!isBlockMenuOpen)}
+                  className={btnClass(!isBlockMenuOpen)}
+                  title="단락/포맷 서브 메뉴"
                 >
-                  ¶
+                  <span className="font-extrabold text-xs">¶⋮</span>
                 </button>
-                <button
-                  type="button"
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => handleCommand("insertHorizontalRule")}
-                  className={btnClass()}
-                  title="구분선"
-                >
-                  ▬
-                </button>
+                {/* +: 추가 기능 드롭다운 (표 삽입 및 저장한 차트 추가) */}
+                <div className="relative">
+                  <button
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => !showSource && setPlusMenuOpen(!plusMenuOpen)}
+                    className={btnClass(!plusMenuOpen)}
+                    title="추가 기능"
+                  >
+                    +: ▾
+                  </button>
+                  {plusMenuOpen && !showSource && (
+                    <div className="absolute top-full left-0 z-30 mt-1 bg-white border border-gray-200 rounded-2xl shadow-lg p-3 text-[11px] flex flex-col gap-2 w-48">
+                      {/* 테이블 삽입 격자 */}
+                      <div className="flex flex-col gap-1">
+                        <span className="font-bold text-gray-500">표 삽입 ({hoveredGrid ? `${hoveredGrid.r}x${hoveredGrid.c}` : "크기 선택"})</span>
+                        <div className="grid grid-cols-10 gap-0.5 border border-gray-100 p-1 bg-gray-50 rounded-lg">
+                          {Array.from({ length: 2 }).map((_, rIdx) => {
+                            const r = rIdx + 1;
+                            return (
+                              <React.Fragment key={r}>
+                                {Array.from({ length: 10 }).map((_, cIdx) => {
+                                  const c = cIdx + 1;
+                                  const isHighlighted = hoveredGrid && r <= hoveredGrid.r && c <= hoveredGrid.c;
+                                  return (
+                                    <div
+                                      key={`${r}-${c}`}
+                                      onMouseEnter={() => setHoveredGrid({ r, c })}
+                                      onMouseLeave={() => setHoveredGrid(null)}
+                                      onClick={() => insertTableToEditor(r, c)}
+                                      className={`w-3.5 h-3.5 border transition cursor-pointer ${
+                                        isHighlighted 
+                                          ? "bg-[#5F8C74]/55 border-[#5F8C74]" 
+                                          : "bg-white border-gray-200 hover:border-[#5F8C74]"
+                                      }`}
+                                    />
+                                  );
+                                })}
+                              </React.Fragment>
+                            );
+                          })}
+                        </div>
+                      </div>
+                      
+                      <hr className="border-gray-100 my-1" />
+                      
+                      {/* 저장한 차트 추가 버튼 */}
+                      <button
+                        type="button"
+                        onClick={openChartModal}
+                        className="w-full text-left py-1.5 px-2 hover:bg-[#E8F2EC] hover:text-[#5F8C74] rounded-xl font-bold transition flex items-center gap-1.5 cursor-pointer text-gray-600"
+                      >
+                        📊 저장한 차트 추가
+                      </button>
+                    </div>
+                  )}
+                </div>
                 <button
                   type="button"
                   onMouseDown={(e) => e.preventDefault()}
@@ -861,34 +1037,234 @@ export function CommunityWritePage() {
                   </span>
                 )}
               </div>
-              
-              {/* Rich Editor / Textarea Display */}
-              {showSource ? (
-                <textarea
-                  ref={textareaRef}
-                  value={content}
-                  onChange={handleSourceChange}
-                  rows={14}
-                  className="w-full p-4 text-xs font-mono text-gray-700 outline-none resize-none leading-relaxed bg-white border-0 focus:ring-0"
-                />
-              ) : (
-                <div
-                  ref={editorRef}
-                  contentEditable
-                  onInput={handleInput}
-                  onPaste={handlePaste}
-                  onDrop={handleDrop}
-                  onClick={(e) => {
-                    handleEditorClick(e);
-                    checkActiveFormats();
-                  }}
-                  onKeyUp={checkActiveFormats}
-                  onMouseUp={checkActiveFormats}
-                  onFocus={checkActiveFormats}
-                  className="w-full min-h-[300px] p-4 text-xs text-gray-700 outline-none overflow-y-auto leading-relaxed bg-white border-0 focus:ring-0 cursor-text"
-                  style={{ maxHeight: "500px" }}
-                />
+
+              {/* Sub Toolbar (단락/포맷 토글 시 노출) */}
+              {isBlockMenuOpen && !showSource && (
+                <div className="bg-[#FAF9F5] border-b border-gray-300 p-2 flex flex-wrap gap-1 items-center select-none animate-fadeIn transition-all">
+                  {/* 1. 텍스트 정렬 */}
+                  <button
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => handleCommand("justifyLeft")}
+                    className="p-1.5 rounded transition-all hover:bg-[#E8F2EC] hover:text-[#5F8C74] text-gray-500 cursor-pointer flex items-center justify-center"
+                    title="좌측 정렬"
+                  >
+                    <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor">
+                      <path d="M3 21h18v-2H3v2zM3 3v2h18V3H3zm0 6h12v2H3V9zm0 6h18v-2H3v2z"/>
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => handleCommand("justifyCenter")}
+                    className="p-1.5 rounded transition-all hover:bg-[#E8F2EC] hover:text-[#5F8C74] text-gray-500 cursor-pointer flex items-center justify-center"
+                    title="가운데 정렬"
+                  >
+                    <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor">
+                      <path d="M3 21h18v-2H3v2zM3 3v2h18V3H3zm4 6h10v2H7V9zm0 6h10v-2H7v2z"/>
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => handleCommand("justifyRight")}
+                    className="p-1.5 rounded transition-all hover:bg-[#E8F2EC] hover:text-[#5F8C74] text-gray-500 cursor-pointer flex items-center justify-center"
+                    title="우측 정렬"
+                  >
+                    <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor">
+                      <path d="M3 21h18v-2H3v2zM3 3v2h18V3H3zm6 6h12v2H9V9zm0 6h12v-2H9v2z"/>
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => handleCommand("justifyFull")}
+                    className="p-1.5 rounded transition-all hover:bg-[#E8F2EC] hover:text-[#5F8C74] text-gray-500 cursor-pointer flex items-center justify-center"
+                    title="양쪽 정렬"
+                  >
+                    <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor">
+                      <path d="M3 21h18v-2H3v2zM3 3v2h18V3H3zm0 6h18v2H3V9zm0 6h18v-2H3v2z"/>
+                    </svg>
+                  </button>
+
+                  <span className="text-gray-300 mx-1 text-xs select-none">|</span>
+
+                  {/* 2. 리스트 */}
+                  <button
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => handleCommand("insertOrderedList")}
+                    className="p-1.5 rounded transition-all hover:bg-[#E8F2EC] hover:text-[#5F8C74] text-gray-500 cursor-pointer flex items-center justify-center"
+                    title="순서 있는 목록 (ol)"
+                  >
+                    <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor">
+                      <path d="M2 17h2v.5H3v1h1v.5H2v1h3v-4H2v1zm1-9h1V4H2v1h1v3zm-1 3h1.8L2 13.1v.9h3v-1H3.2L5 10.9v-.9H2v1zm5-6v2h14V5H7zm0 14h14v-2H7v2zm0-5h14v-2H7v2z"/>
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => handleCommand("insertUnorderedList")}
+                    className="p-1.5 rounded transition-all hover:bg-[#E8F2EC] hover:text-[#5F8C74] text-gray-500 cursor-pointer flex items-center justify-center"
+                    title="순서 없는 목록 (ul)"
+                  >
+                    <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor">
+                      <path d="M4 10.5c-.83 0-1.5.67-1.5 1.5s.67 1.5 1.5 1.5 1.5-.67 1.5-1.5-.67-1.5-1.5-1.5zm0-6c-.83 0-1.5.67-1.5 1.5S3.17 7.5 4 7.5 5.5 6.83 5.5 6 4.83 4.5 4 4.5zm0 12c-.83 0-1.5.68-1.5 1.5s.68 1.5 1.5 1.5 1.5-.68 1.5-1.5-.67-1.5-1.5-1.5zM7 19h14v-2H7v2zm0-6h14v-2H7v2zm0-8v2h14V5H7z"/>
+                    </svg>
+                  </button>
+
+                  <span className="text-gray-300 mx-1 text-xs select-none">|</span>
+
+                  {/* 3. 들여쓰기 */}
+                  <button
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => handleCommand("outdent")}
+                    className="p-1.5 rounded transition-all hover:bg-[#E8F2EC] hover:text-[#5F8C74] text-gray-500 cursor-pointer flex items-center justify-center"
+                    title="들여쓰기 줄이기"
+                  >
+                    <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor">
+                      <path d="M11 17h10v-2H11v2zm-8-5l4 4V8l-4 4zm0 9h18v-2H3v2zM3 3v2h18V3H3zm8 6h10V7H11v2zm0 4h10v-2H11v2z"/>
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => handleCommand("indent")}
+                    className="p-1.5 rounded transition-all hover:bg-[#E8F2EC] hover:text-[#5F8C74] text-gray-500 cursor-pointer flex items-center justify-center"
+                    title="들여쓰기 늘리기"
+                  >
+                    <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor">
+                      <path d="M3 21h18v-2H3v2zM3 3v2h18V3H3zm11 14h7v-2h-7v2zm-7-5l-4 4V8l4 4zm4 1h10v-2H11v2zm0-4h10V7H11v2z"/>
+                    </svg>
+                  </button>
+
+                  <span className="text-gray-300 mx-1 text-xs select-none">|</span>
+
+                  {/* 4. 인용구 */}
+                  <button
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => handleCommand("formatBlock", "blockquote")}
+                    className="p-1.5 rounded transition-all hover:bg-[#E8F2EC] hover:text-[#5F8C74] text-gray-500 cursor-pointer flex items-center justify-center"
+                    title="인용구 블록 (blockquote)"
+                  >
+                    <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor">
+                      <path d="M6 17h3l2-4V7H5v6h3zm8 0h3l2-4V7h-6v6h3z"/>
+                    </svg>
+                  </button>
+
+                  <span className="text-gray-300 mx-1 text-xs select-none">|</span>
+
+                  {/* 5. 가로 구분선 */}
+                  <button
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => handleCommand("insertHorizontalRule")}
+                    className="p-1.5 rounded transition-all hover:bg-[#E8F2EC] hover:text-[#5F8C74] text-gray-500 cursor-pointer flex items-center justify-center"
+                    title="구분선 삽입 (hr)"
+                  >
+                    <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor">
+                      <path d="M19 13H5v-2h14v2z"/>
+                    </svg>
+                  </button>
+                </div>
               )}
+
+              {/* 스크롤 컨테이너 (relative overflow-y-auto min-h-[300px] max-h-[500px]) */}
+              <div 
+                className="relative overflow-y-auto min-h-[300px] max-h-[500px] flex-1"
+                onScroll={() => {
+                  if (activeImage) {
+                    updateResizeBox(activeImage);
+                    const coords = getImageCoordinates(activeImage);
+                    setImageToolbarPos({
+                      top: coords.top - 40,
+                      left: coords.left + (coords.width / 2) - 130
+                    });
+                  }
+                }}
+              >
+                
+                {/* 이미지 오버레이 컨텍스트 툴바 */}
+                {activeImage && imageToolbarPos && (
+                  <div 
+                    style={{ top: `${imageToolbarPos.top}px`, left: `${imageToolbarPos.left}px` }}
+                    className="absolute z-20 flex items-center gap-1 bg-gray-800 text-white rounded-lg p-1 shadow-md text-[10px] animate-fadeIn"
+                  >
+                    <button type="button" onClick={() => resizeImage("25%")} className="p-1 px-1.5 hover:bg-gray-700 rounded cursor-pointer font-bold">25%</button>
+                    <button type="button" onClick={() => resizeImage("50%")} className="p-1 px-1.5 hover:bg-gray-700 rounded cursor-pointer font-bold">50%</button>
+                    <button type="button" onClick={() => resizeImage("100%")} className="p-1 px-1.5 hover:bg-gray-700 rounded cursor-pointer font-bold">100%</button>
+                    <span className="text-gray-500 mx-0.5">|</span>
+                    <button type="button" onClick={() => alignImage("left")} className="p-1 px-1.5 hover:bg-gray-700 rounded cursor-pointer" title="좌측 정렬">◀</button>
+                    <button type="button" onClick={() => alignImage("center")} className="p-1 px-1.5 hover:bg-gray-700 rounded cursor-pointer" title="가운데 정렬">■</button>
+                    <button type="button" onClick={() => alignImage("right")} className="p-1 px-1.5 hover:bg-gray-700 rounded cursor-pointer" title="우측 정렬">▶</button>
+                  </div>
+                )}
+
+                {/* 이미지 드래그 리사이즈 오버레이 바운딩 박스 */}
+                {activeImage && imageResizeBox && (
+                  <div 
+                    style={{
+                      position: "absolute",
+                      top: `${imageResizeBox.top}px`,
+                      left: `${imageResizeBox.left}px`,
+                      width: `${imageResizeBox.width}px`,
+                      height: `${imageResizeBox.height}px`,
+                      border: "2px dashed #5F8C74",
+                      pointerEvents: "none",
+                      zIndex: 10
+                    }}
+                  >
+                    {/* 우측 하단 리사이즈 드래그 핸들 꼭짓점 점 */}
+                    <div 
+                      onMouseDown={handleResizeStart}
+                      style={{
+                        position: "absolute",
+                        bottom: "-6px",
+                        right: "-6px",
+                        width: "12px",
+                        height: "12px",
+                        backgroundColor: "#5F8C74",
+                        border: "1px solid white",
+                        borderRadius: "50%",
+                        cursor: "se-resize",
+                        pointerEvents: "auto",
+                        zIndex: 11
+                      }}
+                    />
+                  </div>
+                )}
+                
+                {/* Rich Editor / Textarea Display */}
+                {showSource ? (
+                  <textarea
+                    ref={textareaRef}
+                    value={content}
+                    onChange={handleSourceChange}
+                    rows={14}
+                    className="w-full p-4 text-xs font-mono text-gray-700 outline-none resize-none leading-relaxed bg-white border-0 focus:ring-0"
+                  />
+                ) : (
+                  <div
+                    ref={editorRef}
+                    contentEditable
+                    onInput={handleInput}
+                    onPaste={handlePaste}
+                    onDrop={handleDrop}
+                    onMouseMove={handleEditorMouseMove}
+                    onMouseDown={handleEditorMouseDown}
+                    onClick={(e) => {
+                      handleEditorClick(e);
+                      checkActiveFormats();
+                    }}
+                    onKeyUp={checkActiveFormats}
+                    onMouseUp={checkActiveFormats}
+                    onFocus={checkActiveFormats}
+                    className="w-full min-h-[300px] p-4 text-xs text-gray-700 outline-none leading-relaxed bg-white border-0 focus:ring-0 cursor-text"
+                  />
+                )}
+              </div>
 
               {/* Editor Footer */}
               <div className="bg-[#FAF9F5] border-t border-gray-200 px-4 py-2 flex justify-end text-[10px] text-gray-400 select-none">
@@ -953,6 +1329,64 @@ export function CommunityWritePage() {
           </form>
         </section>
       </main>
+
+      {/* 저장한 차트 목록 조회 모달 */}
+      {chartModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm animate-fadeIn">
+          <div className="w-full max-w-md bg-white rounded-3xl border border-[#E8F2EC] p-6 shadow-xl max-h-[80vh] flex flex-col">
+            <div className="flex justify-between items-center mb-4 border-b border-[#E8F2EC] pb-3">
+              <h3 className="text-sm font-bold text-gray-800 flex items-center gap-1.5">
+                📊 저장한 차트 추가
+              </h3>
+              <button 
+                type="button" 
+                onClick={() => setChartModalOpen(false)} 
+                className="text-gray-400 hover:text-gray-600 font-bold text-base cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+            
+            {isLoadingSnapshots ? (
+              <div className="flex justify-center items-center py-10">
+                <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#5F8C74] border-t-transparent"></div>
+              </div>
+            ) : mySnapshots.length === 0 ? (
+              <div className="py-10 text-center text-xs text-gray-400">
+                저장된 차트 스냅샷이 없습니다.<br/>
+                대시보드에서 차트의 '공유하기' 버튼을 눌러 스냅샷을 먼저 생성해 보세요!
+              </div>
+            ) : (
+              <div className="overflow-y-auto flex-1 grid gap-2 pr-1">
+                {mySnapshots.map((snapshot) => (
+                  <button
+                    key={snapshot.id}
+                    type="button"
+                    onClick={() => insertChartToEditor(snapshot.id)}
+                    className="w-full text-left p-3 rounded-2xl border border-gray-100 bg-[#FAF9F5]/50 hover:bg-[#E8F2EC]/40 hover:border-[#5F8C74]/30 transition flex flex-col gap-1 cursor-pointer"
+                  >
+                    <span className="font-bold text-gray-800 text-xs">{snapshot.title || "제목 없음"}</span>
+                    <div className="flex justify-between w-full text-[9px] text-gray-400">
+                      <span>종류: {snapshot.chartType === "GAS" ? "가스 사용량" : "전력 사용량"}</span>
+                      <span>작성: {snapshot.createdAt ? new Date(snapshot.createdAt).toLocaleDateString() : ""}</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+            
+            <div className="mt-4 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setChartModalOpen(false)}
+                className="rounded-xl border border-gray-200 px-4 py-2 text-xs font-bold text-gray-500 hover:bg-gray-50 transition cursor-pointer"
+              >
+                닫기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

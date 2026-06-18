@@ -205,3 +205,12 @@ export async function getChartSnapshot(
     "차트 스냅샷 조회에 실패했습니다.",
   );
 }
+
+// 10.5 사용자의 저장된 차트 스냅샷 목록 조회 API
+export async function fetchMyChartSnapshots(): Promise<DashboardChartSnapshotResponse[]> {
+  const token = localStorage.getItem("accessToken");
+  return await apiRequest<DashboardChartSnapshotResponse[]>("/api/charts/snapshot", {
+    method: "GET",
+    token,
+  });
+}

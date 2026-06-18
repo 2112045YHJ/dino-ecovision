@@ -376,6 +376,13 @@ public class CommunityService {
         return convertToChartSnapshotResponse(snapshot);
     }
 
+    @Transactional(readOnly = true)
+    public java.util.List<CommunityDto.ChartSnapshotResponse> getUserSnapshots(Long userId) {
+        return chartSnapshotRepository.findAllByUserIdOrderByCreatedAtDesc(userId).stream()
+                .map(this::convertToChartSnapshotResponse)
+                .collect(java.util.stream.Collectors.toList());
+    }
+
     private void rewardPoints(User user, int amount, String reason) {
         LocalDate today = LocalDate.now();
         
