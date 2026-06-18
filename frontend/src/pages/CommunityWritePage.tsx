@@ -85,8 +85,12 @@ export function CommunityWritePage() {
 
   // 2. content 변경 시 contenteditable innerHTML 싱글톤 동기화
   useEffect(() => {
-    if (!showSource && editorRef.current && editorRef.current.innerHTML !== content) {
-      editorRef.current.innerHTML = content;
+    if (!showSource && editorRef.current) {
+      // 에디터 화면 렌더링 시 상대 경로를 절대 경로로 가공하여 엑박 방지
+      const processed = content.replace(/src="\/uploads\//gi, 'src="http://localhost:8080/uploads/');
+      if (editorRef.current.innerHTML !== processed) {
+        editorRef.current.innerHTML = processed;
+      }
     }
   }, [content, showSource]);
 
@@ -163,8 +167,11 @@ export function CommunityWritePage() {
 
   // 6. 이미지 삽입 처리 (캐럿 기준)
   const insertImageAtCursor = (url: string) => {
+    // 엑박 방지: 상대 경로 /uploads/를 백엔드 절대 주소로 변환
+    const absoluteUrl = url.startsWith("/") ? `http://localhost:8080${url}` : url;
+
     if (showSource) {
-      setContent((prev) => prev + `<p><img src="${url}" style="max-width: 100%; display: block; margin: 10px 0;" /></p>`);
+      setContent((prev) => prev + `<p><img src="${absoluteUrl}" style="max-width: 100%; display: block; margin: 10px 0;" /></p>`);
       return;
     }
     if (editorRef.current) {
@@ -176,11 +183,11 @@ export function CommunityWritePage() {
       range.deleteContents();
 
       const img = document.createElement("img");
-      img.src = url;
+      img.src = absoluteUrl;
       img.style.maxWidth = "100%";
       img.style.display = "block";
       img.style.margin = "10px 0";
-      img.className = "editable-image cursor-pointer hover:ring-2 hover:ring-[#5F8C74]";
+      img.className = "editable-image cursor-pointer";
 
       range.insertNode(img);
 
@@ -195,7 +202,7 @@ export function CommunityWritePage() {
         setContent(editorRef.current.innerHTML);
       }
     } else {
-      setContent((prev) => prev + `<p><img src="${url}" style="max-width: 100%; display: block; margin: 10px 0;" /></p>`);
+      setContent((prev) => prev + `<p><img src="${absoluteUrl}" style="max-width: 100%; display: block; margin: 10px 0;" /></p>`);
     }
   };
 
@@ -362,10 +369,13 @@ export function CommunityWritePage() {
     const chartSnapshotId = match ? match[1] : null;
 
     try {
+      // 백엔드 저장 시에는 절대 경로 http://localhost:8080/uploads/를 상대 경로 /uploads/로 정제하여 DB 매핑 무결성 유지
+      const cleanContent = content.replace(/http:\/\/localhost:8080\/uploads\//gi, '/uploads/');
+
       if (isEditMode && id) {
         await updatePost(parseInt(id), {
           title,
-          content,
+          content: cleanContent,
           category,
           chartSnapshotId,
           dinoSnapshot,
@@ -376,7 +386,7 @@ export function CommunityWritePage() {
       } else {
         const newId = await createPost({
           title,
-          content,
+          content: cleanContent,
           category,
           chartSnapshotId,
           dinoSnapshot,

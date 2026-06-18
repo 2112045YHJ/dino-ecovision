@@ -197,7 +197,9 @@ export function CommunityDetailPage() {
   const renderContent = (content: string) => {
     const EMBED_REGEX = /\/embed\/([a-zA-Z0-9-]+)/i;
     const match = content.match(EMBED_REGEX);
-    const sanitized = sanitizeHtml(content);
+    // 상대 경로 /uploads/를 백엔드 절대 주소로 치환하여 엑박 예방
+    const processedContent = content.replace(/src="\/uploads\//gi, 'src="http://localhost:8080/uploads/');
+    const sanitized = sanitizeHtml(processedContent);
 
     if (match) {
       const parts = sanitized.split(EMBED_REGEX);
