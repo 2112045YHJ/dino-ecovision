@@ -10,6 +10,25 @@ import {
   type DinoType,
 } from "../assets/images/dinos/dinoImages";
 
+/*
+  이 페이지에서 하는 일
+
+  1. 사용자가 키울 공룡 타입을 선택합니다.
+  2. 공룡 이름을 입력합니다.
+  3. POST /api/me/dino/hatch API를 호출해서 첫 공룡을 생성합니다.
+  4. 성공하면 홈 화면으로 이동합니다.
+  5. 이미 공룡이 있는 계정이면 409 에러를 사용자 친화적으로 처리합니다.
+
+  왜 409 처리가 필요할까?
+
+  409는 보통 "이미 존재한다", "이미 처리된 상태다"라는 뜻입니다.
+  예를 들어 이미 공룡을 선택한 사용자가 다시 공룡 선택을 시도하면,
+  백엔드는 "이미 공룡이 있습니다"라는 의미로 409를 줄 수 있습니다.
+
+  이때 화면이 그냥 에러로 끝나면 발표 중에 당황할 수 있으므로,
+  디노룸으로 이동할 수 있는 버튼을 보여줍니다.
+*/
+
 // 화면에 보여줄 공룡 선택 목록입니다.
 // 프론트에서는 TYRANO / SAURO / CERATO 이름을 사용합니다.
 const dinoOptions: {
@@ -34,6 +53,27 @@ const dinoOptions: {
   },
 ];
 
+// 에러 객체에서 화면에 보여줄 메시지를 안전하게 꺼내는 함수입니다.
+function getErrorMessage(error: unknown, fallbackMessage: string) {
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  return fallbackMessage;
+}
+
+// 이미 공룡이 있는 상태인지 확인하는 함수입니다.
+function isAlreadyHasDinoError(message: string) {
+  return (
+    message.includes("409") ||
+    message.includes("이미") ||
+    message.includes("공룡") ||
+    message.includes("DINO_ALREADY_EXISTS") ||
+    message.includes("ALREADY_HAS_DINO") ||
+    message.includes("already")
+  );
+}
+
 export function DinoSelectionPage() {
   // 페이지 이동을 도와주는 함수입니다.
   const navigate = useNavigate();
@@ -50,10 +90,21 @@ export function DinoSelectionPage() {
   // 에러 메시지입니다.
   const [errorMessage, setErrorMessage] = useState("");
 
+  // 이미 공룡이 있는 계정인지 저장합니다.
+  const [alreadyHasDino, setAlreadyHasDino] = useState(false);
+
   // 공룡 이름 입력값이 바뀔 때 실행됩니다.
   const handleDinoNameChange = (value: string) => {
     setDinoName(value);
     setErrorMessage("");
+    setAlreadyHasDino(false);
+  };
+
+  // 공룡 타입 카드를 클릭했을 때 실행됩니다.
+  const handleSelectDinoType = (dinoType: DinoType) => {
+    setSelectedDinoType(dinoType);
+    setErrorMessage("");
+    setAlreadyHasDino(false);
   };
 
   // 공룡 선택 완료 버튼을 눌렀을 때 실행됩니다.
@@ -62,17 +113,20 @@ export function DinoSelectionPage() {
 
     if (!trimmedDinoName) {
       setErrorMessage("공룡 이름을 입력해주세요.");
+      setAlreadyHasDino(false);
       return;
     }
 
     if (trimmedDinoName.length < 2) {
       setErrorMessage("공룡 이름은 2자 이상 입력해주세요.");
+      setAlreadyHasDino(false);
       return;
     }
 
     try {
       setIsSaving(true);
       setErrorMessage("");
+      setAlreadyHasDino(false);
 
       // 백엔드에 첫 공룡 선택 정보를 저장합니다.
       // dinoApi.ts 안에서 TYRANO / SAURO / CERATO가 templateId로 바뀝니다.
@@ -81,9 +135,13 @@ export function DinoSelectionPage() {
         nickname: trimmedDinoName,
       });
 
-      // 아직 HomePage나 DinoRoomPage가 localStorage를 참고하는 부분이 있을 수 있어서
-      // 화면 표시용으로 임시 저장해둡니다.
-      // 나중에 모든 화면이 GET /api/me/dino로 바뀌면 이 부분은 지워도 됩니다.
+      /*
+        아직 일부 화면이 localStorage를 참고할 가능성이 있어서 임시 저장합니다.
+
+        현재 HomePage / DinoRoomPage / DinoCollectionPage는
+        GET /api/me/dino 기반으로 정리했기 때문에,
+        나중에는 이 localStorage 저장 로직을 삭제해도 됩니다.
+      */
       localStorage.setItem(
         "myDino",
         JSON.stringify({
@@ -100,7 +158,26 @@ export function DinoSelectionPage() {
       navigate("/home");
     } catch (error) {
       console.error(error);
-      setErrorMessage("공룡 선택 정보를 저장하지 못했습니다.");
+
+      const message = getErrorMessage(
+        error,
+        "공룡 선택 정보를 저장하지 못했습니다.",
+      );
+
+      /*
+        이미 공룡이 있는 계정이면,
+        에러만 보여주고 끝내지 않고 디노룸으로 이동할 수 있게 합니다.
+      */
+      if (isAlreadyHasDinoError(message)) {
+        setAlreadyHasDino(true);
+        setErrorMessage(
+          "이미 선택한 디노가 있어요. 디노룸에서 내 디노를 확인해주세요.",
+        );
+        return;
+      }
+
+      setAlreadyHasDino(false);
+      setErrorMessage(message || "공룡 선택 정보를 저장하지 못했습니다.");
     } finally {
       setIsSaving(false);
     }
@@ -130,10 +207,7 @@ export function DinoSelectionPage() {
               <button
                 key={dino.type}
                 type="button"
-                onClick={() => {
-                  setSelectedDinoType(dino.type);
-                  setErrorMessage("");
-                }}
+                onClick={() => handleSelectDinoType(dino.type)}
                 className={`rounded-3xl border-2 bg-white p-5 text-left shadow-sm transition hover:-translate-y-1 hover:shadow-md ${
                   isSelected ? "border-[#5F8C74]" : "border-transparent"
                 }`}
@@ -189,8 +263,34 @@ export function DinoSelectionPage() {
           </p>
 
           {errorMessage && (
-            <div className="mt-4 rounded-2xl bg-[#FFF0EA] p-4 text-sm font-bold text-[#E07A5F]">
+            <div
+              className={`mt-4 rounded-2xl p-4 text-sm font-bold ${
+                alreadyHasDino
+                  ? "bg-[#E8F2EC] text-[#5F8C74]"
+                  : "bg-[#FFF0EA] text-[#E07A5F]"
+              }`}
+            >
               {errorMessage}
+
+              {alreadyHasDino && (
+                <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                  <button
+                    type="button"
+                    onClick={() => navigate("/dino-room")}
+                    className="rounded-2xl bg-[#5F8C74] py-3 font-bold text-white transition hover:bg-[#4d735f]"
+                  >
+                    디노룸으로 가기
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => navigate("/home")}
+                    className="rounded-2xl border border-[#5F8C74] bg-white py-3 font-bold text-[#5F8C74] transition hover:bg-[#E8F2EC]"
+                  >
+                    홈으로 가기
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
@@ -201,6 +301,14 @@ export function DinoSelectionPage() {
             className="mt-6 w-full rounded-2xl bg-[#5F8C74] py-3 font-bold text-white transition hover:bg-[#4d735f] disabled:bg-gray-300"
           >
             {isSaving ? "저장 중..." : "공룡 선택 완료"}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => navigate("/home")}
+            className="mt-3 w-full rounded-2xl border border-[#5F8C74] py-3 font-bold text-[#5F8C74] transition hover:bg-[#E8F2EC]"
+          >
+            홈으로 돌아가기
           </button>
         </section>
       </section>

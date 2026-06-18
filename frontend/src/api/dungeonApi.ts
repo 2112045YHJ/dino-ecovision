@@ -1,5 +1,5 @@
-// src/api/worldApi.ts
-// 명세서 v0.8 - 4. world 도메인
+// src/api/dungeonApi.ts
+// 명세서 v0.8 - 6. dungeon 도메인
 
 const API_BASE_URL = "http://localhost:8080";
 
@@ -13,21 +13,23 @@ type ApiResponse<T> = {
   } | null;
 };
 
-type PowerMix = {
-  source: string;
-  ratio: number;
+type DungeonMission = {
+  assignmentId: number;
+  title: string;
+  estimatedCo2Kg: number;
+  baseReward: number;
 };
 
-export type WorldCurrentResponse = {
-  carbonIntensity: number;
-  gradeStatus: "PURIFIED" | "NORMAL" | "POLLUTED";
-  carbonWeight: number;
+export type ActiveDungeonResponse = {
+  dungeonId: number;
+  status: "ACTIVE" | "ENDED";
   reserveRate: number;
-  powerMix: PowerMix[];
-  dungeonActive: boolean;
-  measuredAt: string;
-  isFallback: boolean;
-};
+  dungeonMultiplier: number;
+  startedAt: string;
+  endsAt: string;
+  remainingSeconds: number;
+  missions: DungeonMission[];
+} | null;
 
 function getAccessToken() {
   return localStorage.getItem("accessToken");
@@ -55,16 +57,16 @@ async function readApiResponse<T>(
   return result.data;
 }
 
-// 4.1 현재 세계 상태 조회 (5초 폴링용)
-export async function getCurrentWorld(): Promise<WorldCurrentResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/world/current`, {
+// 6.1 활성 던전 조회
+export async function getActiveDungeon(): Promise<ActiveDungeonResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/dungeons/active`, {
     method: "GET",
     credentials: "include",
     headers: createAuthHeaders(),
   });
 
-  return readApiResponse<WorldCurrentResponse>(
+  return readApiResponse<ActiveDungeonResponse>(
     response,
-    "세계 상태 조회에 실패했습니다.",
+    "던전 조회에 실패했습니다.",
   );
 }
