@@ -9,11 +9,7 @@ export interface EnergyUsageSumResponse {
   sumCarbonEmissionKg: number;
 }
 
-<<<<<<< HEAD
-export interface ChartSnapshotResponse {
-=======
 export interface DashboardChartSnapshotResponse {
->>>>>>> feature/community-fe-setup
   id: string;
   title: string;
   chartType: string;
@@ -38,22 +34,14 @@ export async function createDashboardSnapshot(request: {
   title: string;
   chartType: string;
   chartMetadata: string;
-<<<<<<< HEAD
-}): Promise<ChartSnapshotResponse> {
-  const token = localStorage.getItem("accessToken");
-  return await apiRequest<ChartSnapshotResponse>("/api/charts/snapshot", {
-=======
 }): Promise<DashboardChartSnapshotResponse> {
   const token = localStorage.getItem("accessToken");
   return await apiRequest<DashboardChartSnapshotResponse>("/api/charts/snapshot", {
->>>>>>> feature/community-fe-setup
     method: "POST",
     body: request,
     token,
   });
 }
-<<<<<<< HEAD
-=======
 
 // -------------------------------------------------------------
 // 조원 추가 API (명세서 v0.8 - 10. dashboard 도메인)
@@ -226,4 +214,3 @@ export async function fetchMyChartSnapshots(): Promise<DashboardChartSnapshotRes
     token,
   });
 }
->>>>>>> feature/community-fe-setup

@@ -8,18 +8,12 @@ import {
   fetchPostDetails,
   likePost,
   createComment,
-<<<<<<< HEAD
-  deleteComment,
-  type PostResponse,
-} from "../api/communityApi";
-=======
   updateComment,
   deleteComment,
   deletePost,
   type PostResponse,
 } from "../api/communityApi";
 import { getMe, type MeProfile } from "../api/meApi";
->>>>>>> feature/community-fe-setup
 
 export function CommunityDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -28,13 +22,6 @@ export function CommunityDetailPage() {
   const [post, setPost] = useState<PostResponse | null>(null);
   const [commentInput, setCommentInput] = useState("");
   const [isLoading, setIsLoading] = useState(true);
-<<<<<<< HEAD
-
-  useEffect(() => {
-    loadPostDetails();
-  }, [id]);
-
-=======
   const [currentUser, setCurrentUser] = useState<MeProfile | null>(null);
   
   const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
@@ -54,7 +41,6 @@ export function CommunityDetailPage() {
     }
   }
 
->>>>>>> feature/community-fe-setup
   async function loadPostDetails() {
     if (!id) return;
     try {
@@ -70,8 +56,6 @@ export function CommunityDetailPage() {
     }
   }
 
-<<<<<<< HEAD
-=======
   const handleDeletePost = async () => {
     if (!post) return;
     if (!window.confirm("정말로 이 게시글을 삭제하시겠습니까?")) return;
@@ -87,7 +71,6 @@ export function CommunityDetailPage() {
     }
   };
 
->>>>>>> feature/community-fe-setup
   const handleLike = async () => {
     if (!post) return;
     try {
@@ -117,10 +100,6 @@ export function CommunityDetailPage() {
       // 다시 불러오기
       const updated = await fetchPostDetails(post.id);
       setPost(updated);
-<<<<<<< HEAD
-    } catch (err) {
-      console.error("Failed to submit comment:", err);
-=======
     } catch (err: any) {
       console.error("Failed to submit comment:", err);
       const errorMsg = err?.message || "오류가 발생했습니다.";
@@ -154,7 +133,6 @@ export function CommunityDetailPage() {
       console.error("Failed to edit comment:", err);
       const errorMsg = err?.message || "오류가 발생했습니다.";
       alert(`댓글 수정에 실패했습니다: ${errorMsg}`);
->>>>>>> feature/community-fe-setup
     }
   };
 
@@ -167,15 +145,10 @@ export function CommunityDetailPage() {
       // 다시 불러오기
       const updated = await fetchPostDetails(post.id);
       setPost(updated);
-<<<<<<< HEAD
-    } catch (err) {
-      console.error("Failed to delete comment:", err);
-=======
     } catch (err: any) {
       console.error("Failed to delete comment:", err);
       const errorMsg = err?.message || "오류가 발생했습니다.";
       alert(`댓글 삭제에 실패했습니다: ${errorMsg}`);
->>>>>>> feature/community-fe-setup
     }
   };
 
@@ -212,20 +185,6 @@ export function CommunityDetailPage() {
     }
   };
 
-<<<<<<< HEAD
-  // 본문 안에서 차트 스냅샷 감지 및 렌더링
-  const renderContent = (content: string) => {
-    const EMBED_REGEX = /\/embed\/([a-zA-Z0-9-]+)/i;
-    const match = content.match(EMBED_REGEX);
-
-    if (match) {
-      const parts = content.split(EMBED_REGEX);
-      return (
-        <>
-          <p className="whitespace-pre-wrap leading-relaxed">{parts[0]}</p>
-          <EmbedChart snapshotId={match[1]} />
-          {parts[2] && <p className="whitespace-pre-wrap leading-relaxed mt-4">{parts[2]}</p>}
-=======
   // XSS 방어용 클라이언트 사이드 HTML 새니타이즈
   const sanitizeHtml = (html: string): string => {
     if (!html) return "";
@@ -249,16 +208,11 @@ export function CommunityDetailPage() {
           <div dangerouslySetInnerHTML={{ __html: parts[0] }} className="rich-content leading-relaxed" />
           <EmbedChart snapshotId={match[1]} />
           {parts[2] && <div dangerouslySetInnerHTML={{ __html: parts[2] }} className="rich-content leading-relaxed mt-4" />}
->>>>>>> feature/community-fe-setup
         </>
       );
     }
 
-<<<<<<< HEAD
-    return <p className="whitespace-pre-wrap leading-relaxed">{content}</p>;
-=======
     return <div dangerouslySetInnerHTML={{ __html: sanitized }} className="rich-content leading-relaxed" />;
->>>>>>> feature/community-fe-setup
   };
 
   if (isLoading) {
@@ -292,11 +246,7 @@ export function CommunityDetailPage() {
         <article className="rounded-3xl border border-[#E8F2EC] bg-white p-6 shadow-sm">
           {/* 머리말 */}
           <header className="border-b border-[#E8F2EC] pb-4 mb-6">
-<<<<<<< HEAD
-            <div className="flex items-center gap-2 mb-2">
-=======
             <div className="flex items-center justify-between mb-2">
->>>>>>> feature/community-fe-setup
               <span className={`rounded px-2.5 py-0.5 text-[10px] font-bold border ${
                 post.category === "NOTICE" 
                   ? "bg-red-50 text-red-600 border-red-200" 
@@ -305,22 +255,6 @@ export function CommunityDetailPage() {
                 {post.category === "NOTICE" ? "공지" : post.category === "INFO_SHARE" ? "정보공유" : "일반"}
               </span>
             </div>
-<<<<<<< HEAD
-            <h2 className="text-2xl font-bold text-gray-800">{post.title}</h2>
-            
-            <div className="mt-3 flex items-center justify-between text-xs text-gray-500">
-              <div className="flex items-center gap-3">
-                <span className="font-semibold text-[#5F8C74]">{post.authorNickname}</span>
-                <span>•</span>
-                <span>{new Date(post.createdAt).toLocaleString()}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span>조회수 {post.viewCount}</span>
-                <span>•</span>
-                <span className="text-[#E07A5F]">추천 {post.likeCount}</span>
-              </div>
-            </div>
-=======
             
             <div className="flex justify-between items-start gap-4">
               <h2 className="text-2xl font-bold text-gray-800 flex-1">{post.title}</h2>
@@ -376,7 +310,6 @@ export function CommunityDetailPage() {
                 </div>
               );
             })()}
->>>>>>> feature/community-fe-setup
           </header>
 
           {/* 본문 내용 */}
@@ -419,21 +352,6 @@ export function CommunityDetailPage() {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 text-xs">
                       <span className="font-bold text-[#5F8C74]">{comment.authorNickname}</span>
-<<<<<<< HEAD
-                      <span className="text-gray-400 text-[10px]">{new Date(comment.createdAt).toLocaleDateString()}</span>
-                    </div>
-                    <p className="text-xs text-gray-600 mt-1.5 leading-relaxed">{comment.content}</p>
-                  </div>
-                  
-                  {/* 삭제 버튼 */}
-                  <button
-                    type="button"
-                    onClick={() => handleCommentDelete(comment.id)}
-                    className="text-[10px] font-bold text-red-400 hover:text-red-600 shrink-0 cursor-pointer"
-                  >
-                    삭제
-                  </button>
-=======
                       <span className="text-gray-400 text-[10px]">
                         {comment.createdAt ? new Date(comment.createdAt).toLocaleDateString() : ""}
                       </span>
@@ -490,7 +408,6 @@ export function CommunityDetailPage() {
                       </button>
                     </div>
                   )}
->>>>>>> feature/community-fe-setup
                 </li>
               ))
             )}

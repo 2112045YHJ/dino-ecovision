@@ -11,7 +11,7 @@ public final class QuizDto {
 	
 	private QuizDto() {}
 	
-	public record Option(int optioinNo, String text) {}	
+	public record Option(int optionNo, String text) {}	
 
 	// 오늘의 퀴즈 (GET /api/quiz/today)
 	// correct는 미응시면 null

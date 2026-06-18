@@ -18,10 +18,6 @@ export function Header() {
     { label: "홈", path: "/home" },
     { label: "대시보드", path: "/dashboard" },
     { label: "커뮤니티", path: "/community" },
-<<<<<<< HEAD
-    { label: "랭킹", path: "/leaderboard" },
-=======
->>>>>>> feature/community-fe-setup
     { label: "마이페이지", path: "/mypage" },
   ];
 

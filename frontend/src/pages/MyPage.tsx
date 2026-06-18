@@ -363,11 +363,7 @@ export function MyPage() {
                         </span>
                         <span className="text-xs font-bold text-gray-800 group-hover:text-[#5F8C74] transition-colors">{post.title}</span>
                       </div>
-<<<<<<< HEAD
-                      <span className="text-[10px] text-gray-400 shrink-0">{new Date(post.createdAt).toLocaleDateString()}</span>
-=======
                       <span className="text-[10px] text-gray-400 shrink-0">{post.createdAt ? new Date(post.createdAt).toLocaleDateString() : ""}</span>
->>>>>>> feature/community-fe-setup
                     </li>
                   ))}
                 </ul>

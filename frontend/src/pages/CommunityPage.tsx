@@ -134,13 +134,8 @@ export function CommunityPage() {
               type="text"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-<<<<<<< HEAD
-              placeholder="검색어 입력 (2자 이상)"
-              className="flex-1 px-3 py-2 text-xs text-gray-800 focus:outline-none"
-=======
               placeholder="검색어 입력"
               className="flex-1 min-w-0 px-3 py-2 text-xs text-gray-800 focus:outline-none"
->>>>>>> feature/community-fe-setup
             />
             {activeSearch && (
               <button
@@ -153,11 +148,7 @@ export function CommunityPage() {
             )}
             <button
               type="submit"
-<<<<<<< HEAD
-              className="bg-[#5F8C74] px-4 py-2 text-xs font-bold text-white transition hover:bg-[#4d735f] shrink-0 cursor-pointer"
-=======
               className="bg-[#5F8C74] w-16 flex-shrink-0 text-xs font-bold text-white transition hover:bg-[#4d735f] cursor-pointer"
->>>>>>> feature/community-fe-setup
             >
               검색
             </button>
@@ -199,8 +190,6 @@ export function CommunityPage() {
                         </span>
                       )}
                       <h3 className="text-base font-bold text-gray-800 truncate">{post.title}</h3>
-<<<<<<< HEAD
-=======
                       {post.chartSnapshotId && (
                         <span className="rounded bg-sky-50 px-1.5 py-0.5 text-[9px] font-bold text-sky-600 border border-sky-100 shrink-0">
                           📊 차트
@@ -211,17 +200,12 @@ export function CommunityPage() {
                           🦖 디노
                         </span>
                       )}
->>>>>>> feature/community-fe-setup
                     </div>
 
                     <div className="mt-2 flex items-center gap-3 text-xs text-gray-500">
                       <span className="font-semibold text-[#5F8C74]">{post.authorNickname}</span>
                       <span>•</span>
-<<<<<<< HEAD
-                      <span>{new Date(post.createdAt).toLocaleDateString()}</span>
-=======
                       <span>{post.createdAt ? new Date(post.createdAt).toLocaleDateString() : ""}</span>
->>>>>>> feature/community-fe-setup
                     </div>
                   </div>
 
