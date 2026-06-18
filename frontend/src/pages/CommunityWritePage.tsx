@@ -30,6 +30,7 @@ export function CommunityWritePage() {
   // 이미지 컨텍스트 툴바 대상 이미지 엘리먼트
   const [activeImage, setActiveImage] = useState<HTMLImageElement | null>(null);
   const [imageToolbarPos, setImageToolbarPos] = useState<{ top: number; left: number } | null>(null);
+  const [imageResizeBox, setImageResizeBox] = useState<{ top: number; left: number; width: number; height: number } | null>(null);
 
   // 드롭다운 메뉴 활성 상태
   const [fontSizeOpen, setFontSizeOpen] = useState(false);
@@ -266,25 +267,33 @@ export function CommunityWritePage() {
     }
   };
 
-  // 10. contenteditable 클릭 시 이미지 감지 (컨텍스트 툴바 트리거)
+  // 10. contenteditable 클릭 시 이미지 감지 (컨텍스트 툴바 및 리사이즈 박스 트리거)
+  const updateResizeBox = (img: HTMLImageElement) => {
+    setImageResizeBox({
+      top: img.offsetTop,
+      left: img.offsetLeft,
+      width: img.offsetWidth,
+      height: img.offsetHeight
+    });
+  };
+
   const handleEditorClick = (e: React.MouseEvent<HTMLDivElement>) => {
     const target = e.target as HTMLElement;
     if (target.tagName === "IMG") {
       const img = target as HTMLImageElement;
       setActiveImage(img);
+      updateResizeBox(img);
       
       // 이미지 상단에 툴바 띄우기
       const rect = img.getBoundingClientRect();
-      const parentRect = editorRef.current?.getBoundingClientRect();
-      if (parentRect) {
-        setImageToolbarPos({
-          top: img.offsetTop - 40,
-          left: img.offsetLeft + (rect.width / 2) - 130
-        });
-      }
+      setImageToolbarPos({
+        top: img.offsetTop - 40,
+        left: img.offsetLeft + (rect.width / 2) - 130
+      });
     } else {
       setActiveImage(null);
       setImageToolbarPos(null);
+      setImageResizeBox(null);
     }
     
     // 다른 메뉴 닫기
@@ -301,6 +310,7 @@ export function CommunityWritePage() {
       if (editorRef.current) {
         setContent(editorRef.current.innerHTML);
       }
+      setTimeout(() => updateResizeBox(activeImage), 50);
     }
   };
 
@@ -322,7 +332,65 @@ export function CommunityWritePage() {
       if (editorRef.current) {
         setContent(editorRef.current.innerHTML);
       }
+      setTimeout(() => updateResizeBox(activeImage), 50);
+      setTimeout(() => {
+        setImageToolbarPos({
+          top: activeImage.offsetTop - 40,
+          left: activeImage.offsetLeft + (activeImage.offsetWidth / 2) - 130
+        });
+      }, 60);
     }
+  };
+
+  // 11.5 드래그 이미지 크기 조절 (모서리/꼭짓점 리사이즈 핸들러)
+  const handleResizeStart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!activeImage) return;
+
+    const startWidth = activeImage.offsetWidth;
+    const startX = e.clientX;
+    const parentWidth = editorRef.current?.clientWidth || 600;
+
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      const deltaX = moveEvent.clientX - startX;
+      let newWidth = startWidth + deltaX;
+      
+      // 최소 크기와 최대 크기 제한
+      if (newWidth < 50) newWidth = 50;
+      if (newWidth > parentWidth) newWidth = parentWidth;
+
+      // 퍼센트 단위로 지정하여 반응형 대응
+      const percentWidth = `${Math.round((newWidth / parentWidth) * 100)}%`;
+      activeImage.style.width = percentWidth;
+      activeImage.style.height = "auto";
+
+      // 오버레이 박스 갱신
+      setImageResizeBox((prev) => prev ? {
+        ...prev,
+        width: newWidth,
+        height: activeImage.offsetHeight
+      } : null);
+
+      // 툴바 위치 갱신
+      setImageToolbarPos({
+        top: activeImage.offsetTop - 40,
+        left: activeImage.offsetLeft + (newWidth / 2) - 130
+      });
+    };
+
+    const handleMouseUp = () => {
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+      
+      // 최종 HTML 동기화
+      if (editorRef.current) {
+        setContent(editorRef.current.innerHTML);
+      }
+    };
+
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
   };
 
   // 12. 에디터 입력 동기화
@@ -498,6 +566,40 @@ export function CommunityWritePage() {
                   <button type="button" onClick={() => alignImage("left")} className="p-1 px-1.5 hover:bg-gray-700 rounded cursor-pointer" title="좌측 정렬">◀</button>
                   <button type="button" onClick={() => alignImage("center")} className="p-1 px-1.5 hover:bg-gray-700 rounded cursor-pointer" title="가운데 정렬">■</button>
                   <button type="button" onClick={() => alignImage("right")} className="p-1 px-1.5 hover:bg-gray-700 rounded cursor-pointer" title="우측 정렬">▶</button>
+                </div>
+              )}
+
+              {/* 이미지 드래그 리사이즈 오버레이 바운딩 박스 */}
+              {activeImage && imageResizeBox && (
+                <div 
+                  style={{
+                    position: "absolute",
+                    top: `${imageResizeBox.top}px`,
+                    left: `${imageResizeBox.left}px`,
+                    width: `${imageResizeBox.width}px`,
+                    height: `${imageResizeBox.height}px`,
+                    border: "2px dashed #5F8C74",
+                    pointerEvents: "none",
+                    zIndex: 10
+                  }}
+                >
+                  {/* 우측 하단 리사이즈 드래그 핸들 꼭짓점 점 */}
+                  <div 
+                    onMouseDown={handleResizeStart}
+                    style={{
+                      position: "absolute",
+                      bottom: "-6px",
+                      right: "-6px",
+                      width: "12px",
+                      height: "12px",
+                      backgroundColor: "#5F8C74",
+                      border: "1px solid white",
+                      borderRadius: "50%",
+                      cursor: "se-resize",
+                      pointerEvents: "auto",
+                      zIndex: 11
+                    }}
+                  />
                 </div>
               )}
 
