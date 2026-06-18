@@ -275,18 +275,30 @@ export function CommunityDetailPage() {
               )}
             </div>
             
-            <div className="mt-3 flex items-center justify-between text-xs text-gray-500">
-              <div className="flex items-center gap-3">
-                <span className="font-semibold text-[#5F8C74]">{post.authorNickname}</span>
-                <span>•</span>
-                <span>{post.createdAt ? new Date(post.createdAt).toLocaleString() : ""}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span>조회수 {post.viewCount}</span>
-                <span>•</span>
-                <span className="text-[#E07A5F]">추천 {post.likeCount}</span>
-              </div>
-            </div>
+            {(() => {
+              const isEdited = post.updatedAt && post.createdAt &&
+                (new Date(post.updatedAt).getTime() - new Date(post.createdAt).getTime() > 1000);
+              return (
+                <div className="mt-3 flex items-center justify-between text-xs text-gray-500">
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <span className="font-semibold text-[#5F8C74]">{post.authorNickname}</span>
+                    <span>•</span>
+                    <span>작성: {post.createdAt ? new Date(post.createdAt).toLocaleString() : ""}</span>
+                    {isEdited && (
+                      <>
+                        <span>•</span>
+                        <span className="text-gray-400">수정: {new Date(post.updatedAt).toLocaleString()}</span>
+                      </>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span>조회수 {post.viewCount}</span>
+                    <span>•</span>
+                    <span className="text-[#E07A5F]">추천 {post.likeCount}</span>
+                  </div>
+                </div>
+              );
+            })()}
           </header>
 
           {/* 본문 내용 */}

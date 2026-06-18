@@ -148,7 +148,7 @@ export function CommunityPage() {
             )}
             <button
               type="submit"
-              className="bg-[#5F8C74] px-4 py-2 text-xs font-bold text-white transition hover:bg-[#4d735f] shrink-0 cursor-pointer"
+              className="bg-[#5F8C74] w-16 flex-shrink-0 text-xs font-bold text-white transition hover:bg-[#4d735f] cursor-pointer"
             >
               검색
             </button>
