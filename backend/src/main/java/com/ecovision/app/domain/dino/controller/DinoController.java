@@ -43,5 +43,4 @@ public class DinoController {
 			@AuthenticationPrincipal Long userId) {
 		return ApiResponse.success(dinoService.getCollection(userId));
 	}
-	}
 }
