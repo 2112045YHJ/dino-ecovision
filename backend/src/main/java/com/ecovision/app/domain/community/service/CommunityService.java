@@ -512,7 +512,7 @@ public class CommunityService {
                 .prettyPrint(false)
                 .escapeMode(Entities.EscapeMode.xhtml);
 
-        return Jsoup.clean(html, "", safelist, outputSettings);
+        return Jsoup.clean(html, "http://localhost:8080", safelist, outputSettings);
     }
 
     private void mapPostImages(Post post, String sanitizedContent) {
