@@ -7,6 +7,7 @@ export interface CommentResponse {
   content: string;
   authorNickname: string;
   authorId: number;
+  authorAvatarUrl?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -18,6 +19,7 @@ export interface PostResponse {
   category: "NOTICE" | "GENERAL" | "INFO_SHARE";
   authorNickname: string;
   authorId: number;
+  authorAvatarUrl?: string;
   viewCount: number;
   likeCount: number;
   commentCount: number;

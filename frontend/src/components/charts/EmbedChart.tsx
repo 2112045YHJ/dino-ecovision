@@ -26,8 +26,33 @@ export const EmbedChart: React.FC<EmbedChartProps> = ({ snapshotId }) => {
         const data = await fetchChartSnapshot(snapshotId);
         setSnapshot(data);
         if (data.chartMetadata) {
-          const parsed = JSON.parse(data.chartMetadata) as ChartDataPoint[];
-          setChartData(parsed);
+          const rawData = JSON.parse(data.chartMetadata) as any[];
+          if (rawData && rawData.length > 0 && rawData[0].usageYearMonth !== undefined) {
+            const processed = Array.from({ length: 12 }, (_, i) => {
+              const monthStr = i + 1 < 10 ? `0${i + 1}` : `${i + 1}`;
+              
+              // 전기 사용량 합산
+              const electricityMatch = rawData.filter(
+                (item) => item.usageYearMonth.endsWith(monthStr) && item.energyType === "ELECTRICITY"
+              );
+              const powerUsage = electricityMatch.reduce((sum, item) => sum + (item.sumUsageAmount || 0), 0);
+              
+              // 전체(전기+가스) 탄소 배출량 합산
+              const allMatch = rawData.filter(
+                (item) => item.usageYearMonth.endsWith(monthStr)
+              );
+              const carbonEmission = allMatch.reduce((sum, item) => sum + (item.sumCarbonEmissionKg || 0), 0);
+              
+              return {
+                month: i + 1,
+                totalPowerUsage: Math.round(powerUsage * 10) / 10,
+                totalCarbonEmission: Math.round(carbonEmission * 10) / 10,
+              };
+            });
+            setChartData(processed);
+          } else {
+            setChartData(rawData as ChartDataPoint[]);
+          }
         }
       } catch (err) {
         console.error("Failed to load chart snapshot:", err);
@@ -77,7 +102,7 @@ export const EmbedChart: React.FC<EmbedChartProps> = ({ snapshotId }) => {
         {chartData.map((data, index) => {
           const heightPercent = (data.totalPowerUsage / maxUsage) * 100;
           return (
-            <div key={index} className="group relative flex flex-1 flex-col items-center">
+            <div key={index} className="group relative flex flex-1 flex-col items-center h-full justify-end">
               {/* 호버 툴팁 */}
               <div className="absolute bottom-full mb-2 hidden flex-col items-center group-hover:flex">
                 <div className="rounded bg-gray-800 px-2 py-1 text-[10px] font-medium text-white shadow-md">

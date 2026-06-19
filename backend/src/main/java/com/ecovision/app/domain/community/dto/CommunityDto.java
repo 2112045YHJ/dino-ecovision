@@ -40,6 +40,7 @@ public final class CommunityDto {
             String chartSnapshotId,
             String dinoSnapshot,
             boolean liked,
+            String authorAvatarUrl,
             List<CommentResponse> comments
     ) {}
 
@@ -60,6 +61,7 @@ public final class CommunityDto {
             String content,
             String authorNickname,
             Long authorId,
+            String authorAvatarUrl,
             LocalDateTime createdAt,
             LocalDateTime updatedAt
     ) {}

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Header } from "../components/layout/Header";
-import { fetchEnergySummary, createDashboardSnapshot } from "../api/dashboardApi";
+import { fetchEnergySummary, createDashboardSnapshot, resetAndFetchEnergyData, fetchFilterOptions } from "../api/dashboardApi";
 import type { EnergyUsageSumResponse } from "../api/dashboardApi";
 import { EnergyChart } from "../components/charts/EnergyChart";
 
@@ -12,6 +12,52 @@ export const Dashboard: React.FC = () => {
   const [chartData, setChartData] = useState<EnergyUsageSumResponse[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [isResetting, setIsResetting] = useState<boolean>(false);
+  const [filterOptions, setFilterOptions] = useState<{ years: string[]; regions: string[] }>({
+    years: ["2025"],
+    regions: [],
+  });
+
+  // 필터 옵션 로드
+  useEffect(() => {
+    const loadFilters = async () => {
+      try {
+        const options = await fetchFilterOptions();
+        setFilterOptions(options);
+        
+        if (options.years.length > 0 && !options.years.includes(selectedYear)) {
+          setSelectedYear(options.years[0]);
+        }
+      } catch (err) {
+        console.error("필터 옵션 로드 실패", err);
+      }
+    };
+    loadFilters();
+  }, []);
+
+  const handleResetAndFetch = async (useMock: boolean = false) => {
+    const confirmMsg = useMock 
+      ? "DB의 모든 데이터를 제거하고 로컬 개발/테스트용 모의 데이터를 적재하시겠습니까?"
+      : "DB의 모든 데이터를 제거하고 등록된 API 키로 실시간 최신 데이터를 재수집하시겠습니까?\n(약 10~20초 가량 소요됩니다.)";
+    
+    if (!window.confirm(confirmMsg)) return;
+    setIsResetting(true);
+    showToast(useMock 
+      ? "DB를 초기화하고 모의 데이터를 적재합니다... ⏳"
+      : "DB를 초기화하고 API 재수집을 시작합니다. 잠시만 기다려 주세요... ⏳"
+    );
+    try {
+      const msg = await resetAndFetchEnergyData(useMock);
+      showToast("성공: " + msg + " 🎉");
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
+    } catch (err: any) {
+      console.error(err);
+      showToast("실패: " + (err.message || "오류가 발생했습니다."));
+      setIsResetting(false);
+    }
+  };
 
   // 데이터 로딩
   useEffect(() => {
@@ -96,6 +142,13 @@ export const Dashboard: React.FC = () => {
 
           <div className="flex flex-wrap items-center gap-3">
             <button
+              onClick={() => handleResetAndFetch(false)}
+              disabled={isResetting}
+              className="flex items-center justify-center gap-2 px-4 py-2.5 bg-[#E07A5F] hover:bg-[#c8654d] disabled:bg-gray-300 text-white rounded-2xl shadow-sm transition-colors text-xs font-bold cursor-pointer"
+            >
+              {isResetting ? "⏳ 수집 중..." : "🔄 API 재수집"}
+            </button>
+            <button
               onClick={handleShareSnapshot}
               className="flex items-center justify-center gap-2 px-4 py-2.5 bg-[#5F8C74] hover:bg-[#4d735f] text-white rounded-2xl shadow-sm transition-colors text-xs font-bold cursor-pointer"
             >
@@ -107,13 +160,9 @@ export const Dashboard: React.FC = () => {
               onChange={(e) => setSelectedYear(e.target.value)}
               className="px-4 py-2.5 bg-[#FAF9F5] border border-[#E8F2EC] rounded-2xl shadow-sm focus:outline-none focus:border-[#5F8C74] text-xs font-semibold text-gray-700 cursor-pointer"
             >
-              <option value="2026">2026년</option>
-              <option value="2025">2025년</option>
-              <option value="2024">2024년</option>
-              <option value="2023">2023년</option>
-              <option value="2022">2022년</option>
-              <option value="2021">2021년</option>
-              <option value="2020">2020년</option>
+              {filterOptions.years.map((y) => (
+                <option key={y} value={y}>{y}년</option>
+              ))}
             </select>
 
             <select
@@ -122,9 +171,9 @@ export const Dashboard: React.FC = () => {
               className="px-4 py-2.5 bg-[#FAF9F5] border border-[#E8F2EC] rounded-2xl shadow-sm focus:outline-none focus:border-[#5F8C74] text-xs font-semibold text-gray-700 cursor-pointer"
             >
               <option value="">전국 (모든 지역)</option>
-              <option value="서울특별시 중구">서울특별시 중구</option>
-              <option value="서울특별시 강남구">서울특별시 강남구</option>
-              <option value="경기도 수원시">경기도 수원시</option>
+              {filterOptions.regions.map((r) => (
+                <option key={r} value={r}>{r}</option>
+              ))}
             </select>
           </div>
         </div>
@@ -155,6 +204,22 @@ export const Dashboard: React.FC = () => {
         {loading ? (
           <div className="h-96 bg-white border border-[#E8F2EC] rounded-3xl animate-pulse flex items-center justify-center">
             <span className="text-xs text-gray-400 font-medium">실시간 전력 및 탄소 데이터 분석 중...</span>
+          </div>
+        ) : chartData.length === 0 ? (
+          <div className="bg-white border border-[#E8F2EC] rounded-3xl p-12 text-center shadow-sm">
+            <span className="text-4xl">📭</span>
+            <h3 className="text-base font-bold text-gray-800 mt-4">분석 데이터가 존재하지 않습니다</h3>
+            <p className="text-xs text-gray-500 mt-2 max-w-md mx-auto leading-relaxed mb-6">
+              현재 DB에 적재된 실시간 에너지 사용량 정보가 없습니다.<br />
+              API 인증키가 정상적으로 등록되었는지 확인하거나, 수집 배치를 기다려 주세요.
+            </p>
+            <button
+              onClick={() => handleResetAndFetch(true)}
+              disabled={isResetting}
+              className="px-5 py-3 rounded-2xl bg-[#5F8C74] hover:bg-[#4d735f] text-white font-bold transition text-xs shadow-sm cursor-pointer disabled:bg-gray-300"
+            >
+              💡 개발용 모의 데이터 적재하기
+            </button>
           </div>
         ) : (
           <div className="space-y-6">

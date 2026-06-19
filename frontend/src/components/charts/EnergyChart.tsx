@@ -132,15 +132,20 @@ export const EnergyChart: React.FC<EnergyChartProps> = ({ data }) => {
           </div>
 
           {/* 막대 정렬 영역 */}
-          <div className="absolute inset-0 flex justify-around items-end px-2 pt-6">
+          <div className="absolute inset-0 flex justify-around items-end px-2 pt-10">
             {monthlyData.map((d, idx) => {
               const val = viewMetric === "USAGE" ? d.usage : d.carbon;
               const heightPercent = maxVal > 0 ? (val / maxVal) * 100 : 0;
+              const tooltipAlignClass = idx === 0 
+                ? "left-0" 
+                : idx === 11 
+                  ? "right-0" 
+                  : "left-1/2 -translate-x-1/2";
 
               return (
                 <div key={idx} className="group relative flex flex-col items-center w-full max-w-[40px] h-full justify-end">
                   {/* 툴팁 마우스오버 */}
-                  <div className="absolute bottom-full mb-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none bg-gray-800 text-white px-3 py-1.5 rounded-xl text-[10px] font-mono text-center shadow-md z-20 whitespace-nowrap">
+                  <div className={`absolute bottom-full mb-2 ${tooltipAlignClass} opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none bg-gray-800 text-white px-3 py-1.5 rounded-xl text-[10px] font-mono text-center shadow-md z-20 whitespace-nowrap`}>
                     <div className="font-bold text-gray-300">{d.month}</div>
                     <div className="font-bold mt-0.5 text-white">
                       {val.toLocaleString()} {unit}

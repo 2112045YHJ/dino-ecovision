@@ -163,6 +163,59 @@ export function CommunityWritePage() {
     checkActiveFormats();
   };
 
+  const handleCustomIndent = (isOutdent: boolean = false) => {
+    if (showSource) return;
+    if (!editorRef.current) return;
+    editorRef.current.focus();
+
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) return;
+
+    const range = selection.getRangeAt(0);
+    const blockTags = ["P", "DIV", "H1", "H2", "H3", "LI"];
+    
+    // 선택 영역과 교차하는 모든 블록 요소를 찾음
+    const allBlocks = Array.from(editorRef.current.querySelectorAll("*")).filter((el) => {
+      const element = el as HTMLElement;
+      if (!blockTags.includes(element.tagName)) return false;
+      try {
+        return range.intersectsNode(element);
+      } catch (e) {
+        return false;
+      }
+    }) as HTMLElement[];
+
+    // 선택된 블록이 없다면, 커서가 위치한 단일 블록 탐색
+    if (allBlocks.length === 0) {
+      let node = range.commonAncestorContainer as HTMLElement;
+      if (node.nodeType === Node.TEXT_NODE) {
+        node = node.parentElement as HTMLElement;
+      }
+      let current: HTMLElement | null = node;
+      while (current && current !== editorRef.current) {
+        if (blockTags.includes(current.tagName)) {
+          allBlocks.push(current);
+          break;
+        }
+        current = current.parentElement;
+      }
+    }
+
+    if (allBlocks.length > 0) {
+      allBlocks.forEach((block) => {
+        const currentMargin = parseInt(block.style.marginLeft || "0", 10);
+        let newMargin = isOutdent ? currentMargin - 40 : currentMargin + 40;
+        if (newMargin < 0) newMargin = 0;
+        block.style.marginLeft = newMargin > 0 ? `${newMargin}px` : "";
+      });
+
+      setContent(editorRef.current.innerHTML);
+    } else {
+      document.execCommand("formatBlock", false, "p");
+      setTimeout(() => handleCustomIndent(isOutdent), 50);
+    }
+  };
+
   // 5. 기본 서식 명령(Bold, Italic 등) 처리
   const handleCommand = (command: string, value: string = "") => {
     if (showSource) return;
@@ -1119,7 +1172,7 @@ export function CommunityWritePage() {
                   <button
                     type="button"
                     onMouseDown={(e) => e.preventDefault()}
-                    onClick={() => handleCommand("outdent")}
+                    onClick={() => handleCustomIndent(true)}
                     className="p-1.5 rounded transition-all hover:bg-[#E8F2EC] hover:text-[#5F8C74] text-gray-500 cursor-pointer flex items-center justify-center"
                     title="들여쓰기 줄이기"
                   >
@@ -1130,7 +1183,7 @@ export function CommunityWritePage() {
                   <button
                     type="button"
                     onMouseDown={(e) => e.preventDefault()}
-                    onClick={() => handleCommand("indent")}
+                    onClick={() => handleCustomIndent(false)}
                     className="p-1.5 rounded transition-all hover:bg-[#E8F2EC] hover:text-[#5F8C74] text-gray-500 cursor-pointer flex items-center justify-center"
                     title="들여쓰기 늘리기"
                   >
@@ -1138,14 +1191,14 @@ export function CommunityWritePage() {
                       <path d="M3 21h18v-2H3v2zM3 3v2h18V3H3zm11 14h7v-2h-7v2zm-7-5l-4 4V8l4 4zm4 1h10v-2H11v2zm0-4h10V7H11v2z"/>
                     </svg>
                   </button>
-
+                  
                   <span className="text-gray-300 mx-1 text-xs select-none">|</span>
-
+                  
                   {/* 4. 인용구 */}
                   <button
                     type="button"
                     onMouseDown={(e) => e.preventDefault()}
-                    onClick={() => handleCommand("formatBlock", "blockquote")}
+                    onClick={() => handleCommand("indent")}
                     className="p-1.5 rounded transition-all hover:bg-[#E8F2EC] hover:text-[#5F8C74] text-gray-500 cursor-pointer flex items-center justify-center"
                     title="인용구 블록 (blockquote)"
                   >

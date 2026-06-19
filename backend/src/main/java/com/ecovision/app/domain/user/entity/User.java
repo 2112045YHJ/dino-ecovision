@@ -30,7 +30,7 @@ public class User {
     @Column(name = "nickname", unique = true, length = 50)
     private String nickname;
 
-    @Column(name = "avatar_url", length = 255)
+    @Column(name = "avatar_url", columnDefinition = "MEDIUMTEXT")
     private String avatarUrl;
 
     @Column(name = "region_id")

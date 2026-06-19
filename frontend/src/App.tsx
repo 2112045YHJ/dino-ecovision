@@ -61,6 +61,7 @@ function App() {
       
       {/* 마이페이지 */}
       <Route path="/mypage" element={<MyPage />} />
+      <Route path="/mypage/:userId" element={<MyPage />} />
       <Route path="/mypage/edit" element={<ProfileEditPage />} />
       <Route path="/mypage/bills" element={<MyPageBillInputPage />} />
       <Route path="/mypage/trend" element={<MyPageTrendChartPage />} />

@@ -461,6 +461,7 @@ public class CommunityService {
                 post.getChartSnapshot() != null ? post.getChartSnapshot().getId() : null,
                 post.getDinoSnapshot(),
                 liked,
+                post.getUser().getAvatarUrl(),
                 comments
         );
     }
@@ -471,6 +472,7 @@ public class CommunityService {
                 comment.getContent(),
                 comment.getUser().getNickname() != null ? comment.getUser().getNickname() : "알 수 없음",
                 comment.getUser().getId(),
+                comment.getUser().getAvatarUrl(),
                 comment.getCreatedAt(),
                 comment.getUpdatedAt()
         );

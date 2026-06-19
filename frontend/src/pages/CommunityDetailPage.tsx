@@ -15,6 +15,23 @@ import {
 } from "../api/communityApi";
 import { getMe, type MeProfile } from "../api/meApi";
 
+function renderSmallAvatar(url: string) {
+  if (!url) return <span className="text-sm">🦖</span>;
+  const isImage = url.startsWith("data:") || url.startsWith("http") || url.startsWith("/");
+  if (isImage) {
+    return (
+      <img 
+        src={url} 
+        alt="Avatar" 
+        className="h-5 w-5 rounded-full object-cover border border-gray-200"
+      />
+    );
+  }
+  return (
+    <span className="text-sm">{url}</span>
+  );
+}
+
 export function CommunityDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -292,7 +309,13 @@ export function CommunityDetailPage() {
               return (
                 <div className="mt-3 flex items-center justify-between text-xs text-gray-500">
                   <div className="flex items-center gap-3 flex-wrap">
-                    <span className="font-semibold text-[#5F8C74]">{post.authorNickname}</span>
+                    <div 
+                      onClick={() => navigate(`/mypage/${post.authorId}`)}
+                      className="flex items-center gap-1.5 hover:text-[#4d735f] font-semibold cursor-pointer transition-colors"
+                    >
+                      {renderSmallAvatar(post.authorAvatarUrl || "")}
+                      <span>{post.authorNickname}</span>
+                    </div>
                     <span>•</span>
                     <span>작성: {post.createdAt ? new Date(post.createdAt).toLocaleString() : ""}</span>
                     {isEdited && (
@@ -351,7 +374,13 @@ export function CommunityDetailPage() {
                 <li key={comment.id} className="py-4 flex justify-between items-start gap-4">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 text-xs">
-                      <span className="font-bold text-[#5F8C74]">{comment.authorNickname}</span>
+                      <div 
+                        onClick={() => navigate(`/mypage/${comment.authorId}`)}
+                        className="flex items-center gap-1.5 hover:text-[#4d735f] font-semibold cursor-pointer transition-colors"
+                      >
+                        {renderSmallAvatar(comment.authorAvatarUrl || "")}
+                        <span>{comment.authorNickname}</span>
+                      </div>
                       <span className="text-gray-400 text-[10px]">
                         {comment.createdAt ? new Date(comment.createdAt).toLocaleDateString() : ""}
                       </span>
