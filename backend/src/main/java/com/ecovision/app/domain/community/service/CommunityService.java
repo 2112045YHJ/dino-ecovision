@@ -571,6 +571,7 @@ public class CommunityService {
     public String sanitizeHtml(String html) {
         if (html == null) return null;
         Safelist safelist = Safelist.relaxed()
+                .preserveRelativeLinks(true)
                 .addTags("span", "u", "s", "del", "div")
                 .addAttributes("img", "style", "class", "src", "alt")
                 .addAttributes("span", "style", "class")
