@@ -314,10 +314,10 @@ export function CommunityWritePage() {
       setActiveImage(img);
       updateResizeBox(img);
       
-      // 이미지 상단에 툴바 띄우기
+      // 이미지 하단에 툴바 띄우기
       const coords = getImageCoordinates(img);
       setImageToolbarPos({
-        top: coords.top - 40,
+        top: coords.top + coords.height + 10,
         left: coords.left + (coords.width / 2) - 130
       });
     } else {
@@ -374,7 +374,7 @@ export function CommunityWritePage() {
       setTimeout(() => {
         const coords = getImageCoordinates(activeImage);
         setImageToolbarPos({
-          top: coords.top - 40,
+          top: coords.top + coords.height + 10,
           left: coords.left + (coords.width / 2) - 130
         });
       }, 60);
@@ -414,7 +414,7 @@ export function CommunityWritePage() {
       // 툴바 위치 갱신
       const coords = getImageCoordinates(activeImage);
       setImageToolbarPos({
-        top: coords.top - 40,
+        top: coords.top + activeImage.offsetHeight + 10,
         left: coords.left + (newWidth / 2) - 130
       });
     };
@@ -1179,7 +1179,7 @@ export function CommunityWritePage() {
                     updateResizeBox(activeImage);
                     const coords = getImageCoordinates(activeImage);
                     setImageToolbarPos({
-                      top: coords.top - 40,
+                      top: coords.top + coords.height + 10,
                       left: coords.left + (coords.width / 2) - 130
                     });
                   }
