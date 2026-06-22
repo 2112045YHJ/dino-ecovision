@@ -139,15 +139,21 @@ public class DataCollectionService {
                             rawRegion = item.tobDivisionName();
                         }
                         String regionCode = normalizeRegionName(rawRegion);
-                        String yearMonth = year + "01"; // YYYYMM (target year parameter)
                         Double emission = item.usemsQuantity() != null ? item.usemsQuantity() : 0.0;
                         Double usageAmount = 0.0;
                         if (emission > 0.0) {
                             usageAmount = emission / 2.176;
                         }
 
+                        Double monthlyEmission = emission / 12.0;
+                        Double monthlyUsageAmount = usageAmount / 12.0;
+
                         // 온실가스 배출량 API는 가스 및 난방 등의 간접 배출량 중심이므로 GAS 타입으로 임의 적재
-                        saveOrUpdateData(regionCode, yearMonth, EnergyType.GAS, usageAmount, "m3", emission, "KECO Open API");
+                        for (int m = 1; m <= 12; m++) {
+                            String monthStr = String.format("%02d", m);
+                            String yearMonth = year + monthStr;
+                            saveOrUpdateData(regionCode, yearMonth, EnergyType.GAS, monthlyUsageAmount, "m3", monthlyEmission, "KECO Open API");
+                        }
                         dataLoaded = true;
                     }
                 }
