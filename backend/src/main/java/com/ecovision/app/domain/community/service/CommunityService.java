@@ -383,6 +383,18 @@ public class CommunityService {
                 .collect(java.util.stream.Collectors.toList());
     }
 
+    @Transactional
+    public void deleteSnapshot(String id, Long userId) {
+        ChartSnapshot snapshot = chartSnapshotRepository.findById(id)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "차트 스냅샷을 찾을 수 없습니다."));
+
+        if (!snapshot.getUser().getId().equals(userId)) {
+            throw new BusinessException(ErrorCode.FORBIDDEN, "본인이 저장한 차트만 삭제할 수 있습니다.");
+        }
+
+        chartSnapshotRepository.delete(snapshot);
+    }
+
     private void rewardPoints(User user, int amount, String reason) {
         LocalDate today = LocalDate.now();
         
@@ -505,7 +517,7 @@ public class CommunityService {
                 .addAttributes("img", "style", "class", "src", "alt")
                 .addAttributes("span", "style", "class")
                 .addAttributes("p", "style", "class")
-                .addAttributes("div", "style", "class")
+                .addAttributes("div", "style", "class", "data-uuid")
                 .addAttributes("u", "style", "class")
                 .addAttributes("s", "style", "class")
                 .addAttributes("del", "style", "class");

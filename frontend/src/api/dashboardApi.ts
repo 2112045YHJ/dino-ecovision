@@ -236,3 +236,12 @@ export async function fetchMyChartSnapshots(): Promise<DashboardChartSnapshotRes
     token,
   });
 }
+
+// 10.6 차트 스냅샷 삭제 API
+export async function deleteChartSnapshot(id: string): Promise<void> {
+  const token = localStorage.getItem("accessToken");
+  return await apiRequest<void>(`/api/charts/snapshot/${id}`, {
+    method: "DELETE",
+    token,
+  });
+}
