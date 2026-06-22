@@ -725,3 +725,21 @@ API 키(한전, 환경공단) 등록이 올바르게 작동하는지 한눈에 �
 * **프론트엔드 빌드 무결성**: `npm run build` 결과 TypeScript/Vite 컴파일 빌드가 에러 없이 100% 정상 작동 완료되었습니다.
 * **데이터베이스 상태**: `energy_usages` 테이블을 조회하여 `GAS` 타입의 데이터가 전혀 존재하지 않고 `ELECTRICITY`만 존재하는 무결함을 확인했습니다.
 
+---
+
+## 🔧 [신규] 대시보드 사용량/탄소배출량 토글 전환 애니메이션 구현 (2026-06-22)
+
+대시보드 내 "사용량" 및 "탄소배출량" 토글 탭을 변경할 때 데이터 전환을 더 명확히 체감할 수 있도록 Y축 수치 라벨 및 단위 배지에 자연스러운 전환 애니메이션을 주입했습니다.
+
+### 1. 수정 및 조치 내역
+
+1. **[index.css](file:///c:/final/dino-ecovision/frontend/src/index.css) [MODIFY]**
+   - **애니메이션 키프레임 및 클래스 정의**: 전환 시 텍스트가 아래에서 위로 살짝 슬라이드되면서 투명도가 변화하는 `@keyframes chartTextFadeIn` 효과와 이를 래핑하는 `.animate-chart-text` 유틸리티 클래스를 추가했습니다.
+
+2. **[EnergyChart.tsx](file:///c:/final/dino-ecovision/frontend/src/components/charts/EnergyChart.tsx) [MODIFY]**
+   - **Y축 수치 라벨 전환 연동**: Y축 라벨을 감싸는 `div`에 `key={viewMetric}` 속성과 `animate-chart-text` 클래스를 적용하여, 탭 토글 시 리액트가 해당 DOM 요소를 갱신하며 페이드-슬라이드 애니메이션을 매끄럽게 수행하도록 구현했습니다.
+   - **단위(Unit) 전환 배지 추가**: 사용량과 탄소배출량의 차이를 명확히 구분할 수 있도록 차트 타이틀 우측에 단위 배지(`kWh`/`kgCO₂eq`)를 추가하고, 이에 대해 `key={viewMetric}`과 `animate-chart-text`를 연계해 단원 전환 피드백을 극대화했습니다.
+
+### 2. 검증 결과
+* **프론트엔드 빌드 무결성**: `npm run build` 결과 TypeScript 엄격 체크 및 Vite 번들링이 에러 없이 무결하게 성공했습니다.
+

@@ -52,6 +52,9 @@ export const EnergyChart: React.FC<EnergyChartProps> = ({ data }) => {
         <div>
           <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
             📊 지역 에너지 분석 통계
+            <span key={viewMetric} className="text-[10px] font-bold text-[#5F8C74] bg-[#E8F2EC] px-2 py-0.5 rounded-full animate-chart-text inline-block">
+              {unit}
+            </span>
           </h3>
           <p className="text-xs text-gray-500 mt-1">
             월별 전력 사용량 및 온실가스 배출량 비교 분석
@@ -89,7 +92,10 @@ export const EnergyChart: React.FC<EnergyChartProps> = ({ data }) => {
       {/* 차트 렌더링 영역 */}
       <div className="relative flex items-stretch h-72 md:h-80 w-full mt-4">
         {/* Y축 수치 라벨 */}
-        <div className="flex flex-col justify-between text-[11px] text-gray-400 text-right pr-3 w-16 select-none font-mono">
+        <div 
+          key={viewMetric}
+          className="flex flex-col justify-between text-[11px] text-gray-400 text-right pr-3 w-16 select-none font-mono animate-chart-text"
+        >
           {gridLines.map((line, idx) => (
             <span key={idx}>{line.toLocaleString()}</span>
           ))}
