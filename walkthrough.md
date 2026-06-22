@@ -700,12 +700,28 @@ API 키(한전, 환경공단) 등록이 올바르게 작동하는지 한눈에 �
 * **백엔드/프론트엔드 빌드 무결성**: Java 컴파일 및 TypeScript/Vite 엄격 검사 빌드를 모두 성공적으로 마쳐 정적 정합성을 확인했습니다.
 * **동작성**: 대시보드 화면 진입 시 실제로 공공 데이터 API로 수집되거나 적재된 연도("2025년", "2026년")와 실제 지역명들("서울특별시 중구" 등)만 드롭다운 필터 리스트에 예쁘게 동적으로 구성됩니다.
 
+---
 
+## 🔧 [신규] 대시보드 가스 데이터 전면 삭제 및 전기-가스 토글 삭제 (2026-06-22)
 
+대시보드 상에서 가스 데이터를 완전히 배제하고, 기존의 전기-가스 토글 스위치를 제거하며, 데이터베이스 내 기존 적재된 가스 원시 데이터를 전면 제거했습니다.
 
+### 1. 수정 및 조치 내역
 
+1. **[EnergyChart.tsx](file:///c:/final/dino-ecovision/frontend/src/components/charts/EnergyChart.tsx) [MODIFY]**
+   - **에너지원 토글 삭제 및 고정**: `activeTab` 상태를 `"ELECTRICITY"` 고정 상수로 변경하고, 에너지원(전기/가스) 선택 토글 마크업(버튼 그룹)을 제거하여 화면에서 전기 데이터만 고정 노출되도록 했습니다.
 
+2. **[DataController.java](file:///c:/final/dino-ecovision/backend/src/main/java/com/ecovision/app/domain/region/controller/DataController.java) [MODIFY]**
+   - **온실가스 수집 경로 제거**: 데이터 리셋 및 자동 수집 메서드(`resetAndFetchData`) 내에서 환경공단 KECO 온실가스 데이터를 수집하는 `fetchAndSaveKecoCarbonData("2025")` 및 `fetchAndSaveKecoCarbonData("2026")` 호출부를 완전히 제외했습니다.
 
+3. **[EnergyDataBatchJob.java](file:///c:/final/dino-ecovision/backend/src/main/java/com/ecovision/app/domain/region/scheduler/EnergyDataBatchJob.java) [MODIFY]**
+   - **스케줄러 제거**: 매월 1일 새벽 3시에 가동하던 KECO 온실가스 데이터 수집 스케줄러 메서드(`runKecoCarbonCollectionBatch`)를 전면 삭제했습니다.
 
+4. **데이터베이스 가스 데이터 전면 제거**
+   - 데이터베이스 내 `energy_usages` 테이블에서 `energy_type = 'GAS'`인 행들을 완전히 딜리트 처리 완료하여, 시스템 내의 가스 데이터 잔재를 소거했습니다.
 
+### 2. 검증 결과
+* **백엔드 컴파일 무결성**: `./gradlew compileJava` 빌드 검증을 에러 없이 성공했습니다.
+* **프론트엔드 빌드 무결성**: `npm run build` 결과 TypeScript/Vite 컴파일 빌드가 에러 없이 100% 정상 작동 완료되었습니다.
+* **데이터베이스 상태**: `energy_usages` 테이블을 조회하여 `GAS` 타입의 데이터가 전혀 존재하지 않고 `ELECTRICITY`만 존재하는 무결함을 확인했습니다.
 
