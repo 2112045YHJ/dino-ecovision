@@ -779,3 +779,26 @@ API 키(한전, 환경공단) 등록이 올바르게 작동하는지 한눈에 �
 ### 2. 검증 결과
 * **프론트엔드 빌드 무결성**: `npm run build`를 성공적으로 마치고, Recharts 타입 및 TypeScript 엄격 검증을 모두 정상 통과했습니다.
 
+---
+
+## 🔧 [신규] 비교 차트 시각화 타입 토글 및 다중 비교 공유/임베드 구현 (2026-06-22)
+
+지역 비교 차트에서 꺾은선뿐만 아니라 월별 나열형 막대 그래프(Grouped Bar) 형태도 선택할 수 있도록 개선하고, 이 다중 비교 분석 화면 전체를 스냅샷 공유하여 커뮤니티 본문에서도 동일한 형태의 다중 비교 차트로 정밀 복원 렌더링되도록 기능을 확장했습니다.
+
+### 1. 수정 및 조치 내역
+
+1. **[CompareChart.tsx](file:///c:/final/dino-ecovision/frontend/src/components/charts/CompareChart.tsx) [MODIFY]**
+   - **차트 형태 토글 기능 제공**: `chartType` 상태를 부모 `Dashboard`에 상태 위임(Lifting State Up)하여 넘겨받고, 차트 헤더 영역에 `📈 꺾은선` / `📊 막대` 토글 버튼 그룹을 배치했습니다.
+   - **다중 막대 그래프(BarChart) 구현**: Recharts의 `BarChart` 및 `Bar` 컴포넌트를 연계하여, 탭 선택 시 1월~12월 격자 내에 비교군들의 전력/탄소 수치가 나란히 출력되도록 그룹형 막대 차트를 매핑했습니다.
+
+2. **[Dashboard.tsx](file:///c:/final/dino-ecovision/frontend/src/pages/Dashboard.tsx) [MODIFY]**
+   - **다중 스냅샷 메타데이터 구성**: 비교 리스트 활성화 시 `🔗 공유하기`를 누르면, 스냅샷 API 전송 인자로 `chartType: "COMPARE"`와 함께 `{ type: compareChartType, compareList }` 구조가 그대로 포함된 JSON 문자열을 생성하여 전송하도록 핸들러(`handleShareSnapshot`)를 변경했습니다.
+   - 스냅샷 생성 제목 역시 `"서울특별시 중구 (2025년) 외 1개 비교 분석"`처럼 동적으로 자동 조립되도록 고도화했습니다.
+
+3. **[EmbedChart.tsx](file:///c:/final/dino-ecovision/frontend/src/components/charts/EmbedChart.tsx) [MODIFY]**
+   - **다중 비교 임베드 차트 복원**: 스냅샷의 `chartMetadata`를 읽어 파싱할 때 `compareList` 형태가 감지되면 `isCompareMode`로 분기 작동되게 리팩토링했습니다.
+   - 공유 당시 저장한 차트 유형(`parsed.type`: LINE 또는 BAR)을 인식하여, 게시글 상세 보기 안에서도 동일한 다중 비교 꺾은선형 혹은 다중 나열 막대형 그래프로 완벽 복원되어 반응형(`ResponsiveContainer`)으로 그려지도록 구현했습니다.
+
+### 2. 검증 결과
+* **프론트엔드 빌드 무결성**: `npm run build` 결과 TypeScript/Vite 컴파일 빌드가 100% 에러 없이 통과 완료되었습니다.
+

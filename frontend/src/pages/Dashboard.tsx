@@ -13,6 +13,7 @@ export const Dashboard: React.FC = () => {
   const [selectedRegion, setSelectedRegion] = useState<string>(""); // 빈 문자열이면 전국
   const [chartData, setChartData] = useState<EnergyUsageSumResponse[]>([]);
   const [compareList, setCompareList] = useState<CompareItem[]>([]);
+  const [compareChartType, setCompareChartType] = useState<"LINE" | "BAR">("LINE");
   const [loading, setLoading] = useState<boolean>(true);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isResetting, setIsResetting] = useState<boolean>(false);
@@ -119,13 +120,39 @@ export const Dashboard: React.FC = () => {
   // 공유하기 (차트 스냅샷 복사)
   const handleShareSnapshot = async () => {
     try {
-      const metadataStr = JSON.stringify(chartData);
-      const regionLabel = selectedRegion || "전국 (모든 지역)";
-      const title = `${regionLabel} ${selectedYear}년 에너지 소비 및 탄소 배출 분석`;
-      
+      let metadataStr = "";
+      let title = "";
+      let chartTypeStr = "";
+
+      if (compareList.length > 0) {
+        // 비교 모드 공유
+        metadataStr = JSON.stringify({
+          type: compareChartType,
+          compareList: compareList.map((item) => ({
+            id: item.id,
+            year: item.year,
+            regionCode: item.regionCode,
+            regionName: item.regionName,
+            data: item.data,
+            color: item.color,
+          })),
+        });
+        const regionLabels = compareList
+          .map((item) => `${item.regionName} (${item.year}년)`)
+          .join(", ");
+        title = `${regionLabels} 에너지 비교 분석`;
+        chartTypeStr = "COMPARE";
+      } else {
+        // 단일 차트 공유 (기존 하위 호환)
+        metadataStr = JSON.stringify(chartData);
+        const regionLabel = selectedRegion || "전국 (모든 지역)";
+        title = `${regionLabel} ${selectedYear}년 에너지 소비 및 탄소 배출 분석`;
+        chartTypeStr = "BAR";
+      }
+
       const response = await createDashboardSnapshot({
         title,
-        chartType: "BAR",
+        chartType: chartTypeStr,
         chartMetadata: metadataStr,
       });
 
@@ -328,7 +355,11 @@ export const Dashboard: React.FC = () => {
         ) : (
           <div className="space-y-6">
             {compareList.length > 0 ? (
-              <CompareChart compareList={compareList} />
+              <CompareChart
+                compareList={compareList}
+                chartType={compareChartType}
+                onChartTypeChange={setCompareChartType}
+              />
             ) : (
               <EnergyChart data={chartData} />
             )}
