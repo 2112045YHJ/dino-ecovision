@@ -166,6 +166,52 @@ export const Dashboard: React.FC = () => {
     }
   };
 
+  // 차트 저장하기 (내 보관함 저장)
+  const handleSaveChartSnapshot = async () => {
+    try {
+      let metadataStr = "";
+      let title = "";
+      let chartTypeStr = "";
+
+      if (compareList.length > 0) {
+        // 비교 모드 저장
+        metadataStr = JSON.stringify({
+          type: compareChartType,
+          compareList: compareList.map((item) => ({
+            id: item.id,
+            year: item.year,
+            regionCode: item.regionCode,
+            regionName: item.regionName,
+            data: item.data,
+            color: item.color,
+          })),
+        });
+        const regionLabels = compareList
+          .map((item) => `${item.regionName} (${item.year}년)`)
+          .join(", ");
+        title = `${regionLabels} 에너지 비교 분석`;
+        chartTypeStr = "COMPARE";
+      } else {
+        // 단일 차트 저장
+        metadataStr = JSON.stringify(chartData);
+        const regionLabel = selectedRegion || "전국 (모든 지역)";
+        title = `${regionLabel} ${selectedYear}년 에너지 소비 및 탄소 배출 분석`;
+        chartTypeStr = "BAR";
+      }
+
+      await createDashboardSnapshot({
+        title,
+        chartType: chartTypeStr,
+        chartMetadata: metadataStr,
+      });
+
+      showToast("차트가 내 보관함에 성공적으로 저장되었습니다! 💾");
+    } catch (err) {
+      console.error("스냅샷 저장 실패", err);
+      showToast("차트 저장에 실패했습니다. 다시 시도해주세요.");
+    }
+  };
+
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => {
@@ -214,10 +260,16 @@ export const Dashboard: React.FC = () => {
               ➕ 비교 추가
             </button>
             <button
+              onClick={handleSaveChartSnapshot}
+              className="flex items-center justify-center gap-2 px-4 py-2.5 bg-[#FAF9F5] border border-[#E8F2EC] hover:bg-[#E8F2EC] text-[#5F8C74] rounded-2xl shadow-sm transition-colors text-xs font-bold cursor-pointer"
+            >
+              💾 차트 저장
+            </button>
+            <button
               onClick={handleShareSnapshot}
               className="flex items-center justify-center gap-2 px-4 py-2.5 bg-[#5F8C74] hover:bg-[#4d735f] text-white rounded-2xl shadow-sm transition-colors text-xs font-bold cursor-pointer"
             >
-              🔗 공유하기
+              🔗 링크 복사
             </button>
             
             <select
