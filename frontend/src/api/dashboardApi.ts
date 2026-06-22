@@ -29,6 +29,28 @@ export async function fetchEnergySummary(year: string, regionCode: string): Prom
   );
 }
 
+// 1.5. 대시보드 데이터 초기화 및 API 재수집
+export async function resetAndFetchEnergyData(useMock: boolean = false): Promise<string> {
+  const token = localStorage.getItem("accessToken");
+  return await apiRequest<string>(`/api/data/reset?useMock=${useMock}`, {
+    method: "POST",
+    token,
+  });
+}
+
+export interface FilterOptionsResponse {
+  years: string[];
+  regions: string[];
+}
+
+export async function fetchFilterOptions(): Promise<FilterOptionsResponse> {
+  const token = localStorage.getItem("accessToken");
+  return await apiRequest<FilterOptionsResponse>("/api/data/filters", {
+    method: "GET",
+    token,
+  });
+}
+
 // 2. 대시보드 차트 스냅샷 생성 API
 export async function createDashboardSnapshot(request: {
   title: string;
@@ -211,6 +233,15 @@ export async function fetchMyChartSnapshots(): Promise<DashboardChartSnapshotRes
   const token = localStorage.getItem("accessToken");
   return await apiRequest<DashboardChartSnapshotResponse[]>("/api/charts/snapshot", {
     method: "GET",
+    token,
+  });
+}
+
+// 10.6 차트 스냅샷 삭제 API
+export async function deleteChartSnapshot(id: string): Promise<void> {
+  const token = localStorage.getItem("accessToken");
+  return await apiRequest<void>(`/api/charts/snapshot/${id}`, {
+    method: "DELETE",
     token,
   });
 }

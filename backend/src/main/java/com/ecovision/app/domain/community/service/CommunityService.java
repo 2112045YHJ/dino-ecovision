@@ -383,6 +383,18 @@ public class CommunityService {
                 .collect(java.util.stream.Collectors.toList());
     }
 
+    @Transactional
+    public void deleteSnapshot(String id, Long userId) {
+        ChartSnapshot snapshot = chartSnapshotRepository.findById(id)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "차트 스냅샷을 찾을 수 없습니다."));
+
+        if (!snapshot.getUser().getId().equals(userId)) {
+            throw new BusinessException(ErrorCode.FORBIDDEN, "본인이 저장한 차트만 삭제할 수 있습니다.");
+        }
+
+        chartSnapshotRepository.delete(snapshot);
+    }
+
     private void rewardPoints(User user, int amount, String reason) {
         LocalDate today = LocalDate.now();
         
@@ -461,6 +473,7 @@ public class CommunityService {
                 post.getChartSnapshot() != null ? post.getChartSnapshot().getId() : null,
                 post.getDinoSnapshot(),
                 liked,
+                post.getUser().getAvatarUrl(),
                 comments
         );
     }
@@ -471,6 +484,7 @@ public class CommunityService {
                 comment.getContent(),
                 comment.getUser().getNickname() != null ? comment.getUser().getNickname() : "알 수 없음",
                 comment.getUser().getId(),
+                comment.getUser().getAvatarUrl(),
                 comment.getCreatedAt(),
                 comment.getUpdatedAt()
         );
@@ -498,11 +512,12 @@ public class CommunityService {
     public String sanitizeHtml(String html) {
         if (html == null) return null;
         Safelist safelist = Safelist.relaxed()
+                .preserveRelativeLinks(true)
                 .addTags("span", "u", "s", "del", "div")
                 .addAttributes("img", "style", "class", "src", "alt")
                 .addAttributes("span", "style", "class")
                 .addAttributes("p", "style", "class")
-                .addAttributes("div", "style", "class")
+                .addAttributes("div", "style", "class", "data-uuid")
                 .addAttributes("u", "style", "class")
                 .addAttributes("s", "style", "class")
                 .addAttributes("del", "style", "class");
@@ -511,7 +526,7 @@ public class CommunityService {
                 .prettyPrint(false)
                 .escapeMode(Entities.EscapeMode.xhtml);
 
-        return Jsoup.clean(html, "", safelist, outputSettings);
+        return Jsoup.clean(html, "http://localhost:8080", safelist, outputSettings);
     }
 
     private void mapPostImages(Post post, String sanitizedContent) {

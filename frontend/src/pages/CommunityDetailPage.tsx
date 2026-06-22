@@ -1,9 +1,66 @@
 // src/pages/CommunityDetailPage.tsx
 
 import React, { useEffect, useState } from "react";
+import ReactDOM from "react-dom";
 import { useParams, useNavigate } from "react-router-dom";
 import { Header } from "../components/layout/Header";
 import { EmbedChart } from "../components/charts/EmbedChart";
+
+// 생 텍스트 /embed/{uuid}를 wrapper HTML로 일괄 변환해주는 헬퍼 (Jsoup 속성 삭제 시 자가 치유 포함)
+const convertRawEmbedsToWrappers = (html: string): string => {
+  if (!html) return "";
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, "text/html");
+
+  // 1. 이미 존재하는 .chart-embed-wrapper 중 data-uuid가 유실된 경우가 있다면 자가 복원
+  const existingWrappers = doc.querySelectorAll(".chart-embed-wrapper");
+  existingWrappers.forEach((wrapper) => {
+    let uuid = wrapper.getAttribute("data-uuid");
+    if (!uuid) {
+      const text = wrapper.textContent || "";
+      const regex = /\/embed\/([a-zA-Z0-9-]+)/;
+      const match = text.match(regex);
+      if (match) {
+        uuid = match[1];
+        wrapper.setAttribute("data-uuid", uuid);
+        const placeholder = wrapper.querySelector(".chart-embed-placeholder");
+        if (placeholder) {
+          placeholder.setAttribute("data-uuid", uuid);
+        }
+      }
+    }
+  });
+  
+  // 2. 생 텍스트로 존재하는 /embed/uuid 들을 wrapper 로 치환
+  const walkNodes = (node: Node) => {
+    if (node.nodeType === Node.TEXT_NODE) {
+      const text = node.nodeValue || "";
+      if (text.indexOf("/embed/") !== -1) {
+        const parent = node.parentNode;
+        if (parent && (parent as HTMLElement).closest(".chart-embed-wrapper")) {
+          return;
+        }
+        
+        const regex = /\/embed\/([a-zA-Z0-9-]+)/g;
+        const temp = document.createElement("div");
+        temp.innerHTML = text.replace(regex, (_, uuid) => {
+          return `<div class="chart-embed-wrapper" contenteditable="false" data-uuid="${uuid}" style="margin: 16px 0; border: 1px solid #E8F2EC; border-radius: 16px; padding: 12px; background-color: #FAF9F5; display: block; text-align: center;"><div class="chart-embed-placeholder" data-uuid="${uuid}"></div><div class="chart-embed-link" style="text-align: center; color: #5F8C74; font-family: monospace; font-size: 11px; margin-top: 8px;">/embed/${uuid}</div></div><p><br></p>`;
+        });
+        
+        while (temp.firstChild) {
+          parent?.insertBefore(temp.firstChild, node);
+        }
+        parent?.removeChild(node);
+      }
+    } else {
+      const children = Array.from(node.childNodes);
+      children.forEach(walkNodes);
+    }
+  };
+  
+  walkNodes(doc.body);
+  return doc.body.innerHTML;
+};
 import {
   fetchPostDetails,
   likePost,
@@ -14,6 +71,23 @@ import {
   type PostResponse,
 } from "../api/communityApi";
 import { getMe, type MeProfile } from "../api/meApi";
+
+function renderSmallAvatar(url: string) {
+  if (!url) return <span className="text-sm">🦖</span>;
+  const isImage = url.startsWith("data:") || url.startsWith("http") || url.startsWith("/");
+  if (isImage) {
+    return (
+      <img 
+        src={url} 
+        alt="Avatar" 
+        className="h-5 w-5 rounded-full object-cover border border-gray-200"
+      />
+    );
+  }
+  return (
+    <span className="text-sm">{url}</span>
+  );
+}
 
 export function CommunityDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -26,6 +100,26 @@ export function CommunityDetailPage() {
   
   const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
   const [editingCommentContent, setEditingCommentContent] = useState("");
+  const [portals, setPortals] = useState<{ el: Element; uuid: string }[]>([]);
+
+  useEffect(() => {
+    if (post?.content && !isLoading) {
+      const timer = setTimeout(() => {
+        const elements = document.querySelectorAll(".chart-embed-placeholder");
+        const nextPortals: { el: Element; uuid: string }[] = [];
+        elements.forEach((el) => {
+          const uuid = el.getAttribute("data-uuid");
+          if (uuid) {
+            nextPortals.push({ el, uuid });
+          }
+        });
+        setPortals(nextPortals);
+      }, 150);
+      return () => clearTimeout(timer);
+    } else {
+      setPortals([]);
+    }
+  }, [post?.content, isLoading]);
 
   useEffect(() => {
     loadPostDetails();
@@ -193,27 +287,21 @@ export function CommunityDetailPage() {
       .replace(/on\w+\s*=\s*(['"][^'"]*['"]|[^\s>]*)/gi, ""); // 인라인 이벤트 핸들러 제거
   };
 
-  // 본문 안에서 차트 스냅샷 감지 및 렌더링 (HTML 지원)
+  // 본문 안에서 차트 스냅샷 감지 및 래핑 변환 후 렌더링 (HTML 지원)
   const renderContent = (content: string) => {
-    const EMBED_REGEX = /\/embed\/([a-zA-Z0-9-]+)/i;
-    const match = content.match(EMBED_REGEX);
     // 상대 경로 /uploads/를 백엔드 절대 주소로 치환하여 엑박 예방
     const processedContent = content.replace(/src="\/uploads\//gi, 'src="http://localhost:8080/uploads/');
     const sanitized = sanitizeHtml(processedContent);
+    // 생 /embed/uuid 링크를 wrapper HTML 구조로 자동 치환
+    const finalHtml = convertRawEmbedsToWrappers(sanitized);
 
-    if (match) {
-      const parts = sanitized.split(EMBED_REGEX);
-      return (
-        <>
-          <div dangerouslySetInnerHTML={{ __html: parts[0] }} className="rich-content leading-relaxed" />
-          <EmbedChart snapshotId={match[1]} />
-          {parts[2] && <div dangerouslySetInnerHTML={{ __html: parts[2] }} className="rich-content leading-relaxed mt-4" />}
-        </>
-      );
-    }
-
-    return <div dangerouslySetInnerHTML={{ __html: sanitized }} className="rich-content leading-relaxed" />;
+    return <div dangerouslySetInnerHTML={{ __html: finalHtml }} className="rich-content leading-relaxed" />;
   };
+
+  const memoizedContent = React.useMemo(() => {
+    if (!post?.content) return null;
+    return renderContent(post.content);
+  }, [post?.content]);
 
   if (isLoading) {
     return (
@@ -292,7 +380,13 @@ export function CommunityDetailPage() {
               return (
                 <div className="mt-3 flex items-center justify-between text-xs text-gray-500">
                   <div className="flex items-center gap-3 flex-wrap">
-                    <span className="font-semibold text-[#5F8C74]">{post.authorNickname}</span>
+                    <div 
+                      onClick={() => navigate(`/mypage/${post.authorId}`)}
+                      className="flex items-center gap-1.5 hover:text-[#4d735f] font-semibold cursor-pointer transition-colors"
+                    >
+                      {renderSmallAvatar(post.authorAvatarUrl || "")}
+                      <span>{post.authorNickname}</span>
+                    </div>
                     <span>•</span>
                     <span>작성: {post.createdAt ? new Date(post.createdAt).toLocaleString() : ""}</span>
                     {isEdited && (
@@ -314,7 +408,7 @@ export function CommunityDetailPage() {
 
           {/* 본문 내용 */}
           <section className="text-sm text-gray-700">
-            {renderContent(post.content)}
+            {memoizedContent}
           </section>
 
           {/* 공룡 카드 자랑 */}
@@ -351,7 +445,13 @@ export function CommunityDetailPage() {
                 <li key={comment.id} className="py-4 flex justify-between items-start gap-4">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 text-xs">
-                      <span className="font-bold text-[#5F8C74]">{comment.authorNickname}</span>
+                      <div 
+                        onClick={() => navigate(`/mypage/${comment.authorId}`)}
+                        className="flex items-center gap-1.5 hover:text-[#4d735f] font-semibold cursor-pointer transition-colors"
+                      >
+                        {renderSmallAvatar(comment.authorAvatarUrl || "")}
+                        <span>{comment.authorNickname}</span>
+                      </div>
                       <span className="text-gray-400 text-[10px]">
                         {comment.createdAt ? new Date(comment.createdAt).toLocaleDateString() : ""}
                       </span>
@@ -431,6 +531,11 @@ export function CommunityDetailPage() {
           </form>
         </section>
       </main>
+
+      {/* 실시간 차트 포탈 렌더링 */}
+      {portals.map(({ el, uuid }) => 
+        ReactDOM.createPortal(<EmbedChart key={uuid} snapshotId={uuid} />, el)
+      )}
     </div>
   );
 }

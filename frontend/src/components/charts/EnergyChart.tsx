@@ -1,6 +1,6 @@
 // src/components/charts/EnergyChart.tsx
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import type { EnergyUsageSumResponse } from "../../api/dashboardApi";
 
 interface EnergyChartProps {
@@ -8,8 +8,17 @@ interface EnergyChartProps {
 }
 
 export const EnergyChart: React.FC<EnergyChartProps> = ({ data }) => {
-  const [activeTab, setActiveTab] = useState<"ELECTRICITY" | "GAS">("ELECTRICITY");
+  const activeTab = "ELECTRICITY";
   const [viewMetric, setViewMetric] = useState<"USAGE" | "CARBON">("USAGE");
+  const [isAnimate, setIsAnimate] = useState(false);
+
+  useEffect(() => {
+    setIsAnimate(false);
+    const timer = setTimeout(() => {
+      setIsAnimate(true);
+    }, 50);
+    return () => clearTimeout(timer);
+  }, [viewMetric, data]);
 
   // 1~12월 데이터로 가공
   const monthlyData = Array.from({ length: 12 }, (_, i) => {
@@ -52,6 +61,9 @@ export const EnergyChart: React.FC<EnergyChartProps> = ({ data }) => {
         <div>
           <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
             📊 지역 에너지 분석 통계
+            <span key={viewMetric} className="text-[10px] font-bold text-[#5F8C74] bg-[#E8F2EC] px-2 py-0.5 rounded-full animate-chart-text inline-block">
+              {unit}
+            </span>
           </h3>
           <p className="text-xs text-gray-500 mt-1">
             월별 전력 사용량 및 온실가스 배출량 비교 분석
@@ -60,30 +72,6 @@ export const EnergyChart: React.FC<EnergyChartProps> = ({ data }) => {
 
         {/* 토글 스위치들 */}
         <div className="flex flex-wrap items-center gap-3">
-          {/* 에너지원 토글 */}
-          <div className="bg-[#FAF9F5] p-1 rounded-2xl flex border border-[#E8F2EC]">
-            <button
-              onClick={() => setActiveTab("ELECTRICITY")}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all duration-350 cursor-pointer ${
-                activeTab === "ELECTRICITY"
-                  ? "bg-[#5F8C74] text-white shadow-sm"
-                  : "text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              ⚡ 전기
-            </button>
-            <button
-              onClick={() => setActiveTab("GAS")}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all duration-350 cursor-pointer ${
-                activeTab === "GAS"
-                  ? "bg-[#E07A5F] text-white shadow-sm"
-                  : "text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              🔥 가스
-            </button>
-          </div>
-
           {/* 지표 토글 */}
           <div className="bg-[#FAF9F5] p-1 rounded-2xl flex border border-[#E8F2EC]">
             <button
@@ -113,7 +101,10 @@ export const EnergyChart: React.FC<EnergyChartProps> = ({ data }) => {
       {/* 차트 렌더링 영역 */}
       <div className="relative flex items-stretch h-72 md:h-80 w-full mt-4">
         {/* Y축 수치 라벨 */}
-        <div className="flex flex-col justify-between text-[11px] text-gray-400 text-right pr-3 w-16 select-none font-mono">
+        <div 
+          key={viewMetric}
+          className="flex flex-col justify-between text-[11px] text-gray-400 text-right pr-3 w-16 select-none font-mono animate-chart-text"
+        >
           {gridLines.map((line, idx) => (
             <span key={idx}>{line.toLocaleString()}</span>
           ))}
@@ -132,15 +123,20 @@ export const EnergyChart: React.FC<EnergyChartProps> = ({ data }) => {
           </div>
 
           {/* 막대 정렬 영역 */}
-          <div className="absolute inset-0 flex justify-around items-end px-2 pt-6">
+          <div className="absolute inset-0 flex justify-around items-end px-2 pt-10">
             {monthlyData.map((d, idx) => {
               const val = viewMetric === "USAGE" ? d.usage : d.carbon;
               const heightPercent = maxVal > 0 ? (val / maxVal) * 100 : 0;
+              const tooltipAlignClass = idx === 0 
+                ? "left-0" 
+                : idx === 11 
+                  ? "right-0" 
+                  : "left-1/2 -translate-x-1/2";
 
               return (
                 <div key={idx} className="group relative flex flex-col items-center w-full max-w-[40px] h-full justify-end">
                   {/* 툴팁 마우스오버 */}
-                  <div className="absolute bottom-full mb-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none bg-gray-800 text-white px-3 py-1.5 rounded-xl text-[10px] font-mono text-center shadow-md z-20 whitespace-nowrap">
+                  <div className={`absolute bottom-full mb-2 ${tooltipAlignClass} opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none bg-gray-800 text-white px-3 py-1.5 rounded-xl text-[10px] font-mono text-center shadow-md z-20 whitespace-nowrap`}>
                     <div className="font-bold text-gray-300">{d.month}</div>
                     <div className="font-bold mt-0.5 text-white">
                       {val.toLocaleString()} {unit}
@@ -149,8 +145,13 @@ export const EnergyChart: React.FC<EnergyChartProps> = ({ data }) => {
 
                   {/* 세로 막대 (Tailwind Div) */}
                   <div
-                    style={{ height: `${heightPercent}%` }}
-                    className={`w-5 md:w-6 rounded-t-lg transition-all duration-500 transform origin-bottom hover:scale-x-110 shadow-sm relative ${
+                    style={{ 
+                      height: isAnimate ? `${heightPercent}%` : "0%",
+                      transitionDelay: isAnimate ? `${idx * 25}ms` : "0ms"
+                    }}
+                    className={`w-5 md:w-6 rounded-t-lg transform origin-bottom hover:scale-x-110 shadow-sm relative ${
+                      isAnimate ? "transition-all duration-500 ease-out" : "transition-none"
+                    } ${
                       activeTab === "ELECTRICITY"
                         ? "bg-gradient-to-t from-[#5F8C74] to-[#7EA993] hover:from-[#4d735f] hover:to-[#5F8C74]"
                         : "bg-gradient-to-t from-[#E07A5F] to-[#F29F80] hover:from-[#c8654d] hover:to-[#E07A5F]"

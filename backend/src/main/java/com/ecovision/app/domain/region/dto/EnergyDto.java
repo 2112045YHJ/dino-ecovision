@@ -30,7 +30,7 @@ public class EnergyDto {
     ) {}
 
     public record KecoOpenTable(
-            List<KecoItem> row
+            @JsonProperty("field") List<KecoItem> row
     ) {}
 
     public record KecoItem(
@@ -40,10 +40,34 @@ public class EnergyDto {
             @JsonProperty("ENGSRC_NM") String energySourceName,
             @JsonProperty("USG_NM") String usageName,
             @JsonProperty("USEMS_QNTY") Double usemsQuantity,
+            @JsonProperty("UNIT_NM") String unitName,
+            @JsonProperty("LOCL_DVSN_NM") String localDivisionName
+    ) {}
+
+    // 3. KEA API 응답 매핑 레코드
+    public record KeaIndustrialResponse(
+            String pageNo,
+            Integer totalCount,
+            String numOfRows,
+            KeaOpenTable opentable
+    ) {}
+
+    public record KeaOpenTable(
+            @JsonProperty("field") List<KeaItem> row
+    ) {}
+
+    public record KeaItem(
+            @JsonProperty("TRGT_YEAR") String targetYear,
+            @JsonProperty("KSIC_CD") String ksicCode,
+            @JsonProperty("DATA_DVSN_CD") String dataDivisionCode,
+            @JsonProperty("ENGSRC_DVSN_NM") String energySourceDivisionName,
+            @JsonProperty("ENGSRC_NM") String energySourceName,
+            @JsonProperty("LOCL_DVSN_NM") String localDivisionName,
+            @JsonProperty("USEMS_QNTY_NIDVAL") String usemsQuantityNidval,
             @JsonProperty("UNIT_NM") String unitName
     ) {}
 
-    // 3. 대시보드 통계 반환용 DTO
+    // 4. 대시보드 통계 반환용 DTO
     public record EnergySummaryResponse(
             int month,                   // 1 ~ 12
             Double totalPowerUsage,      // kWh

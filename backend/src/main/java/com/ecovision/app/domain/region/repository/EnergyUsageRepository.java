@@ -25,9 +25,24 @@ public interface EnergyUsageRepository extends JpaRepository<EnergyUsage, Long> 
             @Param("regionCode") String regionCode,
             @Param("yearPattern") String yearPattern);
 
+    @Query("SELECT new com.ecovision.app.domain.region.dto.EnergyUsageSumDto(" +
+            "e.usageYearMonth, e.energyType, SUM(e.usageAmount), SUM(e.carbonEmissionKg)) " +
+            "FROM EnergyUsage e " +
+            "WHERE e.usageYearMonth LIKE :yearPattern " +
+            "GROUP BY e.usageYearMonth, e.energyType " +
+            "ORDER BY e.usageYearMonth ASC")
+    List<EnergyUsageSumDto> findMonthlyEnergyUsageSumAllRegions(
+            @Param("yearPattern") String yearPattern);
+
     java.util.Optional<EnergyUsage> findByRegionCodeAndUsageYearMonthAndEnergyType(
             String regionCode, String usageYearMonth, com.ecovision.app.domain.region.entity.EnergyType energyType);
 
     List<EnergyUsage> findByRegionCodeAndUsageYearMonthBetweenOrderByUsageYearMonthAsc(
             String regionCode, String startYearMonth, String endYearMonth);
+
+    @Query("SELECT DISTINCT SUBSTRING(e.usageYearMonth, 1, 4) FROM EnergyUsage e ORDER BY SUBSTRING(e.usageYearMonth, 1, 4) DESC")
+    List<String> findDistinctYears();
+
+    @Query("SELECT DISTINCT e.regionCode FROM EnergyUsage e ORDER BY e.regionCode ASC")
+    List<String> findDistinctRegions();
 }

@@ -5,6 +5,23 @@ import { useNavigate } from "react-router-dom";
 import { Header } from "../components/layout/Header";
 import { fetchPosts, type PostResponse } from "../api/communityApi";
 
+function renderSmallAvatar(url: string) {
+  if (!url) return <span className="text-sm">🦖</span>;
+  const isImage = url.startsWith("data:") || url.startsWith("http") || url.startsWith("/");
+  if (isImage) {
+    return (
+      <img 
+        src={url} 
+        alt="Avatar" 
+        className="h-5 w-5 rounded-full object-cover border border-gray-200"
+      />
+    );
+  }
+  return (
+    <span className="text-sm">{url}</span>
+  );
+}
+
 export function CommunityPage() {
   const navigate = useNavigate();
   const [posts, setPosts] = useState<PostResponse[]>([]);
@@ -189,6 +206,12 @@ export function CommunityPage() {
                           정보공유
                         </span>
                       )}
+                      {post.content && post.content.includes("<img") && (
+                        <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <title>이미지 첨부됨</title>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                      )}
                       <h3 className="text-base font-bold text-gray-800 truncate">{post.title}</h3>
                       {post.chartSnapshotId && (
                         <span className="rounded bg-sky-50 px-1.5 py-0.5 text-[9px] font-bold text-sky-600 border border-sky-100 shrink-0">
@@ -203,7 +226,16 @@ export function CommunityPage() {
                     </div>
 
                     <div className="mt-2 flex items-center gap-3 text-xs text-gray-500">
-                      <span className="font-semibold text-[#5F8C74]">{post.authorNickname}</span>
+                      <div 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/mypage/${post.authorId}`);
+                        }}
+                        className="flex items-center gap-1.5 hover:text-[#4d735f] font-semibold cursor-pointer transition-colors"
+                      >
+                        {renderSmallAvatar(post.authorAvatarUrl || "")}
+                        <span>{post.authorNickname}</span>
+                      </div>
                       <span>•</span>
                       <span>{post.createdAt ? new Date(post.createdAt).toLocaleDateString() : ""}</span>
                     </div>

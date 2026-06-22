@@ -37,4 +37,12 @@ public class ChartSnapshotController {
         java.util.List<CommunityDto.ChartSnapshotResponse> response = communityService.getUserSnapshots(userId);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
+
+    @DeleteMapping("/snapshot/{id}")
+    public ResponseEntity<ApiResponse<Void>> deleteSnapshot(
+            @PathVariable String id,
+            @AuthenticationPrincipal Long userId) {
+        communityService.deleteSnapshot(id, userId);
+        return ResponseEntity.ok(ApiResponse.success(null));
+    }
 }
