@@ -149,7 +149,9 @@ export const EnergyChart: React.FC<EnergyChartProps> = ({ data }) => {
                       height: isAnimate ? `${heightPercent}%` : "0%",
                       transitionDelay: isAnimate ? `${idx * 25}ms` : "0ms"
                     }}
-                    className={`w-5 md:w-6 rounded-t-lg transition-all duration-500 ease-out transform origin-bottom hover:scale-x-110 shadow-sm relative ${
+                    className={`w-5 md:w-6 rounded-t-lg transform origin-bottom hover:scale-x-110 shadow-sm relative ${
+                      isAnimate ? "transition-all duration-500 ease-out" : "transition-none"
+                    } ${
                       activeTab === "ELECTRICITY"
                         ? "bg-gradient-to-t from-[#5F8C74] to-[#7EA993] hover:from-[#4d735f] hover:to-[#5F8C74]"
                         : "bg-gradient-to-t from-[#E07A5F] to-[#F29F80] hover:from-[#c8654d] hover:to-[#E07A5F]"
