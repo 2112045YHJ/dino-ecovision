@@ -86,12 +86,14 @@ public class DataController {
                 if (!"ALL_OK".equals(keyStatus)) {
                     log.warn("Cannot fetch fresh data. API Key status: {}", keyStatus);
                     String errorMsg = "API 키가 등록되어 있지 않아 수집할 수 없습니다.";
-                    if ("BOTH_MISSING".equals(keyStatus)) {
-                        errorMsg = "KEPCO(한전) 및 KECO(환경공단) API 키가 모두 누락되었습니다. application.properties 설정을 확인해 주세요.";
+                    if ("ALL_MISSING".equals(keyStatus)) {
+                        errorMsg = "KEPCO(한전), KECO(환경공단) 및 KEA(에너지공단) API 키가 모두 누락되었습니다. application.properties 설정을 확인해 주세요.";
                     } else if ("KEPCO_MISSING".equals(keyStatus)) {
                         errorMsg = "KEPCO(한전) API 키가 누락되었습니다.";
                     } else if ("KECO_MISSING".equals(keyStatus)) {
                         errorMsg = "KECO(환경공단) API 키가 누락되었습니다.";
+                    } else if ("KEA_MISSING".equals(keyStatus)) {
+                        errorMsg = "KEA(에너지공단) API 키가 누락되었습니다.";
                     }
                     return ResponseEntity.status(400)
                             .body(ApiResponse.error("MISSING_API_KEY", errorMsg));
@@ -112,6 +114,10 @@ public class DataController {
                 // 온실가스 데이터 수집
                 dataCollectionService.fetchAndSaveKecoCarbonData("2025");
                 dataCollectionService.fetchAndSaveKecoCarbonData("2026");
+
+                // KEA 산업부문 온실가스 데이터 수집
+                dataCollectionService.fetchAndSaveKeaIndustrialData("2025");
+                dataCollectionService.fetchAndSaveKeaIndustrialData("2026");
                 
                 return ResponseEntity.ok(ApiResponse.success("데이터베이스를 초기화하고 API를 통해 최신 데이터를 성공적으로 수집했습니다."));
             }

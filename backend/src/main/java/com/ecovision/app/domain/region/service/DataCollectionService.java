@@ -3,7 +3,9 @@ package com.ecovision.app.domain.region.service;
 import com.ecovision.app.domain.region.dto.EnergyDto;
 import com.ecovision.app.domain.region.entity.EnergyType;
 import com.ecovision.app.domain.region.entity.EnergyUsage;
+import com.ecovision.app.domain.region.entity.IndustrialEnergyUsage;
 import com.ecovision.app.domain.region.repository.EnergyUsageRepository;
+import com.ecovision.app.domain.region.repository.IndustrialEnergyUsageRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,6 +27,7 @@ import java.util.Random;
 public class DataCollectionService {
 
     private final EnergyUsageRepository energyUsageRepository;
+    private final IndustrialEnergyUsageRepository industrialEnergyUsageRepository;
     private final ObjectMapper objectMapper;
     private final WebClient webClient = WebClient.builder().build();
 
@@ -33,6 +36,9 @@ public class DataCollectionService {
 
     @Value("${openapi.keco-key:dummy-key}")
     private String kecoKey;
+
+    @Value("${openapi.kea-key:${openapi.keco-key}}")
+    private String keaKey;
 
     private static final String KEPCO_API_URL = "https://bigdata.kepco.co.kr/openapi/v1/powerUsage/houseAve.do";
     private static final String KECO_API_URL = "http://apis.data.go.kr/B553530/GHG_LIST_03/GHG_LIST_03_01_VIEW";
@@ -59,6 +65,11 @@ public class DataCollectionService {
                     .bodyToMono(String.class)
                     .timeout(Duration.ofSeconds(10)) // 타임아웃 10초 설정
                     .block();
+
+            if (jsonResponse != null && (jsonResponse.trim().startsWith("<") || jsonResponse.trim().startsWith("<?xml"))) {
+                log.error("KEPCO API returned XML instead of JSON. Response: {}", jsonResponse);
+                throw new RuntimeException("KEPCO API returned XML error");
+            }
 
             boolean dataLoaded = false;
             if (jsonResponse != null) {
@@ -112,18 +123,31 @@ public class DataCollectionService {
                     .timeout(Duration.ofSeconds(10))
                     .block();
 
+            if (jsonResponse != null && (jsonResponse.trim().startsWith("<") || jsonResponse.trim().startsWith("<?xml"))) {
+                log.error("KECO API returned XML instead of JSON. Response: {}", jsonResponse);
+                throw new RuntimeException("KECO API returned XML error");
+            }
+
             boolean dataLoaded = false;
             if (jsonResponse != null) {
                 EnergyDto.KecoCarbonResponse response = objectMapper.readValue(jsonResponse, EnergyDto.KecoCarbonResponse.class);
 
                 if (response.opentable() != null && response.opentable().row() != null) {
                     for (EnergyDto.KecoItem item : response.opentable().row()) {
-                        String regionCode = item.tobDivisionName() != null ? item.tobDivisionName() : "DEFAULT_REGION";
+                        String rawRegion = item.localDivisionName();
+                        if (rawRegion == null || rawRegion.trim().isEmpty()) {
+                            rawRegion = item.tobDivisionName();
+                        }
+                        String regionCode = normalizeRegionName(rawRegion);
                         String yearMonth = item.targetYear() + "01"; // YYYYMM
                         Double emission = item.usemsQuantity() != null ? item.usemsQuantity() : 0.0;
+                        Double usageAmount = 0.0;
+                        if (emission > 0.0) {
+                            usageAmount = emission / 2.176;
+                        }
 
                         // 온실가스 배출량 API는 가스 및 난방 등의 간접 배출량 중심이므로 GAS 타입으로 임의 적재
-                        saveOrUpdateData(regionCode, yearMonth, EnergyType.GAS, 0.0, "m3", emission, "KECO Open API");
+                        saveOrUpdateData(regionCode, yearMonth, EnergyType.GAS, usageAmount, "m3", emission, "KECO Open API");
                         dataLoaded = true;
                     }
                 }
@@ -186,13 +210,16 @@ public class DataCollectionService {
     public String getKeyStatus() {
         boolean isKepcoMissing = (kepcoKey == null || kepcoKey.trim().isEmpty() || "dummy-key".equals(kepcoKey));
         boolean isKecoMissing = (kecoKey == null || kecoKey.trim().isEmpty() || "dummy-key".equals(kecoKey));
+        boolean isKeaMissing = (keaKey == null || keaKey.trim().isEmpty() || "dummy-key".equals(keaKey));
         
-        if (isKepcoMissing && isKecoMissing) {
-            return "BOTH_MISSING";
+        if (isKepcoMissing && isKecoMissing && isKeaMissing) {
+            return "ALL_MISSING";
         } else if (isKepcoMissing) {
             return "KEPCO_MISSING";
         } else if (isKecoMissing) {
             return "KECO_MISSING";
+        } else if (isKeaMissing) {
+            return "KEA_MISSING";
         }
         return "ALL_OK";
     }
@@ -228,5 +255,157 @@ public class DataCollectionService {
             double gasCarbon = baseGas * 2.176; // 가스 배출계수 기준 환산
             saveOrUpdateData(regionCode, yearMonth, EnergyType.GAS, baseGas, "m3", gasCarbon, "Mock Data Creator");
         }
+    }
+
+    /**
+     * 한국에너지공단 산업부문 통계 API 호출 및 저장
+     */
+    @CircuitBreaker(name = "externalApi", fallbackMethod = "keaFallback")
+    @Transactional
+    public void fetchAndSaveKeaIndustrialData(String year) {
+        log.info("Fetching KEA industrial data for {}", year);
+
+        if (keaKey == null || keaKey.trim().isEmpty() || "dummy-key".equals(keaKey)) {
+            log.warn("KEA API Key is missing. Skipping data fetch for {}", year);
+            return;
+        }
+
+        try {
+            String uri = "http://apis.data.go.kr/B553530/GHG_LIST_01/GHG_LIST_01_03_VIEW"
+                    + "?ServiceKey=" + keaKey 
+                    + "&pageNo=1&numOfRows=100&apiType=JSON&q1=" + year;
+
+            String jsonResponse = webClient.get()
+                    .uri(uri)
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .timeout(Duration.ofSeconds(10))
+                    .block();
+
+            if (jsonResponse != null && (jsonResponse.trim().startsWith("<") || jsonResponse.trim().startsWith("<?xml"))) {
+                log.error("KEA API returned XML instead of JSON. Response: {}", jsonResponse);
+                throw new RuntimeException("KEA API returned XML error");
+            }
+
+            boolean dataLoaded = false;
+            if (jsonResponse != null) {
+                EnergyDto.KeaIndustrialResponse response = objectMapper.readValue(jsonResponse, EnergyDto.KeaIndustrialResponse.class);
+
+                if (response.opentable() != null && response.opentable().row() != null) {
+                    for (EnergyDto.KeaItem item : response.opentable().row()) {
+                        String rawRegion = item.localDivisionName();
+                        if (rawRegion == null || rawRegion.trim().isEmpty()) {
+                            rawRegion = item.localDivisionName(); // Fallback check
+                        }
+                        String regionCode = normalizeRegionName(rawRegion);
+                        String targetYear = item.targetYear();
+                        String industryCode = item.ksicCode() != null ? item.ksicCode() : "UNKNOWN";
+                        String dataDivisionCode = item.dataDivisionCode() != null ? item.dataDivisionCode() : "UNKNOWN";
+                        String energySourceName = item.energySourceName() != null ? item.energySourceName() : "UNKNOWN";
+                        String unitName = item.unitName() != null ? item.unitName() : "";
+                        
+                        String rawAmount = item.usemsQuantityNidval();
+                        Double amount = 0.0;
+                        if (rawAmount != null && !rawAmount.trim().equals("-")) {
+                            try {
+                                amount = Double.parseDouble(rawAmount.trim());
+                            } catch (NumberFormatException e) {
+                                log.warn("Failed to parse KEA usemsQuantityNidval: {}", rawAmount);
+                            }
+                        }
+
+                        saveOrUpdateIndustrialData(targetYear, industryCode, dataDivisionCode, energySourceName, regionCode, amount, unitName);
+                        dataLoaded = true;
+                    }
+                }
+            }
+
+            if (!dataLoaded) {
+                log.warn("KEA API returned empty data for {}", year);
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("KEA API fetch failed", e);
+        }
+    }
+
+    public void keaFallback(String year, Throwable t) {
+        log.error("KEA API fetch failed (Circuit Breaker Triggered) for {}: {}", year, t.getMessage());
+    }
+
+    private void saveOrUpdateIndustrialData(String targetYear, String industryCode, String dataDivisionCode, 
+                                            String energySourceName, String regionCode, Double amount, String unitName) {
+        Optional<IndustrialEnergyUsage> existingData = industrialEnergyUsageRepository
+                .findByTargetYearAndIndustryCodeAndDataDivisionCodeAndEnergySourceNameAndRegionCode(
+                        targetYear, industryCode, dataDivisionCode, energySourceName, regionCode);
+
+        BigDecimal bdAmount = amount != null ? BigDecimal.valueOf(amount) : BigDecimal.ZERO;
+
+        if (existingData.isPresent()) {
+            IndustrialEnergyUsage data = existingData.get();
+            IndustrialEnergyUsage updated = IndustrialEnergyUsage.builder()
+                    .id(data.getId())
+                    .targetYear(targetYear)
+                    .industryCode(industryCode)
+                    .dataDivisionCode(dataDivisionCode)
+                    .energySourceName(energySourceName)
+                    .regionCode(regionCode)
+                    .usageAmount(bdAmount)
+                    .unitName(unitName)
+                    .build();
+            industrialEnergyUsageRepository.save(updated);
+        } else {
+            IndustrialEnergyUsage newData = IndustrialEnergyUsage.builder()
+                    .targetYear(targetYear)
+                    .industryCode(industryCode)
+                    .dataDivisionCode(dataDivisionCode)
+                    .energySourceName(energySourceName)
+                    .regionCode(regionCode)
+                    .usageAmount(bdAmount)
+                    .unitName(unitName)
+                    .build();
+            industrialEnergyUsageRepository.save(newData);
+        }
+    }
+
+    private String normalizeRegionName(String rawRegion) {
+        if (rawRegion == null || rawRegion.trim().isEmpty()) {
+            return "DEFAULT_REGION";
+        }
+        String cleaned = rawRegion.trim().replaceAll("\\s+", " ");
+        String[] parts = cleaned.split(" ");
+        if (parts.length == 0) {
+            return "DEFAULT_REGION";
+        }
+        
+        String metro = parts[0];
+        String normalizedMetro = switch (metro) {
+            case "서울", "서울특별시" -> "서울특별시";
+            case "부산", "부산광역시" -> "부산광역시";
+            case "대구", "대구광역시" -> "대구광역시";
+            case "인천", "인천광역시" -> "인천광역시";
+            case "광주", "광주광역시" -> "광주광역시";
+            case "대전", "대전광역시" -> "대전광역시";
+            case "울산", "울산광역시" -> "울산광역시";
+            case "세종", "세종시", "세종특별자치시" -> "세종특별자치시";
+            case "경기", "경기도" -> "경기도";
+            case "강원", "강원도", "강원특별자치도" -> "강원특별자치도";
+            case "충북", "충청북도" -> "충청북도";
+            case "충남", "충청남도" -> "충청남도";
+            case "전북", "전라북도" -> "전라북도";
+            case "전남", "전라남도" -> "전라남도";
+            case "경북", "경상북도" -> "경상북도";
+            case "경남", "경상남도" -> "경상남도";
+            case "제주", "제주도", "제주특별자치도" -> "제주특별자치도";
+            default -> metro;
+        };
+        
+        if (parts.length > 1) {
+            StringBuilder sb = new StringBuilder(normalizedMetro);
+            for (int i = 1; i < parts.length; i++) {
+                sb.append(" ").append(parts[i]);
+            }
+            return sb.toString();
+        }
+        return normalizedMetro;
     }
 }

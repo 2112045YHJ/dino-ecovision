@@ -35,19 +35,14 @@ export const Dashboard: React.FC = () => {
     loadFilters();
   }, []);
 
-  const handleResetAndFetch = async (useMock: boolean = false) => {
-    const confirmMsg = useMock 
-      ? "DB의 모든 데이터를 제거하고 로컬 개발/테스트용 모의 데이터를 적재하시겠습니까?"
-      : "DB의 모든 데이터를 제거하고 등록된 API 키로 실시간 최신 데이터를 재수집하시겠습니까?\n(약 10~20초 가량 소요됩니다.)";
+  const handleResetAndFetch = async () => {
+    const confirmMsg = "DB의 모든 데이터를 제거하고 로컬 개발/테스트용 모의 데이터를 적재하시겠습니까?";
     
     if (!window.confirm(confirmMsg)) return;
     setIsResetting(true);
-    showToast(useMock 
-      ? "DB를 초기화하고 모의 데이터를 적재합니다... ⏳"
-      : "DB를 초기화하고 API 재수집을 시작합니다. 잠시만 기다려 주세요... ⏳"
-    );
+    showToast("DB를 초기화하고 모의 데이터를 적재합니다... ⏳");
     try {
-      const msg = await resetAndFetchEnergyData(useMock);
+      const msg = await resetAndFetchEnergyData(true);
       showToast("성공: " + msg + " 🎉");
       setTimeout(() => {
         window.location.reload();
@@ -142,13 +137,6 @@ export const Dashboard: React.FC = () => {
 
           <div className="flex flex-wrap items-center gap-3">
             <button
-              onClick={() => handleResetAndFetch(false)}
-              disabled={isResetting}
-              className="flex items-center justify-center gap-2 px-4 py-2.5 bg-[#E07A5F] hover:bg-[#c8654d] disabled:bg-gray-300 text-white rounded-2xl shadow-sm transition-colors text-xs font-bold cursor-pointer"
-            >
-              {isResetting ? "⏳ 수집 중..." : "🔄 API 재수집"}
-            </button>
-            <button
               onClick={handleShareSnapshot}
               className="flex items-center justify-center gap-2 px-4 py-2.5 bg-[#5F8C74] hover:bg-[#4d735f] text-white rounded-2xl shadow-sm transition-colors text-xs font-bold cursor-pointer"
             >
@@ -214,7 +202,7 @@ export const Dashboard: React.FC = () => {
               API 인증키가 정상적으로 등록되었는지 확인하거나, 수집 배치를 기다려 주세요.
             </p>
             <button
-              onClick={() => handleResetAndFetch(true)}
+              onClick={handleResetAndFetch}
               disabled={isResetting}
               className="px-5 py-3 rounded-2xl bg-[#5F8C74] hover:bg-[#4d735f] text-white font-bold transition text-xs shadow-sm cursor-pointer disabled:bg-gray-300"
             >
