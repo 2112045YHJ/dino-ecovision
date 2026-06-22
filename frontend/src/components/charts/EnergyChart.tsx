@@ -14,10 +14,10 @@ export const EnergyChart: React.FC<EnergyChartProps> = ({ data }) => {
 
   useEffect(() => {
     setIsAnimate(false);
-    const raf = requestAnimationFrame(() => {
+    const timer = setTimeout(() => {
       setIsAnimate(true);
-    });
-    return () => cancelAnimationFrame(raf);
+    }, 50);
+    return () => clearTimeout(timer);
   }, [viewMetric, data]);
 
   // 1~12월 데이터로 가공
