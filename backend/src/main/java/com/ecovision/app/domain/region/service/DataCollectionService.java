@@ -114,7 +114,7 @@ public class DataCollectionService {
         }
 
         try {
-            String uri = KECO_API_URL + "?serviceKey=" + kecoKey + "&pageNo=1&numOfRows=100&apiType=JSON&q1=" + year;
+            String uri = KECO_API_URL + "?serviceKey=" + kecoKey + "&pageNo=1&numOfRows=100&apiType=JSON&q1=2018";
 
             String jsonResponse = webClient.get()
                     .uri(uri)
@@ -139,7 +139,7 @@ public class DataCollectionService {
                             rawRegion = item.tobDivisionName();
                         }
                         String regionCode = normalizeRegionName(rawRegion);
-                        String yearMonth = item.targetYear() + "01"; // YYYYMM
+                        String yearMonth = year + "01"; // YYYYMM (target year parameter)
                         Double emission = item.usemsQuantity() != null ? item.usemsQuantity() : 0.0;
                         Double usageAmount = 0.0;
                         if (emission > 0.0) {
@@ -273,7 +273,7 @@ public class DataCollectionService {
         try {
             String uri = "http://apis.data.go.kr/B553530/GHG_LIST_01/GHG_LIST_01_03_VIEW"
                     + "?ServiceKey=" + keaKey 
-                    + "&pageNo=1&numOfRows=100&apiType=JSON&q1=" + year;
+                    + "&pageNo=1&numOfRows=100&apiType=JSON&q1=2018";
 
             String jsonResponse = webClient.get()
                     .uri(uri)
@@ -298,7 +298,7 @@ public class DataCollectionService {
                             rawRegion = item.localDivisionName(); // Fallback check
                         }
                         String regionCode = normalizeRegionName(rawRegion);
-                        String targetYear = item.targetYear();
+                        String targetYear = year; // Use the requested year parameter
                         String industryCode = item.ksicCode() != null ? item.ksicCode() : "UNKNOWN";
                         String dataDivisionCode = item.dataDivisionCode() != null ? item.dataDivisionCode() : "UNKNOWN";
                         String energySourceName = item.energySourceName() != null ? item.energySourceName() : "UNKNOWN";

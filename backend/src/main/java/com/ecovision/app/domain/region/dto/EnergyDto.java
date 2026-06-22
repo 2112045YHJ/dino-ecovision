@@ -30,7 +30,7 @@ public class EnergyDto {
     ) {}
 
     public record KecoOpenTable(
-            List<KecoItem> row
+            @JsonProperty("field") List<KecoItem> row
     ) {}
 
     public record KecoItem(
@@ -53,7 +53,7 @@ public class EnergyDto {
     ) {}
 
     public record KeaOpenTable(
-            List<KeaItem> row
+            @JsonProperty("field") List<KeaItem> row
     ) {}
 
     public record KeaItem(
