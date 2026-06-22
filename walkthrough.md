@@ -743,3 +743,18 @@ API 키(한전, 환경공단) 등록이 올바르게 작동하는지 한눈에 �
 ### 2. 검증 결과
 * **프론트엔드 빌드 무결성**: `npm run build` 결과 TypeScript 엄격 체크 및 Vite 번들링이 에러 없이 무결하게 성공했습니다.
 
+---
+
+## 🔧 [신규] 차트 막대 순차적 솟아오름(Staggered Grow-up) 애니메이션 구현 (2026-06-22)
+
+대시보드 페이지 진입 및 차트가 화면에 노출되는 시점(마운트), 그리고 "사용량/탄소배출량" 토글 클릭 시 차트 막대들이 0% 높이에서 시작해 순차적으로 솟아오르는(Staggered Animation) 시각적 효과를 구현했습니다.
+
+### 1. 수정 및 조치 내역
+
+1. **[EnergyChart.tsx](file:///c:/final/dino-ecovision/frontend/src/components/charts/EnergyChart.tsx) [MODIFY]**
+   - **애니메이션 트리거 상태 및 효과 추가**: `isAnimate` 상태를 도입하고 `useEffect` 훅에서 `requestAnimationFrame`을 통해 마운트 및 갱신 시 `isAnimate`를 `false` ➡️ `true`로 토글하는 애니메이션 프레임 제어 기법을 적용했습니다.
+   - **순차적 딜레이(Stagger) 적용**: 세로 막대의 height 스타일을 `isAnimate ? heightPercent% : 0%`로 제어하고, 각 월 인덱스(`idx`)에 따라 `transitionDelay: idx * 25ms`를 인라인으로 주입하여, 왼쪽부터 오른쪽으로 파도타기 하듯 순차적으로 부드럽게 솟구치도록 연출했습니다.
+
+### 2. 검증 결과
+* **프론트엔드 빌드 무결성**: `npm run build` 결과 에러 없이 성공적으로 정적 리소스 빌드가 완료되었습니다.
+

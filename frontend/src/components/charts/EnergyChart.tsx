@@ -1,6 +1,6 @@
 // src/components/charts/EnergyChart.tsx
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import type { EnergyUsageSumResponse } from "../../api/dashboardApi";
 
 interface EnergyChartProps {
@@ -10,6 +10,15 @@ interface EnergyChartProps {
 export const EnergyChart: React.FC<EnergyChartProps> = ({ data }) => {
   const activeTab = "ELECTRICITY";
   const [viewMetric, setViewMetric] = useState<"USAGE" | "CARBON">("USAGE");
+  const [isAnimate, setIsAnimate] = useState(false);
+
+  useEffect(() => {
+    setIsAnimate(false);
+    const raf = requestAnimationFrame(() => {
+      setIsAnimate(true);
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [viewMetric, data]);
 
   // 1~12월 데이터로 가공
   const monthlyData = Array.from({ length: 12 }, (_, i) => {
@@ -136,8 +145,11 @@ export const EnergyChart: React.FC<EnergyChartProps> = ({ data }) => {
 
                   {/* 세로 막대 (Tailwind Div) */}
                   <div
-                    style={{ height: `${heightPercent}%` }}
-                    className={`w-5 md:w-6 rounded-t-lg transition-all duration-500 transform origin-bottom hover:scale-x-110 shadow-sm relative ${
+                    style={{ 
+                      height: isAnimate ? `${heightPercent}%` : "0%",
+                      transitionDelay: isAnimate ? `${idx * 25}ms` : "0ms"
+                    }}
+                    className={`w-5 md:w-6 rounded-t-lg transition-all duration-500 ease-out transform origin-bottom hover:scale-x-110 shadow-sm relative ${
                       activeTab === "ELECTRICITY"
                         ? "bg-gradient-to-t from-[#5F8C74] to-[#7EA993] hover:from-[#4d735f] hover:to-[#5F8C74]"
                         : "bg-gradient-to-t from-[#E07A5F] to-[#F29F80] hover:from-[#c8654d] hover:to-[#E07A5F]"
