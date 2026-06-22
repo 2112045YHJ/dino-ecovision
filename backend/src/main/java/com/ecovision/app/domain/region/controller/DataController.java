@@ -111,10 +111,6 @@ public class DataController {
                     dataCollectionService.fetchAndSaveKepcoPowerData("2026", month);
                 }
                 
-                // 온실가스 데이터 수집
-                dataCollectionService.fetchAndSaveKecoCarbonData("2025");
-                dataCollectionService.fetchAndSaveKecoCarbonData("2026");
-
                 // KEA 산업부문 온실가스 데이터 수집
                 dataCollectionService.fetchAndSaveKeaIndustrialData("2025");
                 dataCollectionService.fetchAndSaveKeaIndustrialData("2026");

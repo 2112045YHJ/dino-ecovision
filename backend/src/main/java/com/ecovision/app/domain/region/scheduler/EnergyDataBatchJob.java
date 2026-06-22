@@ -43,27 +43,6 @@ public class EnergyDataBatchJob {
         }
     }
 
-    /**
-     * 환경공단 온실가스(가스) 배출량 데이터 수집 배치
-     * 주기: 매월 1일 새벽 3시 ("0 0 3 1 * *")
-     */
-    @Scheduled(cron = "0 0 3 1 * *")
-    @SchedulerLock(name = "kecoCarbonCollectionBatchLock", lockAtLeastFor = "10m", lockAtMostFor = "50m")
-    public void runKecoCarbonCollectionBatch() {
-        log.info("Starting KECO Carbon Data Collection Batch Job...");
-        
-        LocalDate today = LocalDate.now();
-        String currentYear = String.valueOf(today.getYear());
-        String lastYear = String.valueOf(today.minusYears(1).getYear());
-
-        try {
-            dataCollectionService.fetchAndSaveKecoCarbonData(lastYear);
-            dataCollectionService.fetchAndSaveKecoCarbonData(currentYear);
-            log.info("KECO Carbon Data Collection Batch Job completed successfully.");
-        } catch (Exception e) {
-            log.error("Error occurred during KECO Carbon Data Collection Batch Job: {}", e.getMessage(), e);
-        }
-    }
 
     /**
      * 한국에너지공단 산업부문 에너지/온실가스 데이터 수집 배치

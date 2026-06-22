@@ -8,7 +8,7 @@ interface EnergyChartProps {
 }
 
 export const EnergyChart: React.FC<EnergyChartProps> = ({ data }) => {
-  const [activeTab, setActiveTab] = useState<"ELECTRICITY" | "GAS">("ELECTRICITY");
+  const activeTab = "ELECTRICITY";
   const [viewMetric, setViewMetric] = useState<"USAGE" | "CARBON">("USAGE");
 
   // 1~12월 데이터로 가공
@@ -60,30 +60,6 @@ export const EnergyChart: React.FC<EnergyChartProps> = ({ data }) => {
 
         {/* 토글 스위치들 */}
         <div className="flex flex-wrap items-center gap-3">
-          {/* 에너지원 토글 */}
-          <div className="bg-[#FAF9F5] p-1 rounded-2xl flex border border-[#E8F2EC]">
-            <button
-              onClick={() => setActiveTab("ELECTRICITY")}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all duration-350 cursor-pointer ${
-                activeTab === "ELECTRICITY"
-                  ? "bg-[#5F8C74] text-white shadow-sm"
-                  : "text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              ⚡ 전기
-            </button>
-            <button
-              onClick={() => setActiveTab("GAS")}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all duration-350 cursor-pointer ${
-                activeTab === "GAS"
-                  ? "bg-[#E07A5F] text-white shadow-sm"
-                  : "text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              🔥 가스
-            </button>
-          </div>
-
           {/* 지표 토글 */}
           <div className="bg-[#FAF9F5] p-1 rounded-2xl flex border border-[#E8F2EC]">
             <button
