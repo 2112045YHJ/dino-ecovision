@@ -8,60 +8,13 @@ import { createPost, fetchPostDetails, updatePost, uploadPostImage } from "../ap
 import { EmbedChart } from "../components/charts/EmbedChart";
 import { fetchMyChartSnapshots, deleteChartSnapshot } from "../api/dashboardApi";
 
-// 생 텍스트 /embed/{uuid}를 wrapper HTML로 일괄 변환해주는 헬퍼 (Jsoup 속성 삭제 시 자가 치유 포함)
+// 생 텍스트 /embed/{uuid}를 wrapper HTML로 일괄 변환해주는 헬퍼
 const convertRawEmbedsToWrappers = (html: string): string => {
   if (!html) return "";
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(html, "text/html");
-
-  // 1. 이미 존재하는 .chart-embed-wrapper 중 data-uuid가 유실된 경우가 있다면 자가 복원
-  const existingWrappers = doc.querySelectorAll(".chart-embed-wrapper");
-  existingWrappers.forEach((wrapper) => {
-    let uuid = wrapper.getAttribute("data-uuid");
-    if (!uuid) {
-      const text = wrapper.textContent || "";
-      const regex = /\/embed\/([a-zA-Z0-9-]+)/;
-      const match = text.match(regex);
-      if (match) {
-        uuid = match[1];
-        wrapper.setAttribute("data-uuid", uuid);
-        const placeholder = wrapper.querySelector(".chart-embed-placeholder");
-        if (placeholder) {
-          placeholder.setAttribute("data-uuid", uuid);
-        }
-      }
-    }
+  const regex = /\/embed\/([a-zA-Z0-9-]+)/g;
+  return html.replace(regex, (_, uuid) => {
+    return `<div class="chart-embed-wrapper" contenteditable="false" data-uuid="${uuid}" style="margin: 16px 0; border: 1px solid #E8F2EC; border-radius: 16px; padding: 12px; background-color: #FAF9F5; display: block; text-align: center;"><div class="chart-embed-placeholder" data-uuid="${uuid}"></div><div class="chart-embed-link" style="text-align: center; color: #5F8C74; font-family: monospace; font-size: 11px; margin-top: 8px;">📊 [공유 차트 스냅샷: ${uuid}]</div></div><p><br></p>`;
   });
-  
-  // 2. 생 텍스트로 존재하는 /embed/uuid 들을 wrapper 로 치환
-  const walkNodes = (node: Node) => {
-    if (node.nodeType === Node.TEXT_NODE) {
-      const text = node.nodeValue || "";
-      if (text.indexOf("/embed/") !== -1) {
-        const parent = node.parentNode;
-        if (parent && (parent as HTMLElement).closest(".chart-embed-wrapper")) {
-          return;
-        }
-        
-        const regex = /\/embed\/([a-zA-Z0-9-]+)/g;
-        const temp = document.createElement("div");
-        temp.innerHTML = text.replace(regex, (_, uuid) => {
-          return `<div class="chart-embed-wrapper" contenteditable="false" data-uuid="${uuid}" style="margin: 16px 0; border: 1px solid #E8F2EC; border-radius: 16px; padding: 12px; background-color: #FAF9F5; display: block; text-align: center;"><div class="chart-embed-placeholder" data-uuid="${uuid}"></div><div class="chart-embed-link" style="text-align: center; color: #5F8C74; font-family: monospace; font-size: 11px; margin-top: 8px;">/embed/${uuid}</div></div><p><br></p>`;
-        });
-        
-        while (temp.firstChild) {
-          parent?.insertBefore(temp.firstChild, node);
-        }
-        parent?.removeChild(node);
-      }
-    } else {
-      const children = Array.from(node.childNodes);
-      children.forEach(walkNodes);
-    }
-  };
-  
-  walkNodes(doc.body);
-  return doc.body.innerHTML;
 };
 
 export function CommunityWritePage() {
@@ -166,7 +119,10 @@ export function CommunityWritePage() {
 
   // 2.5 에디터 내 차트 플레이스홀더 스캔 및 portals 생성
   useEffect(() => {
-    const timer = setTimeout(() => {
+    let rId1: number;
+    let rId2: number;
+
+    const scanPortals = () => {
       if (editorRef.current && !showSource && !isInitialLoading) {
         const elements = editorRef.current.querySelectorAll(".chart-embed-placeholder");
         const nextPortals: { el: Element; uuid: string }[] = [];
@@ -180,8 +136,16 @@ export function CommunityWritePage() {
       } else {
         setPortals([]);
       }
-    }, 150);
-    return () => clearTimeout(timer);
+    };
+
+    rId1 = requestAnimationFrame(() => {
+      rId2 = requestAnimationFrame(scanPortals);
+    });
+
+    return () => {
+      cancelAnimationFrame(rId1);
+      if (rId2) cancelAnimationFrame(rId2);
+    };
   }, [content, showSource, isInitialLoading]);
 
   // 3. 30초마다 자동 임시 저장 연동 (localStorage)
@@ -398,7 +362,7 @@ export function CommunityWritePage() {
     if (EMBED_REGEX_GLOBAL.test(pastedText)) {
       e.preventDefault();
       const htmlToInsert = pastedText.replace(EMBED_REGEX_GLOBAL, (_, uuid) => {
-        return `<div class="chart-embed-wrapper" contenteditable="false" data-uuid="${uuid}" style="margin: 16px 0; border: 1px solid #E8F2EC; border-radius: 16px; padding: 12px; background-color: #FAF9F5; display: block; text-align: center;"><div class="chart-embed-placeholder" data-uuid="${uuid}"></div><div class="chart-embed-link" style="text-align: center; color: #5F8C74; font-family: monospace; font-size: 11px; margin-top: 8px;">/embed/${uuid}</div></div><p><br></p>`;
+        return `<div class="chart-embed-wrapper" contenteditable="false" data-uuid="${uuid}" style="margin: 16px 0; border: 1px solid #E8F2EC; border-radius: 16px; padding: 12px; background-color: #FAF9F5; display: block; text-align: center;"><div class="chart-embed-placeholder" data-uuid="${uuid}"></div><div class="chart-embed-link" style="text-align: center; color: #5F8C74; font-family: monospace; font-size: 11px; margin-top: 8px;">📊 [공유 차트 스냅샷: ${uuid}]</div></div><p><br></p>`;
       });
       document.execCommand("insertHTML", false, htmlToInsert);
       if (editorRef.current) {
@@ -659,7 +623,7 @@ export function CommunityWritePage() {
   };
 
   const insertChartToEditor = (uuid: string) => {
-    const wrapperHtml = `<div class="chart-embed-wrapper" contenteditable="false" data-uuid="${uuid}" style="margin: 16px 0; border: 1px solid #E8F2EC; border-radius: 16px; padding: 12px; background-color: #FAF9F5; display: block; text-align: center;"><div class="chart-embed-placeholder" data-uuid="${uuid}"></div><div class="chart-embed-link" style="text-align: center; color: #5F8C74; font-family: monospace; font-size: 11px; margin-top: 8px;">/embed/${uuid}</div></div><p><br></p>`;
+    const wrapperHtml = `<div class="chart-embed-wrapper" contenteditable="false" data-uuid="${uuid}" style="margin: 16px 0; border: 1px solid #E8F2EC; border-radius: 16px; padding: 12px; background-color: #FAF9F5; display: block; text-align: center;"><div class="chart-embed-placeholder" data-uuid="${uuid}"></div><div class="chart-embed-link" style="text-align: center; color: #5F8C74; font-family: monospace; font-size: 11px; margin-top: 8px;">📊 [공유 차트 스냅샷: ${uuid}]</div></div><p><br></p>`;
 
     if (showSource) {
       setContent((prev) => prev + wrapperHtml);
@@ -839,8 +803,17 @@ export function CommunityWritePage() {
     const chartSnapshotId = match ? match[1] : null;
 
     try {
-      // 백엔드 저장 시에는 절대 경로 http://localhost:8080/uploads/를 상대 경로 /uploads/로 정제하여 DB 매핑 무결성 유지
-      const cleanContent = content.replace(/http:\/\/localhost:8080\/uploads\//gi, '/uploads/');
+      // 1) 래퍼 HTML 블록 전체를 /embed/{uuid} 로 치환
+      let cleanContent = content.replace(/<div[^>]*class="chart-embed-wrapper"[^>]*>([\s\S]*?)<\/div>/gi, (match) => {
+        const uuidMatch = match.match(/data-uuid="([a-zA-Z0-9-]+)"/);
+        return uuidMatch ? `/embed/${uuidMatch[1]}` : "";
+      });
+
+      // 2) 혹시 에디터에 남은 📊 [공유 차트 스냅샷: uuid] 텍스트가 있다면 /embed/uuid 로 치환
+      cleanContent = cleanContent.replace(/📊\s*\[공유 차트 스냅샷:\s*([a-zA-Z0-9-]+)\]/g, '/embed/$1');
+
+      // 3) 백엔드 저장 시에는 절대 경로 http://localhost:8080/uploads/를 상대 경로 /uploads/로 정제하여 DB 매핑 무결성 유지
+      cleanContent = cleanContent.replace(/http:\/\/localhost:8080\/uploads\//gi, '/uploads/');
 
       if (isEditMode && id) {
         await updatePost(parseInt(id), {
