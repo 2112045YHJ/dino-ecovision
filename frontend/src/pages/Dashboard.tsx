@@ -154,6 +154,7 @@ export const Dashboard: React.FC = () => {
         title,
         chartType: chartTypeStr,
         chartMetadata: metadataStr,
+        isSaved: false,
       });
 
       const embedUrl = `${window.location.origin}/embed/${response.id}`;
@@ -203,6 +204,7 @@ export const Dashboard: React.FC = () => {
         title,
         chartType: chartTypeStr,
         chartMetadata: metadataStr,
+        isSaved: true,
       });
 
       showToast("차트가 내 보관함에 성공적으로 저장되었습니다! 💾");

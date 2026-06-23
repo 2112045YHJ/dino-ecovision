@@ -117,26 +117,26 @@ export function CommunityWritePage() {
     }
   }, [content, showSource]);
 
-  // 2.5 에디터 내 차트 플레이스홀더 스캔 및 portals 생성
+  // 2.5 에디터 내 차트 플레이스홀더 스캔 및 portals 생성 함수
+  const scanPortals = () => {
+    if (editorRef.current && !showSource && !isInitialLoading) {
+      const elements = editorRef.current.querySelectorAll(".chart-embed-placeholder");
+      const nextPortals: { el: Element; uuid: string }[] = [];
+      elements.forEach((el) => {
+        const uuid = el.getAttribute("data-uuid");
+        if (uuid) {
+          nextPortals.push({ el, uuid });
+        }
+      });
+      setPortals(nextPortals);
+    } else {
+      setPortals([]);
+    }
+  };
+
   useEffect(() => {
     let rId1: number;
     let rId2: number;
-
-    const scanPortals = () => {
-      if (editorRef.current && !showSource && !isInitialLoading) {
-        const elements = editorRef.current.querySelectorAll(".chart-embed-placeholder");
-        const nextPortals: { el: Element; uuid: string }[] = [];
-        elements.forEach((el) => {
-          const uuid = el.getAttribute("data-uuid");
-          if (uuid) {
-            nextPortals.push({ el, uuid });
-          }
-        });
-        setPortals(nextPortals);
-      } else {
-        setPortals([]);
-      }
-    };
 
     rId1 = requestAnimationFrame(() => {
       rId2 = requestAnimationFrame(scanPortals);
@@ -660,6 +660,11 @@ export function CommunityWritePage() {
       setContent((prev) => prev + wrapperHtml);
     }
     setChartModalOpen(false);
+
+    // 즉시 포탈 스캔 실행 (렌더링 동기화 보장)
+    requestAnimationFrame(() => {
+      requestAnimationFrame(scanPortals);
+    });
   };
 
   const insertTableToEditor = (rows: number, cols: number) => {

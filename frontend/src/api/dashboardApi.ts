@@ -56,6 +56,7 @@ export async function createDashboardSnapshot(request: {
   title: string;
   chartType: string;
   chartMetadata: string;
+  isSaved?: boolean;
 }): Promise<DashboardChartSnapshotResponse> {
   const token = localStorage.getItem("accessToken");
   return await apiRequest<DashboardChartSnapshotResponse>("/api/charts/snapshot", {
