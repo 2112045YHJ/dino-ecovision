@@ -342,6 +342,21 @@ export function MyPage() {
       setCropImageSrc(null);
     }
   };
+  const [hasAutoOpened, setHasAutoOpened] = useState(false);
+
+  const closeEditModal = () => {
+    setIsEditModalOpen(false);
+    if (window.location.pathname === "/mypage/edit") {
+      navigate("/mypage");
+    }
+  };
+
+  useEffect(() => {
+    if (window.location.pathname === "/mypage/edit" && profile.email && !hasAutoOpened) {
+      setHasAutoOpened(true);
+      openEditModal();
+    }
+  }, [profile.email, hasAutoOpened]);
 
   const openEditModal = async () => {
     setEditNickname(profile.nickname);
@@ -423,7 +438,7 @@ export function MyPage() {
         localStorage.setItem("nickname", updatedData.nickname || "에코시티즌");
       }
 
-      setIsEditModalOpen(false);
+      closeEditModal();
     } catch (err: any) {
       console.error("Failed to save profile:", err);
       setErrorMessage(err.message || "프로필 변경 중 오류가 발생했습니다.");
@@ -989,7 +1004,7 @@ export function MyPage() {
                   <div className="flex gap-3 pt-2">
                     <button
                       type="button"
-                      onClick={() => setIsEditModalOpen(false)}
+                      onClick={closeEditModal}
                       disabled={isSaving}
                       className="flex-1 cursor-pointer rounded-xl border border-gray-200 bg-white py-3 text-xs font-bold text-gray-500 transition-colors hover:bg-gray-50"
                     >
