@@ -29,6 +29,6 @@ public final class QuizDto {
 	
 	// 제출 응답
 	public record SubmitResponse(
-			boolean correct, int answerNo, String explantaion, int rewardGranted) {}
+			boolean correct, int answerNo, String explanation, int rewardGranted) {}
 	
 }

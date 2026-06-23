@@ -354,8 +354,11 @@ public class CommunityService {
 
     @Transactional
     public CommunityDto.ChartSnapshotResponse createSnapshot(CommunityDto.ChartSnapshotRequest request, Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "사용자를 찾을 수 없습니다."));
+        User user = null;
+        if (Boolean.TRUE.equals(request.isSaved())) {
+            user = userRepository.findById(userId)
+                    .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "사용자를 찾을 수 없습니다."));
+        }
 
         ChartSnapshot snapshot = ChartSnapshot.builder()
                 .user(user)

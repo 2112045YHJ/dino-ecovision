@@ -30,6 +30,7 @@ import { CommunityDetailPage } from "./pages/CommunityDetailPage";
 import { CommunityWritePage } from "./pages/CommunityWritePage";
 import { MyPage } from "./pages/MyPage";
 import { Dashboard } from "./pages/Dashboard";
+import { EmbedLandingPage } from "./pages/EmbedLandingPage";
 
 function App() {
   return (
@@ -74,6 +75,7 @@ function App() {
 
       {/* 대시보드 */}
       <Route path="/dashboard" element={<Dashboard />} />
+      <Route path="/embed/:id" element={<EmbedLandingPage />} />
       <Route path="/dashboard/compare" element={<RegionEnergyComparePage />} />
 
       {/* 커뮤니티 */}

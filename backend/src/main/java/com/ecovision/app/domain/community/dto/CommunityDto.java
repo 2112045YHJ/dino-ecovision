@@ -75,7 +75,9 @@ public final class CommunityDto {
             String chartType,
 
             @NotBlank(message = "차트 메타데이터는 필수입니다.")
-            String chartMetadata // JSON String
+            String chartMetadata, // JSON String
+
+            Boolean isSaved
     ) {}
 
     public record ChartSnapshotResponse(
