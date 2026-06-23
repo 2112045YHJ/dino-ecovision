@@ -69,12 +69,20 @@ public class MissionService {
 	private final UserDinoRepository userDinoRepository;
 	private final LevelPolicyRepository levelPolicyRepository;
 	private final DinoUnlockService dinoUnlockService;
+	private final MissionAssignmentService missionAssignmentService;
 
 	// 오늘 배정된 일일 미션 목록
 	@Transactional(readOnly = true)
 	public List<MissionDto.TodayMission> getTodayMissions(Long userId) {
 		LocalDate today = LocalDate.now();
 		List<DailyMissionAssignment> assignments = dailyAssignmentRepository.findByUserIdAndAssignedDate(userId, today);
+
+		// 스케줄러 미동작 대비 안전망: 오늘 배정이 없으면 즉시 배정 후 재조회.
+		// assignForUser는 REQUIRES_NEW + 멱등이라 별도 트랜잭션으로 커밋된 뒤 재조회된다.
+		if (assignments.isEmpty()) {
+			missionAssignmentService.assignForUser(userId, today);
+			assignments = dailyAssignmentRepository.findByUserIdAndAssignedDate(userId, today);
+		}
 
 		List<MissionDto.TodayMission> result = new ArrayList<>();
 		for (DailyMissionAssignment a : assignments) {
