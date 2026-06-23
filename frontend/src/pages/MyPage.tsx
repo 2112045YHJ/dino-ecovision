@@ -329,6 +329,13 @@ export function MyPage() {
     }
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
+    localStorage.removeItem("nickname");
+    navigate("/login");
+  };
+
   const handleSaveProfile = async () => {
     if (!editNickname.trim()) {
       setErrorMessage("닉네임을 입력해 주세요.");
@@ -428,8 +435,18 @@ export function MyPage() {
             </div>
           </div>
 
-          {/* 지표 보드 */}
-          <div className="grid grid-cols-2 gap-4 w-full md:w-auto min-w-[280px]">
+          {/* 지표 보드 + 로그아웃 */}
+          <div className="flex flex-col gap-3 w-full md:w-auto min-w-[280px]">
+          {isOwnPage && (
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="self-end text-xs font-bold text-gray-400 hover:text-red-500 transition-colors cursor-pointer bg-transparent border-none p-0 outline-none"
+            >
+              🚪 로그아웃
+            </button>
+          )}
+          <div className="grid grid-cols-2 gap-4">
             {/* 포인트 */}
             <div className="rounded-2xl border border-[#E8F2EC] bg-[#FAF9F5] p-4 flex items-center gap-3">
               <span className="text-2xl">🪙</span>
@@ -446,6 +463,7 @@ export function MyPage() {
                 <p className="text-base font-bold text-gray-800 mt-0.5">{profile.savedCarbonKg.toLocaleString()} kg</p>
               </div>
             </div>
+          </div>
           </div>
         </section>
 
