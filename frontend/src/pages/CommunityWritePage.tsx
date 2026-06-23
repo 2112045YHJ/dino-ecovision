@@ -803,11 +803,30 @@ export function CommunityWritePage() {
     const chartSnapshotId = match ? match[1] : null;
 
     try {
-      // 1) 래퍼 HTML 블록 전체를 /embed/{uuid} 로 치환
-      let cleanContent = content.replace(/<div[^>]*class="chart-embed-wrapper"[^>]*>([\s\S]*?)<\/div>/gi, (match) => {
-        const uuidMatch = match.match(/data-uuid="([a-zA-Z0-9-]+)"/);
-        return uuidMatch ? `/embed/${uuidMatch[1]}` : "";
-      });
+      // 1) DOMParser를 이용해 래퍼 HTML 블록 전체를 /embed/{uuid} 생 텍스트로 치환 (제출 시 문자열 가공이므로 캐럿 영향 없음)
+      let cleanContent = content;
+      try {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(content, "text/html");
+        const wrappers = doc.querySelectorAll(".chart-embed-wrapper");
+        wrappers.forEach((wrapper) => {
+          const uuid = wrapper.getAttribute("data-uuid");
+          if (uuid) {
+            const textNode = doc.createTextNode(`/embed/${uuid}`);
+            wrapper.parentNode?.replaceChild(textNode, wrapper);
+          } else {
+            wrapper.parentNode?.removeChild(wrapper);
+          }
+        });
+        cleanContent = doc.body.innerHTML;
+      } catch (e) {
+        console.error("DOMParser fallback during submit:", e);
+        // Fallback: 정규식 기반 처리
+        cleanContent = content.replace(/<div[^>]*class="chart-embed-wrapper"[^>]*>[\s\S]*?<\/div>/gi, (match) => {
+          const uuidMatch = match.match(/data-uuid="([a-zA-Z0-9-]+)"/);
+          return uuidMatch ? `/embed/${uuidMatch[1]}` : "";
+        });
+      }
 
       // 2) 혹시 에디터에 남은 📊 [공유 차트 스냅샷: uuid] 텍스트가 있다면 /embed/uuid 로 치환
       cleanContent = cleanContent.replace(/📊\s*\[공유 차트 스냅샷:\s*([a-zA-Z0-9-]+)\]/g, '/embed/$1');
