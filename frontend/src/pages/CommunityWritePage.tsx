@@ -621,15 +621,15 @@ export function CommunityWritePage() {
     if (!selection || selection.rangeCount === 0) return;
     const range = selection.getRangeAt(0);
     
-    // 텍스트 내에 /embed/uuid 가 있는지 먼저 검사하여 없으면 조기 반환 (불필요한 DOM 조작 방지)
+    // 텍스트 내에 /embed/uuid 가 있는지 먼저 검사하여 없으면 조기 반환
     const textContent = editor.textContent || "";
     const rawEmbedRegex = /\/embed\/([a-zA-Z0-9-]+)/;
     if (!rawEmbedRegex.test(textContent)) return;
 
-    // 이미 chart-embed-wrapper 가 해당 UUID를 감싸고 있다면 치환 대상에서 제외
-    const html = editor.innerHTML;
-    const regex = /(?<!data-uuid="[^"]*")\/embed\/([a-zA-Z0-9-]+)/g;
-    if (!regex.test(html)) return;
+    // 래퍼가 없는 생 /embed/uuid 가 실제로 존재하는지 확인하기 위해 비교
+    const currentHtml = editor.innerHTML;
+    const convertedHtml = convertRawEmbedsToWrappers(currentHtml);
+    if (currentHtml === convertedHtml) return;
 
     // 커서 위치에 임시 마커 삽입
     const marker = document.createElement("span");
@@ -640,32 +640,22 @@ export function CommunityWritePage() {
       return; // 비정상 상황 방어
     }
 
-    const currentHtml = editor.innerHTML;
-    
-    // 치환
-    let replaced = false;
-    const nextHtml = currentHtml.replace(regex, (_, uuid) => {
-      replaced = true;
-      return `<div class="chart-embed-wrapper" contenteditable="false" data-uuid="${uuid}" style="margin: 16px 0; border: 1px solid #E8F2EC; border-radius: 16px; padding: 12px; background-color: #FAF9F5; display: block; text-align: center;"><div class="chart-embed-placeholder" data-uuid="${uuid}"></div><div class="chart-embed-link" style="text-align: center; color: #5F8C74; font-family: monospace; font-size: 11px; margin-top: 8px;">/embed/${uuid}</div></div><p><br></p>`;
-    });
+    const htmlWithMarker = editor.innerHTML;
+    const nextHtml = convertRawEmbedsToWrappers(htmlWithMarker);
 
-    if (replaced) {
-      editor.innerHTML = nextHtml;
-      // 마커를 찾아서 커서 위치 복원 후 마커 제거
-      const newMarker = editor.querySelector("#editor-cursor-marker");
-      if (newMarker) {
-        const newRange = document.createRange();
-        newRange.setStartAfter(newMarker);
-        newRange.collapse(true);
-        selection.removeAllRanges();
-        selection.addRange(newRange);
-        newMarker.parentNode?.removeChild(newMarker);
-      }
-      setContent(editor.innerHTML);
-    } else {
-      // 치환되지 않았다면 마커만 조용히 삭제
-      marker.parentNode?.removeChild(marker);
+    editor.innerHTML = nextHtml;
+    
+    // 마커를 찾아서 커서 위치 복원 후 마커 제거
+    const newMarker = editor.querySelector("#editor-cursor-marker");
+    if (newMarker) {
+      const newRange = document.createRange();
+      newRange.setStartAfter(newMarker);
+      newRange.collapse(true);
+      selection.removeAllRanges();
+      selection.addRange(newRange);
+      newMarker.parentNode?.removeChild(newMarker);
     }
+    setContent(editor.innerHTML);
   };
 
   const insertChartToEditor = (uuid: string) => {
