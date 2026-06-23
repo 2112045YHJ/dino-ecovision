@@ -29,4 +29,18 @@ public final class DinoDto {
 	public record DinoStatusResponse(
 			Long dinoId, String nickname, String templateCode, String templateName,
 			String stage, int exp, Integer nextStageExp, int affinity) {}
+
+	// 공룡 도감 조회 항목 (GET /api/me/dino/collection)
+	public record CollectionItemResponse(
+			Long collectionId,
+			Long dinoId,
+			Long templateId,
+			String templateCode,
+			String templateName,
+			String nickname,
+			String stage,
+			boolean owned,
+			boolean acquired,
+			String acquiredAt
+	) {}
 }

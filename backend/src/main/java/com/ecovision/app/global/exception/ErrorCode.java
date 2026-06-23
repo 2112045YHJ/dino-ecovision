@@ -44,7 +44,18 @@ public enum ErrorCode {
 	// mission 도메인 코드
 	ASSIGNMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "본인에게 배정되지 않은 미션입니다."),
 	ALREADY_COMPLETED(HttpStatus.CONFLICT, "이미 완료한 미션입니다."),
-	MISSION_EXPIRED(HttpStatus.BAD_REQUEST, "만료된 미션입니다.");
+	MISSION_EXPIRED(HttpStatus.BAD_REQUEST, "만료된 미션입니다."),
+	
+	// quiz 도메인 코드
+	ALREADY_ATTEMPTED(HttpStatus.CONFLICT, "오늘의 퀴즈는 이미 참여하셨습니다."),
+	QUIZ_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 퀴즈입니다."),
+	
+	// guild 도메인 코드
+	GUILD_NOT_FOUND(HttpStatus.NOT_FOUND, "소속된 길드가 없습니다. 지역 등록 후 이용해 주세요."),
+	
+	// admin 도메인 코드
+	USER_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 사용자입니다."),
+	INVALID_STATUS(HttpStatus.BAD_REQUEST, "허용되지 않은 상태값입니다.");
 	
 	private final HttpStatus status;
 	private final String message;

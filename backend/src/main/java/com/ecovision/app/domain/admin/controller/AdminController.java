@@ -1,13 +1,20 @@
 package com.ecovision.app.domain.admin.controller;
 
+import com.ecovision.app.domain.admin.dto.AdminDto;
 import com.ecovision.app.domain.admin.entity.DataUploadLog;
 import com.ecovision.app.domain.admin.repository.DataUploadLogRepository;
+import com.ecovision.app.domain.admin.service.AdminService;
+import com.ecovision.app.domain.dungeon.dto.DungeonDto;
+import com.ecovision.app.global.response.ApiResponse;
+
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -27,7 +34,8 @@ public class AdminController {
 
     private final JdbcTemplate jdbcTemplate;
     private final DataUploadLogRepository dataUploadLogRepository;
-
+	private final AdminService adminService;
+    
     /**
      * 공공 에너지 사용량 CSV 데이터를 벌크 적재합니다.
      * 
@@ -245,4 +253,25 @@ public class AdminController {
             this.failedRows = failedRows;
         }
     }
+
+	//	13.2 던전 수동 발령. 생성된 던전을 6.1과 동일 구조로 반환(201).
+	@PostMapping("/dungeons")
+	public ResponseEntity<ApiResponse<DungeonDto.ActiveDungeonResponse>> triggerDungeon(
+			@AuthenticationPrincipal Long adminUserId,
+			@Valid @RequestBody AdminDto.ManualDungeonRequest request) {
+		DungeonDto.ActiveDungeonResponse data = adminService.triggerManualDungeon(adminUserId, request);
+		return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(data));
+	}
+ 
+	//	13.3 회원 상태 변경 (ACTIVE/INACTIVE/BANNED)
+	@PatchMapping("/users/{userId}/status")
+	public ApiResponse<AdminDto.UserStatusResponse> changeUserStatus(
+			@PathVariable Long userId,
+			@Valid @RequestBody AdminDto.UserStatusRequest request) {
+		return ApiResponse.success(adminService.changeUserStatus(userId, request));
+	}
+    
+
+
+
 }

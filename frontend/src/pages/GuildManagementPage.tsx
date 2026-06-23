@@ -1,61 +1,98 @@
 // src/pages/GuildManagementPage.tsx
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { guildRankingMock, myGuildMock } from "../mocks/guildMock";
-import { GuildSeasonRewardModal } from "../components/guild/GuildSeasonRewardModal";
+import {
+  getMyGuild,
+  getMyGuildMembers,
+  getGuildRanking,
+  type MyGuildResponse,
+  type GuildMember,
+  type GuildRankingItem,
+} from "../api/guildApi";
 
-// 길드 멤버 더미 데이터
-const guildMembersMock = [
-  {
-    rank: 1,
-    nickname: "에코마스터",
-    isLeader: true,
-    isMe: false,
-    seasonPoint: 1200,
-  },
-  {
-    rank: 2,
-    nickname: "그린파워",
-    isLeader: false,
-    isMe: false,
-    seasonPoint: 980,
-  },
-  {
-    rank: 3,
-    nickname: "지구지킴이",
-    isLeader: false,
-    isMe: false,
-    seasonPoint: 720,
-  },
-  {
-    rank: 4,
-    nickname: "탄소제로",
-    isLeader: false,
-    isMe: false,
-    seasonPoint: 530,
-  },
-  {
-    rank: 5,
-    nickname: "에코시티즌",
-    isLeader: false,
-    isMe: true,
-    seasonPoint: 340,
-  },
-  {
-    rank: 6,
-    nickname: "친환경이",
-    isLeader: false,
-    isMe: false,
-    seasonPoint: 280,
-  },
-];
+import { GuildSeasonRewardModal } from "../components/guild/GuildSeasonRewardModal";
 
 export function GuildManagementPage() {
   const navigate = useNavigate();
 
   const [isRewardOpen, setIsRewardOpen] = useState(false);
+
+  // 내 길드 정보
+  const [myGuild, setMyGuild] = useState<MyGuildResponse | null>(null);
+  const [isMyGuildLoading, setIsMyGuildLoading] = useState(true);
+  const [myGuildErrorMessage, setMyGuildErrorMessage] = useState("");
+
+  // 길드 멤버 목록
+  const [members, setMembers] = useState<GuildMember[]>([]);
+  const [isMembersLoading, setIsMembersLoading] = useState(true);
+  const [membersErrorMessage, setMembersErrorMessage] = useState("");
+
+  // 길드 랭킹
+  const [guildRanking, setGuildRanking] = useState<GuildRankingItem[]>([]);
+  const [isGuildRankingLoading, setIsGuildRankingLoading] = useState(true);
+  const [guildRankingErrorMessage, setGuildRankingErrorMessage] = useState("");
+
+  // 내 길드 정보 가져오기
+  useEffect(() => {
+    const fetchMyGuild = async () => {
+      try {
+        setIsMyGuildLoading(true);
+        setMyGuildErrorMessage("");
+
+        const data = await getMyGuild();
+        setMyGuild(data);
+      } catch (error) {
+        console.error(error);
+        setMyGuildErrorMessage("내 길드 정보를 불러오지 못했습니다.");
+      } finally {
+        setIsMyGuildLoading(false);
+      }
+    };
+
+    fetchMyGuild();
+  }, []);
+
+  // 길드 멤버 목록 가져오기
+  useEffect(() => {
+    const fetchMembers = async () => {
+      try {
+        setIsMembersLoading(true);
+        setMembersErrorMessage("");
+
+        const data = await getMyGuildMembers();
+        setMembers(data);
+      } catch (error) {
+        console.error(error);
+        setMembersErrorMessage("길드 멤버 정보를 불러오지 못했습니다.");
+      } finally {
+        setIsMembersLoading(false);
+      }
+    };
+
+    fetchMembers();
+  }, []);
+
+  // 길드 랭킹 가져오기
+  useEffect(() => {
+    const fetchGuildRanking = async () => {
+      try {
+        setIsGuildRankingLoading(true);
+        setGuildRankingErrorMessage("");
+
+        const data = await getGuildRanking(0, 20);
+        setGuildRanking(data);
+      } catch (error) {
+        console.error(error);
+        setGuildRankingErrorMessage("길드 랭킹 정보를 불러오지 못했습니다.");
+      } finally {
+        setIsGuildRankingLoading(false);
+      }
+    };
+
+    fetchGuildRanking();
+  }, []);
 
   return (
     <main className="min-h-screen bg-[#FAF9F5] p-6 text-[#2C3531]">
@@ -93,84 +130,122 @@ export function GuildManagementPage() {
 
         {/* 내 길드 정보 */}
         <section className="mb-6 rounded-3xl bg-white p-6 shadow-sm">
-          <div className="flex items-center justify-between border-b-2 border-[#5F8C74] pb-3">
-            <div className="flex items-center gap-2">
-              <span className="text-2xl">🏠</span>
-              <h2 className="text-2xl font-bold">{myGuildMock.guildName}</h2>
+          {isMyGuildLoading && (
+            <div className="rounded-2xl bg-[#FAF9F5] p-4 text-sm font-bold text-gray-500">
+              내 길드 정보를 불러오는 중...
             </div>
-            <span className="rounded-full bg-[#E8F2EC] px-3 py-1 text-xs font-bold text-[#5F8C74]">
-              지역코드: 26350
-            </span>
-          </div>
+          )}
 
-          <p className="mt-2 text-sm text-gray-600">{myGuildMock.regionName}</p>
+          {!isMyGuildLoading && myGuildErrorMessage && (
+            <div className="rounded-2xl bg-[#FFF0EA] p-4 text-sm font-bold text-[#E07A5F]">
+              {myGuildErrorMessage}
+            </div>
+          )}
 
-          <div className="mt-5 grid gap-4 md:grid-cols-4">
-            <div className="rounded-2xl bg-[#FAF9F5] p-4">
-              <p className="text-sm text-gray-600">길드원</p>
-              <p className="mt-1 text-xl font-bold">
-                {myGuildMock.memberCount}명
+          {!isMyGuildLoading && !myGuildErrorMessage && myGuild && (
+            <>
+              <div className="flex items-center justify-between border-b-2 border-[#5F8C74] pb-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl">🏠</span>
+                  <h2 className="text-2xl font-bold">{myGuild.name}</h2>
+                </div>
+                <span className="rounded-full bg-[#E8F2EC] px-3 py-1 text-xs font-bold text-[#5F8C74]">
+                  지역코드: {myGuild.regionCode}
+                </span>
+              </div>
+
+              <p className="mt-2 text-sm text-gray-600">
+                전국 {myGuild.nationalRank}위 길드
               </p>
-            </div>
 
-            <div className="rounded-2xl bg-[#FAF9F5] p-4">
-              <p className="text-sm text-gray-600">길드 점수</p>
-              <p className="mt-1 text-xl font-bold text-[#5F8C74]">
-                {myGuildMock.totalPoint} P
-              </p>
-            </div>
+              <div className="mt-5 grid gap-4 md:grid-cols-4">
+                <div className="rounded-2xl bg-[#FAF9F5] p-4">
+                  <p className="text-sm text-gray-600">길드원</p>
+                  <p className="mt-1 text-xl font-bold">
+                    {myGuild.memberCount} / {myGuild.capacity}명
+                  </p>
+                </div>
 
-            <div className="rounded-2xl bg-[#FAF9F5] p-4">
-              <p className="text-sm text-gray-600">예상 절감량</p>
-              <p className="mt-1 text-xl font-bold">
-                {myGuildMock.reducedCarbonKg} kg
-              </p>
-            </div>
+                <div className="rounded-2xl bg-[#FAF9F5] p-4">
+                  <p className="text-sm text-gray-600">시즌 점수</p>
+                  <p className="mt-1 text-xl font-bold text-[#5F8C74]">
+                    {myGuild.seasonScore.toLocaleString()} P
+                  </p>
+                </div>
 
-            <div className="rounded-2xl bg-[#FAF9F5] p-4">
-              <p className="text-sm text-gray-600">내 기여 점수</p>
-              <p className="mt-1 text-xl font-bold text-[#E07A5F]">
-                {myGuildMock.myContributionPoint} P
-              </p>
-            </div>
-          </div>
+                <div className="rounded-2xl bg-[#FAF9F5] p-4">
+                  <p className="text-sm text-gray-600">내 기여 점수</p>
+                  <p className="mt-1 text-xl font-bold text-[#E07A5F]">
+                    {myGuild.myContribution} P
+                  </p>
+                </div>
+
+                <div className="rounded-2xl bg-[#FAF9F5] p-4">
+                  <p className="text-sm text-gray-600">내 기여 순위</p>
+                  <p className="mt-1 text-xl font-bold">
+                    {myGuild.myContributionRank}위
+                  </p>
+                </div>
+              </div>
+            </>
+          )}
         </section>
 
         {/* 길드 멤버 리스트 */}
         <section className="mb-6 rounded-3xl bg-white p-6 shadow-sm">
           <p className="text-sm font-bold text-[#5F8C74]">GUILD MEMBERS</p>
-          <h2 className="mt-2 text-xl font-bold">
-            길드 멤버 현황 ({guildMembersMock.length} / 30)
-          </h2>
 
-          <div className="mt-4 max-h-64 overflow-y-auto">
-            <div className="flex flex-col gap-2">
-              {guildMembersMock.map((member) => (
-                <div
-                  key={member.rank}
-                  className={`flex items-center justify-between rounded-2xl p-3 text-sm ${
-                    member.isMe
-                      ? "bg-[#E8F2EC] ring-2 ring-[#5F8C74]"
-                      : "bg-[#FAF9F5]"
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-gray-500">
-                      {member.rank}위
-                    </span>
-                    <span className="font-bold">
-                      {member.isLeader && "👑 "}
-                      {member.nickname}
-                      {member.isMe && " (나)"}
-                    </span>
-                  </div>
-                  <span className="font-bold text-[#5F8C74]">
-                    시즌 누적: {member.seasonPoint} AP
-                  </span>
-                </div>
-              ))}
+          {isMembersLoading && (
+            <div className="mt-4 rounded-2xl bg-[#FAF9F5] p-4 text-sm font-bold text-gray-500">
+              길드 멤버 정보를 불러오는 중...
             </div>
-          </div>
+          )}
+
+          {!isMembersLoading && membersErrorMessage && (
+            <div className="mt-4 rounded-2xl bg-[#FFF0EA] p-4 text-sm font-bold text-[#E07A5F]">
+              {membersErrorMessage}
+            </div>
+          )}
+
+          {!isMembersLoading &&
+            !membersErrorMessage &&
+            members.length === 0 && (
+              <div className="mt-4 rounded-2xl bg-[#FAF9F5] p-4 text-sm font-bold text-gray-500">
+                아직 길드 멤버가 없습니다.
+              </div>
+            )}
+
+          {!isMembersLoading && !membersErrorMessage && members.length > 0 && (
+            <>
+              <h2 className="mt-2 text-xl font-bold">
+                길드 멤버 현황 ({members.length}명)
+              </h2>
+
+              <div className="mt-4 max-h-64 overflow-y-auto">
+                <div className="flex flex-col gap-2">
+                  {members.map((member, index) => (
+                    <div
+                      key={member.userId}
+                      className="flex items-center justify-between rounded-2xl bg-[#FAF9F5] p-3 text-sm"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-gray-500">
+                          {index + 1}위
+                        </span>
+                        <span className="font-bold">
+                          {member.role === "LEADER" && "👑 "}
+                          {member.nickname}
+                        </span>
+                      </div>
+                      <span className="font-bold text-[#5F8C74]">
+                        시즌 누적: {member.seasonContribution} AP
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
         </section>
 
         {/* 길드 랭킹 */}
@@ -179,45 +254,73 @@ export function GuildManagementPage() {
 
           <h2 className="mt-2 text-xl font-bold">길드 랭킹</h2>
 
-          <div className="mt-4 space-y-3">
-            {guildRankingMock.map((guild) => (
-              <article
-                key={guild.rank}
-                className="flex flex-col gap-2 rounded-2xl bg-[#FAF9F5] p-4 md:flex-row md:items-center md:justify-between"
-              >
-                <div>
-                  <p className="text-sm font-bold text-[#E07A5F]">
-                    {guild.rank}위
-                  </p>
+          {isGuildRankingLoading && (
+            <div className="mt-4 rounded-2xl bg-[#FAF9F5] p-4 text-sm font-bold text-gray-500">
+              길드 랭킹 정보를 불러오는 중...
+            </div>
+          )}
 
-                  <h3 className="mt-1 font-bold">{guild.guildName}</h3>
+          {!isGuildRankingLoading && guildRankingErrorMessage && (
+            <div className="mt-4 rounded-2xl bg-[#FFF0EA] p-4 text-sm font-bold text-[#E07A5F]">
+              {guildRankingErrorMessage}
+            </div>
+          )}
 
-                  <p className="mt-1 text-sm text-gray-600">
-                    {guild.regionName} · {guild.memberCount}명
-                  </p>
-                </div>
+          {!isGuildRankingLoading &&
+            !guildRankingErrorMessage &&
+            guildRanking.length === 0 && (
+              <div className="mt-4 rounded-2xl bg-[#FAF9F5] p-4 text-sm font-bold text-gray-500">
+                아직 길드 랭킹 정보가 없습니다.
+              </div>
+            )}
 
-                <div className="text-sm md:text-right">
-                  <p className="font-bold">{guild.totalPoint} P</p>
-                  <p className="text-gray-600">
-                    {guild.reducedCarbonKg} kgCO₂e 절감
-                  </p>
-                </div>
-              </article>
-            ))}
-          </div>
+          {!isGuildRankingLoading &&
+            !guildRankingErrorMessage &&
+            guildRanking.length > 0 && (
+              <div className="mt-4 space-y-3">
+                {guildRanking.map((guild) => (
+                  <article
+                    key={guild.guildId}
+                    className={`flex flex-col gap-2 rounded-2xl p-4 md:flex-row md:items-center md:justify-between ${
+                      myGuild?.guildId === guild.guildId
+                        ? "bg-[#E8F2EC] ring-2 ring-[#5F8C74]"
+                        : "bg-[#FAF9F5]"
+                    }`}
+                  >
+                    <div>
+                      <p className="text-sm font-bold text-[#E07A5F]">
+                        {guild.rank === 1 && "🥇 "}
+                        {guild.rank === 2 && "🥈 "}
+                        {guild.rank === 3 && "🥉 "}
+                        {guild.rank}위
+                      </p>
+
+                      <h3 className="mt-1 font-bold">
+                        {guild.name}
+                        {myGuild?.guildId === guild.guildId && " (내 길드)"}
+                      </h3>
+
+                      <p className="mt-1 text-sm text-gray-600">
+                        {guild.regionName}
+                      </p>
+                    </div>
+
+                    <div className="text-sm md:text-right">
+                      <p className="font-bold">
+                        {guild.seasonScore.toLocaleString()} P
+                      </p>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            )}
         </section>
-
-        <p className="mt-4 rounded-2xl bg-white p-4 text-sm text-gray-500 shadow-sm">
-          현재는 더미데이터 기준 화면입니다. 나중에 길드 API가 연결되면 내 지역
-          길드 정보와 길드 랭킹을 실제 데이터로 교체하면 됩니다.
-        </p>
       </section>
 
-      {isRewardOpen && (
+      {isRewardOpen && myGuild && (
         <GuildSeasonRewardModal
-          guildName={myGuildMock.guildName}
-          rank={1}
+          guildName={myGuild.name}
+          rank={myGuild.nationalRank}
           rewardPoint={500}
           onClose={() => setIsRewardOpen(false)}
         />

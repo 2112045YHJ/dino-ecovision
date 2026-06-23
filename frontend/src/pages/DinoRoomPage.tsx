@@ -22,7 +22,8 @@ import { DinoEvolutionModal } from "../components/dino/DinoEvolutionModal";
   2. 백엔드에서 받은 디노 타입/성장 단계를 프론트 이미지 타입에 맞게 바꿉니다.
   3. 디노룸 화면에 공룡 이미지, EXP, 친밀도, 성장 안내를 보여줍니다.
   4. 다음 성장까지 남은 EXP를 보여줍니다.
-  5. 공룡 정보가 없을 때 홈/공룡 선택 화면으로 이동할 수 있게 합니다.
+  5. "다음 진화 미리보기" 버튼으로 다음 단계 공룡을 미리 볼 수 있습니다.
+  6. 공룡 정보가 없을 때 홈/공룡 선택 화면으로 이동할 수 있게 합니다.
 */
 
 /* =========================
@@ -121,14 +122,22 @@ function getStageLabel(stage: DinoStage) {
 }
 
 /* =========================
-   이전 성장 단계 반환 함수
+   다음 성장 단계 반환 함수
    ========================= */
 
-function getPrevStage(stage: DinoStage): DinoStage {
-  if (stage === "HATCHLING") return "EGG";
-  if (stage === "JUVENILE") return "HATCHLING";
-  if (stage === "ADULT") return "JUVENILE";
-  return "EGG";
+/*
+  현재 단계의 다음 단계를 반환합니다.
+  ADULT(성룡)는 최종 단계이므로 null을 반환합니다.
+  - EGG (알) → HATCHLING (유아기)
+  - HATCHLING (유아기) → JUVENILE (청소년기)
+  - JUVENILE (청소년기) → ADULT (성룡)
+  - ADULT (성룡) → null
+*/
+function getNextStage(stage: DinoStage): DinoStage | null {
+  if (stage === "EGG") return "HATCHLING";
+  if (stage === "HATCHLING") return "JUVENILE";
+  if (stage === "JUVENILE") return "ADULT";
+  return null;
 }
 
 /* =========================
@@ -218,8 +227,12 @@ export function DinoRoomPage() {
   const dinoType = getSafeDinoType(dino);
   const dinoStage = getSafeDinoStage(dino.stage);
   const dinoStageLabel = getStageLabel(dinoStage);
-  const prevStage = getPrevStage(dinoStage);
 
+  /*
+    다음 진화 단계 미리보기용.
+    ADULT(성룡)면 null이 되어 미리보기 버튼/모달이 안 보입니다.
+  */
+  const nextStage = getNextStage(dinoStage);
 
   /*
     nextStageExp는 백엔드 응답에 따라 null일 수도 있다고 보고 방어합니다.
@@ -296,10 +309,10 @@ export function DinoRoomPage() {
         <section className="grid gap-6 lg:grid-cols-[1.4fr_0.8fr]">
           <article className="overflow-hidden rounded-3xl bg-white shadow-sm">
             <div
-              className="relative flex items-end justify-center bg-cover bg-center"
+              className="relative flex items-end justify-center bg-cover bg-bottom"
               style={{
                 backgroundImage: `url(${dinoRoomBg})`,
-                minHeight: "520px",
+                minHeight: "600px",
               }}
             >
               <div className="absolute left-1/2 top-8 -translate-x-1/2 rounded-full bg-white/90 px-5 py-3 text-sm font-bold text-[#5F8C74] shadow-sm">
@@ -379,13 +392,19 @@ export function DinoRoomPage() {
               </p>
             </div>
 
-            <button
-              type="button"
-              onClick={() => setIsEvolutionOpen(true)}
-              className="mt-4 w-full rounded-2xl bg-[#5F8C74] py-3 text-sm font-bold text-white transition hover:bg-[#4d735f]"
-            >
-              🎉 진화 확인하기
-            </button>
+            {/*
+              다음 진화 단계가 있을 때만 미리보기 버튼을 보여줍니다.
+              ADULT(성룡)는 최종 단계라 다음 단계가 없습니다.
+            */}
+            {nextStage && (
+              <button
+                type="button"
+                onClick={() => setIsEvolutionOpen(true)}
+                className="mt-4 w-full rounded-2xl bg-[#5F8C74] py-3 text-sm font-bold text-white transition hover:bg-[#4d735f]"
+              >
+                🔮 다음 진화 미리보기
+              </button>
+            )}
 
             <button
               type="button"
@@ -410,12 +429,18 @@ export function DinoRoomPage() {
         />
       )}
 
-      {isEvolutionOpen && (
+      {/*
+        현재 단계 → 다음 단계 미리보기 모달.
+        nextStage가 null이면 (ADULT 단계) 모달 자체를 그리지 않습니다.
+        prevStage = 현재 단계 (진화 전)
+        newStage = 다음 단계 (진화 후)
+      */}
+      {isEvolutionOpen && nextStage && (
         <DinoEvolutionModal
           nickname={dino.nickname}
           dinoType={dinoType}
-          prevStage={prevStage}
-          newStage={dinoStage}
+          prevStage={dinoStage}
+          newStage={nextStage}
           onClose={() => setIsEvolutionOpen(false)}
         />
       )}
