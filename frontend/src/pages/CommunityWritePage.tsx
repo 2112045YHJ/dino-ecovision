@@ -134,6 +134,32 @@ export function CommunityWritePage() {
     }
   };
 
+  // 에디터 모드에서 차트 및 마크업 태그를 제외한 순수 본문 글자 수를 추출하는 헬퍼
+  const getCharacterCount = () => {
+    if (showSource) {
+      return content.length;
+    }
+    if (!editorRef.current) {
+      return 0;
+    }
+    try {
+      const tempDiv = document.createElement("div");
+      tempDiv.innerHTML = content;
+      
+      // 차트 래퍼 요소를 글자 수 계산에서 제외
+      const wrappers = tempDiv.querySelectorAll(".chart-embed-wrapper");
+      wrappers.forEach((el) => {
+        el.parentNode?.removeChild(el);
+      });
+      
+      const pureText = tempDiv.textContent || tempDiv.innerText || "";
+      // 본문 줄바꿈 문자 등을 세분화하여 최종 글자 수 반환
+      return pureText.length;
+    } catch (e) {
+      return content.length;
+    }
+  };
+
   useEffect(() => {
     let rId1: number;
     let rId2: number;
@@ -1490,7 +1516,7 @@ export function CommunityWritePage() {
 
               {/* Editor Footer */}
               <div className="bg-[#FAF9F5] border-t border-gray-200 px-4 py-2 flex justify-end text-[10px] text-gray-400 select-none">
-                <span>문자 : {content.length}</span>
+                <span>문자 : {getCharacterCount()}</span>
               </div>
             </div>
 
