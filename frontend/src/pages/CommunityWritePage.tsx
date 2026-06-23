@@ -11,7 +11,7 @@ import { fetchMyChartSnapshots, deleteChartSnapshot } from "../api/dashboardApi"
 // 생 텍스트 /embed/{uuid}를 wrapper HTML로 일괄 변환해주는 헬퍼
 const convertRawEmbedsToWrappers = (html: string): string => {
   if (!html) return "";
-  const regex = /\/embed\/([a-zA-Z0-9-]+)/g;
+  const regex = /(?:https?:\/\/[a-zA-Z0-9.-]+(?::\d+)?)?\/embed\/([a-zA-Z0-9-]+)/g;
   return html.replace(regex, (_, uuid) => {
     return `<div class="chart-embed-wrapper" contenteditable="false" data-uuid="${uuid}" style="margin: 16px 0; border: 1px solid #E8F2EC; border-radius: 16px; padding: 12px; background-color: #FAF9F5; display: block; text-align: center;"><div class="chart-embed-placeholder" data-uuid="${uuid}"></div><div class="chart-embed-link" style="text-align: center; color: #5F8C74; font-family: monospace; font-size: 11px; margin-top: 8px;">📊 [공유 차트 스냅샷: ${uuid}]</div></div><p><br></p>`;
   });
@@ -384,7 +384,7 @@ export function CommunityWritePage() {
 
     // 8.2 텍스트 붙여넣기 중 /embed/uuid 감지 처리
     const pastedText = e.clipboardData?.getData("text") || "";
-    const EMBED_REGEX_GLOBAL = /\/embed\/([a-zA-Z0-9-]+)/g;
+    const EMBED_REGEX_GLOBAL = /(?:https?:\/\/[a-zA-Z0-9.-]+(?::\d+)?)?\/embed\/([a-zA-Z0-9-]+)/g;
     if (EMBED_REGEX_GLOBAL.test(pastedText)) {
       e.preventDefault();
       const htmlToInsert = pastedText.replace(EMBED_REGEX_GLOBAL, (_, uuid) => {
@@ -613,7 +613,7 @@ export function CommunityWritePage() {
     
     // 텍스트 내에 /embed/uuid 가 있는지 먼저 검사하여 없으면 조기 반환
     const textContent = editor.textContent || "";
-    const rawEmbedRegex = /\/embed\/([a-zA-Z0-9-]+)/;
+    const rawEmbedRegex = /(?:https?:\/\/[a-zA-Z0-9.-]+(?::\d+)?)?\/embed\/([a-zA-Z0-9-]+)/;
     if (!rawEmbedRegex.test(textContent)) return;
 
     // 래퍼가 없는 생 /embed/uuid 가 실제로 존재하는지 확인하기 위해 비교

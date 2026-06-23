@@ -55,7 +55,13 @@ export const EmbedChart: React.FC<EmbedChartProps> = ({ snapshotId }) => {
           } else {
             // 단일 차트 모드
             setIsCompareMode(false);
-            const rawData = parsed as any[];
+            let rawData: any[] = [];
+            if (parsed && !Array.isArray(parsed) && "data" in parsed) {
+              rawData = parsed.data || [];
+            } else if (Array.isArray(parsed)) {
+              rawData = parsed;
+            }
+
             if (rawData && rawData.length > 0 && rawData[0].usageYearMonth !== undefined) {
               const processed = Array.from({ length: 12 }, (_, i) => {
                 const monthStr = i + 1 < 10 ? `0${i + 1}` : `${i + 1}`;

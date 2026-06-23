@@ -7,6 +7,7 @@ import type { EnergyUsageSumResponse } from "../api/dashboardApi";
 import { EnergyChart } from "../components/charts/EnergyChart";
 import { CompareChart } from "../components/charts/CompareChart";
 import type { CompareItem } from "../components/charts/CompareChart";
+import { fetchChartSnapshot } from "../api/communityApi";
 
 export const Dashboard: React.FC = () => {
   const [selectedYear, setSelectedYear] = useState<string>("2025");
@@ -21,6 +22,53 @@ export const Dashboard: React.FC = () => {
     years: ["2025"],
     regions: [],
   });
+
+  const queryParams = new URLSearchParams(window.location.search);
+  const snapshotId = queryParams.get("snapshotId");
+  const [isRestoring, setIsRestoring] = useState<boolean>(!!snapshotId);
+
+  // 스냅샷 복원 처리
+  useEffect(() => {
+    const restoreSnapshot = async () => {
+      if (!snapshotId) return;
+      try {
+        setLoading(true);
+        const snapshot = await fetchChartSnapshot(snapshotId);
+        const parsed = JSON.parse(snapshot.chartMetadata);
+
+        if (snapshot.chartType === "COMPARE") {
+          // 비교 모드 복원
+          if (parsed.compareList) {
+            setCompareList(parsed.compareList);
+          }
+          if (parsed.type) {
+            setCompareChartType(parsed.type);
+          }
+        } else {
+          // 단일 차트 복원
+          if (parsed && typeof parsed === "object" && "data" in parsed) {
+            // 신규 객체 포맷 { isCompare, year, regionCode, data }
+            setSelectedYear(parsed.year || "2025");
+            setSelectedRegion(parsed.regionCode || "");
+            setChartData(parsed.data || []);
+          } else if (Array.isArray(parsed)) {
+            // 구버전 배열 포맷
+            setChartData(parsed);
+          }
+        }
+      } catch (err) {
+        console.error("스냅샷 복원 실패", err);
+        showToast("공유된 차트 정보를 불러오는 데 실패했습니다.");
+      } finally {
+        setLoading(false);
+        setIsRestoring(false);
+      }
+    };
+
+    if (snapshotId) {
+      restoreSnapshot();
+    }
+  }, [snapshotId]);
 
   const handleAddCompare = () => {
     const regionName = selectedRegion || "전국 (모든 지역)";
@@ -102,6 +150,9 @@ export const Dashboard: React.FC = () => {
   // 데이터 로딩
   useEffect(() => {
     const loadData = async () => {
+      // 복원 중인 경우에만 단일 조회를 스킵합니다.
+      if (isRestoring) return;
+
       setLoading(true);
       try {
         // 전국일 때는 백엔드에 '1111000000' (전국 대용) 전달
@@ -115,7 +166,7 @@ export const Dashboard: React.FC = () => {
       }
     };
     loadData();
-  }, [selectedYear, selectedRegion]);
+  }, [selectedYear, selectedRegion, isRestoring]);
 
   // 공유하기 (차트 스냅샷 복사)
   const handleShareSnapshot = async () => {
@@ -143,8 +194,13 @@ export const Dashboard: React.FC = () => {
         title = `${regionLabels} 에너지 비교 분석`;
         chartTypeStr = "COMPARE";
       } else {
-        // 단일 차트 공유 (기존 하위 호환)
-        metadataStr = JSON.stringify(chartData);
+        // 단일 차트 공유 (신규 규격)
+        metadataStr = JSON.stringify({
+          isCompare: false,
+          year: selectedYear,
+          regionCode: selectedRegion,
+          data: chartData
+        });
         const regionLabel = selectedRegion || "전국 (모든 지역)";
         title = `${regionLabel} ${selectedYear}년 에너지 소비 및 탄소 배출 분석`;
         chartTypeStr = "BAR";
@@ -193,8 +249,13 @@ export const Dashboard: React.FC = () => {
         title = `${regionLabels} 에너지 비교 분석`;
         chartTypeStr = "COMPARE";
       } else {
-        // 단일 차트 저장
-        metadataStr = JSON.stringify(chartData);
+        // 단일 차트 저장 (신규 규격)
+        metadataStr = JSON.stringify({
+          isCompare: false,
+          year: selectedYear,
+          regionCode: selectedRegion,
+          data: chartData
+        });
         const regionLabel = selectedRegion || "전국 (모든 지역)";
         title = `${regionLabel} ${selectedYear}년 에너지 소비 및 탄소 배출 분석`;
         chartTypeStr = "BAR";
@@ -390,7 +451,7 @@ export const Dashboard: React.FC = () => {
           <div className="h-96 bg-white border border-[#E8F2EC] rounded-3xl animate-pulse flex items-center justify-center">
             <span className="text-xs text-gray-400 font-medium">실시간 전력 및 탄소 데이터 분석 중...</span>
           </div>
-        ) : chartData.length === 0 ? (
+        ) : (compareList.length === 0 && chartData.length === 0) ? (
           <div className="bg-white border border-[#E8F2EC] rounded-3xl p-12 text-center shadow-sm">
             <span className="text-4xl">📭</span>
             <h3 className="text-base font-bold text-gray-800 mt-4">분석 데이터가 존재하지 않습니다</h3>

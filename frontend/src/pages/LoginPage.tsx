@@ -91,6 +91,13 @@ export function LoginPage() {
           return;
         }
 
+        const queryParams = new URLSearchParams(window.location.search);
+        const redirectPath = queryParams.get("redirect");
+        if (redirectPath) {
+          navigate(redirectPath);
+          return;
+        }
+
         navigate("/home");
         return;
       }
@@ -117,7 +124,13 @@ export function LoginPage() {
       }
 
       // 온보딩이 끝난 사용자라면 홈으로 이동합니다.
-      navigate("/home");
+      const queryParams = new URLSearchParams(window.location.search);
+      const redirectPath = queryParams.get("redirect");
+      if (redirectPath) {
+        navigate(redirectPath);
+      } else {
+        navigate("/home");
+      }
     } catch (error) {
       // apiClient.ts에서 throw new Error(...) 한 메시지가 여기로 들어옵니다.
       if (error instanceof Error) {
