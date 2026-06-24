@@ -1,16 +1,6 @@
 // src/api/userApi.ts
 
-const API_BASE_URL = "http://localhost:8080";
-
-type ApiResponse<T> = {
-  success: boolean;
-  data: T;
-  error: {
-    code: string;
-    message: string;
-    details?: unknown[];
-  } | null;
-};
+import { apiRequest } from "./apiClient";
 
 export type MeResponse = {
   userId?: number;
@@ -44,45 +34,13 @@ export type NicknameCheckResponse = {
   duplicated?: boolean;
 };
 
-function getAccessToken() {
-  return localStorage.getItem("accessToken");
-}
-
-function createJsonHeaders() {
-  const accessToken = getAccessToken();
-
-  return {
-    "Content-Type": "application/json",
-    ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-  };
-}
-
-async function readApiResponse<T>(
-  response: Response,
-  fallbackMessage: string,
-): Promise<T> {
-  const result = (await response.json()) as ApiResponse<T>;
-
-  if (!response.ok || result.success === false) {
-    throw new Error(result.error?.message ?? fallbackMessage);
-  }
-
-  return result.data;
-}
-
 // 내 프로필 조회
 // GET /api/me
 export async function getMe(): Promise<MeResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/me`, {
+  return apiRequest<MeResponse>("/api/me", {
     method: "GET",
-    credentials: "include",
-    headers: createJsonHeaders(),
+    fallbackMessage: "내 정보를 불러오지 못했습니다.",
   });
-
-  return readApiResponse<MeResponse>(
-    response,
-    "내 정보를 불러오지 못했습니다.",
-  );
 }
 
 // 닉네임 중복 확인
@@ -90,48 +48,34 @@ export async function getMe(): Promise<MeResponse> {
 export async function checkNickname(
   nickname: string,
 ): Promise<NicknameCheckResponse> {
-  const response = await fetch(
-    `${API_BASE_URL}/api/me/nickname/check?nickname=${encodeURIComponent(
-      nickname,
-    )}`,
+  return apiRequest<NicknameCheckResponse>(
+    `/api/me/nickname/check?nickname=${encodeURIComponent(nickname)}`,
     {
       method: "GET",
-      credentials: "include",
-      headers: createJsonHeaders(),
+      fallbackMessage: "닉네임 중복 확인에 실패했습니다.",
     },
-  );
-
-  return readApiResponse<NicknameCheckResponse>(
-    response,
-    "닉네임 중복 확인에 실패했습니다.",
   );
 }
 
 // 닉네임 변경
 // PATCH /api/me/nickname
 export async function updateNickname(nickname: string): Promise<MeResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/me/nickname`, {
+  return apiRequest<MeResponse>("/api/me/nickname", {
     method: "PATCH",
-    credentials: "include",
-    headers: createJsonHeaders(),
-    body: JSON.stringify({ nickname }),
+    body: { nickname },
+    fallbackMessage: "닉네임 변경에 실패했습니다.",
   });
-
-  return readApiResponse<MeResponse>(response, "닉네임 변경에 실패했습니다.");
 }
 
 // 지역 목록 조회
 // GET /api/regions
 export async function getRegions(): Promise<RegionResponse[]> {
-  const response = await fetch(`${API_BASE_URL}/api/regions`, {
-    method: "GET",
-    credentials: "include",
-    headers: createJsonHeaders(),
-  });
-
-  const data = await readApiResponse<
+  const data = await apiRequest<
     RegionResponse[] | { regions?: RegionResponse[]; items?: RegionResponse[] }
-  >(response, "지역 목록을 불러오지 못했습니다.");
+  >("/api/regions", {
+    method: "GET",
+    fallbackMessage: "지역 목록을 불러오지 못했습니다.",
+  });
 
   if (Array.isArray(data)) {
     return data;
@@ -143,12 +87,9 @@ export async function getRegions(): Promise<RegionResponse[]> {
 // 지역 변경
 // PATCH /api/me/region
 export async function updateRegion(regionId: number): Promise<MeResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/me/region`, {
+  return apiRequest<MeResponse>("/api/me/region", {
     method: "PATCH",
-    credentials: "include",
-    headers: createJsonHeaders(),
-    body: JSON.stringify({ regionId }),
+    body: { regionId },
+    fallbackMessage: "지역 변경에 실패했습니다.",
   });
-
-  return readApiResponse<MeResponse>(response, "지역 변경에 실패했습니다.");
 }
