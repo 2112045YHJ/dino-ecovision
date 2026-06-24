@@ -1,6 +1,6 @@
 // src/api/authApi.ts
 
-const API_BASE_URL = "http://localhost:8080";
+const API_BASE_URL = import.meta.env.DEV ? "http://localhost:8080" : "";
 
 // 백엔드 공통 응답 형태입니다.
 // 백엔드는 항상 이런 모양으로 응답합니다.

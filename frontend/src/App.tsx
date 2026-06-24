@@ -12,7 +12,6 @@ import { DinoCollectionPage } from "./pages/DinoCollectionPage";
 
 // 조원 추가 페이지
 import { DinoGrowthComparePage } from "./pages/DinoGrowthComparePage";
-import { ProfileEditPage } from "./pages/ProfileEditPage";
 import { LeaderboardPage } from "./pages/LeaderboardPage";
 import { RegionMapLeaderboardPage } from "./pages/RegionMapLeaderboardPage";
 import { GuildManagementPage } from "./pages/GuildManagementPage";
@@ -63,7 +62,7 @@ function App() {
       {/* 마이페이지 */}
       <Route path="/mypage" element={<MyPage />} />
       <Route path="/mypage/:userId" element={<MyPage />} />
-      <Route path="/mypage/edit" element={<ProfileEditPage />} />
+      <Route path="/mypage/edit" element={<MyPage />} />
       <Route path="/mypage/bills" element={<MyPageBillInputPage />} />
       <Route path="/mypage/trend" element={<MyPageTrendChartPage />} />
 
