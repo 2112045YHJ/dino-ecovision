@@ -1,6 +1,7 @@
 // src/components/layout/Header.tsx
 
 import { useLocation, useNavigate } from "react-router-dom";
+import { logout } from "../../api/authApi"; // 경로는 authApi.ts 위치에 맞춰 확인 필요
 
 export function Header() {
   const navigate = useNavigate();
@@ -11,6 +12,20 @@ export function Header() {
       navigate(path);
     } else {
       alert(`${label} 기능은 준비 중입니다!`);
+    }
+  };
+
+  const handleLogout = async () => {
+    if (!window.confirm("로그아웃 하시겠습니까?")) return;
+
+    try {
+      await logout();
+    } catch (error) {
+      // 서버 로그아웃 실패해도 클라이언트 쪽 정리는 계속 진행
+    } finally {
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("role");
+      navigate("/login");
     }
   };
 
@@ -32,7 +47,7 @@ export function Header() {
           <span>🌿</span> EcoVision
         </div>
 
-        {/* 메뉴 목록 */}
+        {/* 메뉴 목록 + 로그아웃 */}
         <nav className="flex items-center gap-2">
           {menuItems.map((item) => {
             const isActive =
@@ -53,6 +68,18 @@ export function Header() {
               </button>
             );
           })}
+
+          {/* 구분선 */}
+          <div className="mx-1 h-5 w-px bg-[#E8F2EC]" />
+
+          {/* 로그아웃 버튼 */}
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="rounded-xl px-4 py-2 text-sm font-semibold text-[#E07A5F] transition-all hover:bg-[#FFF1EC]"
+          >
+            로그아웃
+          </button>
         </nav>
       </div>
     </header>
