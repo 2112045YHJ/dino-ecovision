@@ -110,7 +110,7 @@ export function CommunityWritePage() {
   useEffect(() => {
     if (!showSource && editorRef.current) {
       // 에디터 화면 렌더링 시 상대 경로를 절대 경로로 가공하여 엑박 방지
-      const processed = content.replace(/src="\/uploads\//gi, 'src="http://localhost:8080/uploads/');
+      const processed = content.replace(/src="\/uploads\//gi, 'src="' + (import.meta.env.DEV ? "http://localhost:8080" : "") + '/uploads/');
       if (editorRef.current.innerHTML !== processed) {
         editorRef.current.innerHTML = processed;
       }
@@ -301,7 +301,7 @@ export function CommunityWritePage() {
   // 6. 이미지 삽입 처리 (캐럿 기준)
   const insertImageAtCursor = (url: string) => {
     // 엑박 방지: 상대 경로 /uploads/를 백엔드 절대 주소로 변환
-    const absoluteUrl = url.startsWith("/") ? `http://localhost:8080${url}` : url;
+    const absoluteUrl = url.startsWith("/") ? `${import.meta.env.DEV ? "http://localhost:8080" : ""}${url}` : url;
 
     if (showSource) {
       setContent((prev) => prev + `<img src="${absoluteUrl}" class="fr-fic fr-dii" style="width: 250px; display: inline-block; vertical-align: bottom; margin: 0 8px;" />`);

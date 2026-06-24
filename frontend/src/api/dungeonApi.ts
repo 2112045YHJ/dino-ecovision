@@ -1,7 +1,7 @@
 // src/api/dungeonApi.ts
 // 명세서 v0.8 - 6. dungeon 도메인
 
-const API_BASE_URL = "http://localhost:8080";
+const API_BASE_URL = import.meta.env.DEV ? "http://localhost:8080" : "";
 
 type ApiResponse<T> = {
   success: boolean;

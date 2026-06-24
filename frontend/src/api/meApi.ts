@@ -2,7 +2,7 @@
 
 // 백엔드 서버 주소입니다.
 // 지금 로컬 백엔드는 8080번 포트에서 실행 중입니다.
-const API_BASE_URL = "http://localhost:8080";
+const API_BASE_URL = import.meta.env.DEV ? "http://localhost:8080" : "";
 
 // 백엔드 공통 응답 형태입니다.
 // 백엔드는 보통 { success, data, error } 구조로 응답합니다.

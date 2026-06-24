@@ -138,7 +138,7 @@ export async function uploadPostImage(file: File): Promise<string> {
   const formData = new FormData();
   formData.append("file", file);
 
-  const response = await fetch("http://localhost:8080/api/posts/images", {
+  const response = await fetch((import.meta.env.DEV ? "http://localhost:8080" : "") + "/api/posts/images", {
     method: "POST",
     credentials: "include",
     headers: {

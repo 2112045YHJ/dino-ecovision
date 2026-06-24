@@ -258,7 +258,7 @@ export function CommunityDetailPage() {
   // 본문 안에서 차트 스냅샷 감지 및 래핑 변환 후 렌더링 (HTML 지원)
   const renderContent = (content: string) => {
     // 상대 경로 /uploads/를 백엔드 절대 주소로 치환하여 엑박 예방
-    const processedContent = content.replace(/src="\/uploads\//gi, 'src="http://localhost:8080/uploads/');
+    const processedContent = content.replace(/src="\/uploads\//gi, 'src="' + (import.meta.env.DEV ? "http://localhost:8080" : "") + '/uploads/');
     const sanitized = sanitizeHtml(processedContent);
     // 생 /embed/uuid 링크를 wrapper HTML 구조로 자동 치환
     const finalHtml = convertRawEmbedsToWrappers(sanitized);

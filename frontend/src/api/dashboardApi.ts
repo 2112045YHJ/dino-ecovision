@@ -69,7 +69,7 @@ export async function createDashboardSnapshot(request: {
 // -------------------------------------------------------------
 // 조원 추가 API (명세서 v0.8 - 10. dashboard 도메인)
 
-const API_BASE_URL = "http://localhost:8080";
+const API_BASE_URL = import.meta.env.DEV ? "http://localhost:8080" : "";
 
 type ApiResponse<T> = {
   success: boolean;
