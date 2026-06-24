@@ -377,13 +377,6 @@ export function MyPage() {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("refreshToken");
-    localStorage.removeItem("nickname");
-    navigate("/login");
-  };
-
   const handleSaveProfile = async () => {
     if (!editNickname.trim()) {
       setErrorMessage("닉네임을 입력해 주세요.");
