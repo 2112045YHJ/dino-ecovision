@@ -14,5 +14,6 @@ public final class DungeonProjections {
 		String getTitle();
 		BigDecimal getEstimatedCo2Kg();
 		Integer getBaseReward();
+		String getStatus();
 	}
 }

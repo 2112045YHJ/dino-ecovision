@@ -20,7 +20,8 @@ public interface DungeonMissionQueryRepository extends Repository<DungeonMission
 			SELECT dma.id AS assignmentId,
 			       m.mission_name AS title,
 			       mef.daily_reduction_value AS estimatedCo2Kg,
-			       m.base_reward AS baseReward
+			       m.base_reward AS baseReward,
+			       dma.status AS status
 			FROM dungeon_mission_assignments dma
 			JOIN missions m ON m.id = dma.mission_id
 			LEFT JOIN mission_emission_factors mef ON mef.mission_id = dma.mission_id

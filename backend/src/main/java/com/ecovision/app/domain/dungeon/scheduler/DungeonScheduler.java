@@ -112,17 +112,23 @@ public class DungeonScheduler {
             log.info("[DUNGEON TERMINATING] Ending active dungeon ID: {} (Reason: Recovered={}, Expired={})",
                     activeDungeon.getId(), isReserveRecovered, isTimeExpired);
 
-            // 1. 던전 이벤트 상태 종료
-            activeDungeon.setStatus("ENDED");
-            activeDungeon.setEndedAt(now);
-            dungeonEventRepository.save(activeDungeon);
+            // 주의: EXPIRED 정리 쿼리가 @Modifying(clearAutomatically=true)라 영속성 컨텍스트를 비운다.
+            //       던전 상태 변경을 먼저 하면 flush 전에 clear에 휩쓸려 유실되므로(미션만 EXPIRED, 던전은 ACTIVE 잔존),
+            //       AdminService.triggerManualDungeon과 동일하게 EXPIRED 정리 → 재조회 → 상태 변경 순서로 처리한다.
 
-            // 2. 해당 던전 내 미완료된 사용자 미션 일괄 EXPIRED 처리
+            // 1. 해당 던전 내 미완료된 사용자 미션 일괄 EXPIRED 처리 (이 쿼리가 컨텍스트를 비움)
             int expiredCount = dungeonMissionAssignmentRepository.updateStatusByDungeonEventIdAndStatus(
                     activeDungeon.getId(), "ASSIGNED", "EXPIRED"
             );
 
-            log.info("[DUNGEON TERMINATING SUCCESS] Dungeon ID {} successfully ended. Expired assignments: {}", 
+            // 2. clear 이후이므로 던전을 재조회해 상태 종료 처리
+            dungeonEventRepository.findById(activeDungeon.getId()).ifPresent(d -> {
+                d.setStatus("ENDED");
+                d.setEndedAt(now);
+                dungeonEventRepository.save(d);
+            });
+
+            log.info("[DUNGEON TERMINATING SUCCESS] Dungeon ID {} successfully ended. Expired assignments: {}",
                     activeDungeon.getId(), expiredCount);
         } else {
             log.info("[DUNGEON RUNNING] Active dungeon ID {} remains ACTIVE. Started: {}, Ends at: {}, Current Reserve Rate: {}%",

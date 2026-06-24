@@ -24,10 +24,12 @@ public final class DungeonDto {
 	}
 
 	//	던전 미션 항목. assignmentId 는 본인 배정 ID(완료 시 type=DUNGEON 으로 사용).
+	//	completed: 본인 배정 상태가 COMPLETED 인지(오늘의 미션 화면에서 완료 표시용).
 	public record DungeonMission(
 			Long assignmentId,
 			String title,
 			BigDecimal estimatedCo2Kg,
-			int baseReward) {
+			int baseReward,
+			boolean completed) {
 	}
 }
