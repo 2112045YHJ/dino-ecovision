@@ -15,6 +15,7 @@ import {
 } from "../components/charts/CompareChart";
 import { EnergyChart } from "../components/charts/EnergyChart";
 import { fetchChartSnapshot } from "../api/communityApi";
+import { copyToClipboard } from "../utils/clipboard";
 
 export const Dashboard: React.FC = () => {
   const [selectedYear, setSelectedYear] = useState<string>("2025");
@@ -204,9 +205,13 @@ export const Dashboard: React.FC = () => {
       });
 
       const embedUrl = `${window.location.origin}/embed/${response.id}`;
-      await navigator.clipboard.writeText(embedUrl);
+      const success = await copyToClipboard(embedUrl);
 
-      showToast("차트 스냅샷 URL이 클립보드에 복사되었습니다! 🚀");
+      if (success) {
+        showToast("차트 스냅샷 URL이 클립보드에 복사되었습니다! 🚀");
+      } else {
+        showToast("링크 복사에 실패했습니다. 브라우저 설정을 확인해 주세요.");
+      }
     } catch (err) {
       console.error("스냅샷 생성 실패", err);
       showToast("링크 복사에 실패했습니다. 다시 시도해주세요.");

@@ -1,6 +1,7 @@
 // src/components/dashboard/ChartShareModal.tsx
 
 import { useState } from "react";
+import { copyToClipboard } from "../../utils/clipboard";
 
 type Props = {
   filterCondition: string;
@@ -14,12 +15,12 @@ export function ChartShareModal({ filterCondition, onClose }: Props) {
   const embedUrl = `https://ecovision.com/embed/${crypto.randomUUID().slice(0, 8)}`;
 
   const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(embedUrl);
+    const success = await copyToClipboard(embedUrl);
+    if (success) {
       setIsCopied(true);
       setTimeout(() => setIsCopied(false), 2000);
-    } catch (error) {
-      console.error("복사 실패:", error);
+    } else {
+      console.error("복사 실패");
     }
   };
 
