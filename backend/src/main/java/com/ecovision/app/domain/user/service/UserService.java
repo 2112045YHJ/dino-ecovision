@@ -85,7 +85,7 @@ public class UserService {
 		Region region = regionRepository.findByRegionCode(request.regionCode())
 				.orElseThrow(() -> new BusinessException(ErrorCode.INVALID_REGION_CODE));
 
-		user.completeOnboarding(request.nickname(), region.getId(), LocalDateTime.now());
+		user.completeOnboarding(request.nickname(), region.getId());
 		guildService.assignToRegion(userId, region);
 
 		return toProfile(user, region);
