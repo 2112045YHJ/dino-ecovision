@@ -33,6 +33,7 @@ public class MissionScheduler {
      * 매일 자정에 모든 활성 사용자에게 중복 카테고리가 없는 3종의 일일 미션을 일괄 배정하고, 일일 누적 포인트를 초기화합니다.
      * Cron: "0 0 0 * * *" (매일 자정 00:00:00 실행)
      */
+	@Scheduled(cron = "0 0 0 * * *")
 	public void assignDailyMissions() {
 		log.info("[MISSION SCHEDULER START] midnight daily mission distribution...");
 		LocalDate today = LocalDate.now();

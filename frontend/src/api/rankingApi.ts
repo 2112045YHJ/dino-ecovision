@@ -1,17 +1,7 @@
 // src/api/rankingApi.ts
 // 명세서 v0.8 - 8. ranking 도메인
 
-const API_BASE_URL = import.meta.env.DEV ? "http://localhost:8080" : "";
-
-type ApiResponse<T> = {
-  success: boolean;
-  data: T;
-  error: {
-    code: string;
-    message: string;
-    details?: unknown[];
-  } | null;
-};
+import { apiRequest } from "./apiClient";
 
 export type MyRank = {
   rank: number | null;
@@ -67,50 +57,18 @@ export type SeasonReward = {
   energyGranted: number;
 };
 
-function getAccessToken() {
-  return localStorage.getItem("accessToken");
-}
-
-function createAuthHeaders() {
-  const accessToken = getAccessToken();
-
-  return {
-    "Content-Type": "application/json",
-    ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-  };
-}
-
-async function readApiResponse<T>(
-  response: Response,
-  fallbackMessage: string,
-): Promise<T> {
-  const result = (await response.json()) as ApiResponse<T>;
-
-  if (!response.ok || result.success === false) {
-    throw new Error(result.error?.message ?? fallbackMessage);
-  }
-
-  return result.data;
-}
-
 // 8.1 개인 랭킹 조회
 export async function getPersonalRanking(
   scope: "national" | "region" = "national",
   page: number = 0,
   size: number = 20,
 ): Promise<PersonalRankingResponse> {
-  const response = await fetch(
-    `${API_BASE_URL}/api/rankings/personal?scope=${scope}&page=${page}&size=${size}`,
+  return apiRequest<PersonalRankingResponse>(
+    `/api/rankings/personal?scope=${scope}&page=${page}&size=${size}`,
     {
       method: "GET",
-      credentials: "include",
-      headers: createAuthHeaders(),
+      fallbackMessage: "개인 랭킹 조회에 실패했습니다.",
     },
-  );
-
-  return readApiResponse<PersonalRankingResponse>(
-    response,
-    "개인 랭킹 조회에 실패했습니다.",
   );
 }
 
@@ -118,61 +76,35 @@ export async function getPersonalRanking(
 export async function getRegionMapRanking(
   scope: "national" | "sido" = "national",
 ): Promise<RegionMapRankingResponse> {
-  const response = await fetch(
-    `${API_BASE_URL}/api/rankings/region-map?scope=${scope}`,
+  return apiRequest<RegionMapRankingResponse>(
+    `/api/rankings/region-map?scope=${scope}`,
     {
       method: "GET",
-      credentials: "include",
-      headers: createAuthHeaders(),
+      fallbackMessage: "지역 맵 랭킹 조회에 실패했습니다.",
     },
-  );
-
-  return readApiResponse<RegionMapRankingResponse>(
-    response,
-    "지역 맵 랭킹 조회에 실패했습니다.",
   );
 }
 
 // 8.3 현재 시즌 정보
 export async function getCurrentSeason(): Promise<SeasonInfoResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/rankings/season`, {
+  return apiRequest<SeasonInfoResponse>("/api/rankings/season", {
     method: "GET",
-    credentials: "include",
-    headers: createAuthHeaders(),
+    fallbackMessage: "시즌 정보 조회에 실패했습니다.",
   });
-
-  return readApiResponse<SeasonInfoResponse>(
-    response,
-    "시즌 정보 조회에 실패했습니다.",
-  );
 }
 
 // 8.4 시즌 보상 조회
 export async function getSeasonRewards(): Promise<SeasonReward[]> {
-  const response = await fetch(`${API_BASE_URL}/api/me/season-rewards`, {
+  return apiRequest<SeasonReward[]>("/api/me/season-rewards", {
     method: "GET",
-    credentials: "include",
-    headers: createAuthHeaders(),
+    fallbackMessage: "시즌 보상 조회에 실패했습니다.",
   });
-
-  return readApiResponse<SeasonReward[]>(
-    response,
-    "시즌 보상 조회에 실패했습니다.",
-  );
 }
 
 // 8.4 시즌 보상 확인 (열람 처리)
 export async function confirmSeasonReward(rewardId: number): Promise<void> {
-  const response = await fetch(
-    `${API_BASE_URL}/api/me/season-rewards/${rewardId}/confirm`,
-    {
-      method: "POST",
-      credentials: "include",
-      headers: createAuthHeaders(),
-    },
-  );
-
-  if (!response.ok) {
-    throw new Error("시즌 보상 확인에 실패했습니다.");
-  }
+  await apiRequest<void>(`/api/me/season-rewards/${rewardId}/confirm`, {
+    method: "POST",
+    fallbackMessage: "시즌 보상 확인에 실패했습니다.",
+  });
 }

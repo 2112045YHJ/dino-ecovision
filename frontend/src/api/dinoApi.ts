@@ -2,17 +2,7 @@
 
 import type { DinoStage, DinoType } from "../assets/images/dinos/dinoImages";
 
-const API_BASE_URL = import.meta.env.DEV ? "http://localhost:8080" : "";
-
-type ApiResponse<T> = {
-  success: boolean;
-  data: T;
-  error: {
-    code: string;
-    message: string;
-    details?: unknown[];
-  } | null;
-};
+import { apiRequest } from "./apiClient";
 
 /* =========================
    공룡 선택 저장 타입
@@ -88,40 +78,6 @@ const dinoTemplateIdMap: Record<DinoType, number> = {
 };
 
 /* =========================
-   공통 인증 처리
-   ========================= */
-
-function getAccessToken() {
-  return localStorage.getItem("accessToken");
-}
-
-function createAuthHeaders() {
-  const accessToken = getAccessToken();
-
-  return {
-    "Content-Type": "application/json",
-    ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-  };
-}
-
-/* =========================
-   공통 응답 처리
-   ========================= */
-
-async function readApiResponse<T>(
-  response: Response,
-  fallbackMessage: string,
-): Promise<T> {
-  const result = (await response.json()) as ApiResponse<T>;
-
-  if (!response.ok || result.success === false) {
-    throw new Error(result.error?.message ?? fallbackMessage);
-  }
-
-  return result.data;
-}
-
-/* =========================
    공룡 선택 저장 API
    ========================= */
 
@@ -135,17 +91,11 @@ export async function hatchDino(params: {
     nickname: params.nickname,
   };
 
-  const response = await fetch(`${API_BASE_URL}/api/me/dino/hatch`, {
+  return apiRequest<HatchDinoResponse>("/api/me/dino/hatch", {
     method: "POST",
-    credentials: "include",
-    headers: createAuthHeaders(),
-    body: JSON.stringify(request),
+    body: request,
+    fallbackMessage: "공룡 선택 저장에 실패했습니다.",
   });
-
-  return readApiResponse<HatchDinoResponse>(
-    response,
-    "공룡 선택 저장에 실패했습니다.",
-  );
 }
 
 /* =========================
@@ -154,16 +104,10 @@ export async function hatchDino(params: {
 
 // GET /api/me/dino
 export async function getMyDino(): Promise<MyDinoResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/me/dino`, {
+  return apiRequest<MyDinoResponse>("/api/me/dino", {
     method: "GET",
-    credentials: "include",
-    headers: createAuthHeaders(),
+    fallbackMessage: "내 공룡 정보를 불러오지 못했습니다.",
   });
-
-  return readApiResponse<MyDinoResponse>(
-    response,
-    "내 공룡 정보를 불러오지 못했습니다.",
-  );
 }
 
 /* =========================
@@ -172,14 +116,8 @@ export async function getMyDino(): Promise<MyDinoResponse> {
 
 // GET /api/me/dino/collection
 export async function getMyDinoCollection(): Promise<DinoCollectionResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/me/dino/collection`, {
+  return apiRequest<DinoCollectionResponse>("/api/me/dino/collection", {
     method: "GET",
-    credentials: "include",
-    headers: createAuthHeaders(),
+    fallbackMessage: "공룡 도감 정보를 불러오지 못했습니다.",
   });
-
-  return readApiResponse<DinoCollectionResponse>(
-    response,
-    "공룡 도감 정보를 불러오지 못했습니다.",
-  );
 }

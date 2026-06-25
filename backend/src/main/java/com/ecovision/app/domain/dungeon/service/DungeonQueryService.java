@@ -54,7 +54,8 @@ public class DungeonQueryService {
 					row.getAssignmentId(),
 					row.getTitle(),
 					row.getEstimatedCo2Kg() != null ? row.getEstimatedCo2Kg() : BigDecimal.ZERO,
-					row.getBaseReward() != null ? row.getBaseReward() : 0));
+					row.getBaseReward() != null ? row.getBaseReward() : 0,
+						"COMPLETED".equals(row.getStatus())));
 		}
 
 		return new DungeonDto.ActiveDungeonResponse(

@@ -8,6 +8,7 @@ type Props = {
   baseReward: number;
   carbonWeight: number;
   carbonWeightLabel: string;
+  dungeonMultiplier?: number;
   onCancel: () => void;
   onConfirm: () => void;
 };
@@ -20,10 +21,15 @@ export function MissionCompleteConfirmModal({
   baseReward,
   carbonWeight,
   carbonWeightLabel,
+  dungeonMultiplier = 1,
   onCancel,
   onConfirm,
 }: Props) {
-  const finalReward = Math.round(baseReward * carbonWeight);
+  // 던전 미션이면 배율(×2 등)이 1보다 큽니다. 일반 미션은 1.
+  const hasDungeonBonus = dungeonMultiplier > 1;
+  const finalReward = Math.round(
+    baseReward * carbonWeight * dungeonMultiplier,
+  );
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
@@ -55,6 +61,13 @@ export function MissionCompleteConfirmModal({
             <span>탄소 가중치 ({carbonWeightLabel})</span>
             <span>× {carbonWeight}</span>
           </div>
+
+          {hasDungeonBonus && (
+            <div className="mt-1 flex justify-between text-sm font-bold text-[#E07A5F]">
+              <span>🔥 던전 보상 배율</span>
+              <span>× {dungeonMultiplier}</span>
+            </div>
+          )}
 
           <div className="my-2 border-t border-[#E8F2EC]" />
 

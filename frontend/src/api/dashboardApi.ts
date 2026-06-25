@@ -19,22 +19,16 @@ export interface DashboardChartSnapshotResponse {
 
 // 1. 대시보드 월별 전력/탄소 통계 데이터 조회
 export async function fetchEnergySummary(year: string, regionCode: string): Promise<EnergyUsageSumResponse[]> {
-  const token = localStorage.getItem("accessToken");
-  return await apiRequest<EnergyUsageSumResponse[]>(
+  return apiRequest<EnergyUsageSumResponse[]>(
     `/api/data/summary?year=${year}&regionCode=${encodeURIComponent(regionCode)}`,
-    {
-      method: "GET",
-      token,
-    }
+    { method: "GET" },
   );
 }
 
 // 1.5. 대시보드 데이터 초기화 및 API 재수집
 export async function resetAndFetchEnergyData(useMock: boolean = false): Promise<string> {
-  const token = localStorage.getItem("accessToken");
-  return await apiRequest<string>(`/api/data/reset?useMock=${useMock}`, {
+  return apiRequest<string>(`/api/data/reset?useMock=${useMock}`, {
     method: "POST",
-    token,
   });
 }
 
@@ -44,10 +38,8 @@ export interface FilterOptionsResponse {
 }
 
 export async function fetchFilterOptions(): Promise<FilterOptionsResponse> {
-  const token = localStorage.getItem("accessToken");
-  return await apiRequest<FilterOptionsResponse>("/api/data/filters", {
+  return apiRequest<FilterOptionsResponse>("/api/data/filters", {
     method: "GET",
-    token,
   });
 }
 
@@ -58,28 +50,14 @@ export async function createDashboardSnapshot(request: {
   chartMetadata: string;
   isSaved?: boolean;
 }): Promise<DashboardChartSnapshotResponse> {
-  const token = localStorage.getItem("accessToken");
-  return await apiRequest<DashboardChartSnapshotResponse>("/api/charts/snapshot", {
+  return apiRequest<DashboardChartSnapshotResponse>("/api/charts/snapshot", {
     method: "POST",
     body: request,
-    token,
   });
 }
 
 // -------------------------------------------------------------
 // 조원 추가 API (명세서 v0.8 - 10. dashboard 도메인)
-
-const API_BASE_URL = import.meta.env.DEV ? "http://localhost:8080" : "";
-
-type ApiResponse<T> = {
-  success: boolean;
-  data: T;
-  error: {
-    code: string;
-    message: string;
-    details?: unknown[];
-  } | null;
-};
 
 export type EnergySeries = {
   period: string;
@@ -111,32 +89,6 @@ export type CompareChartSnapshotResponse = {
   embedUrl: string;
 };
 
-function getAccessToken() {
-  return localStorage.getItem("accessToken");
-}
-
-function createAuthHeaders() {
-  const accessToken = getAccessToken();
-
-  return {
-    "Content-Type": "application/json",
-    ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-  };
-}
-
-async function readApiResponse<T>(
-  response: Response,
-  fallbackMessage: string,
-): Promise<T> {
-  const result = (await response.json()) as ApiResponse<T>;
-
-  if (!response.ok || result.success === false) {
-    throw new Error(result.error?.message ?? fallbackMessage);
-  }
-
-  return result.data;
-}
-
 // 10.1 지역 에너지 통계 조회
 export async function getEnergyStats(
   regionCode: string,
@@ -151,18 +103,12 @@ export async function getEnergyStats(
   });
   if (month !== undefined) params.append("month", String(month));
 
-  const response = await fetch(
-    `${API_BASE_URL}/api/energy/stats?${params.toString()}`,
+  return apiRequest<EnergyStatsResponse>(
+    `/api/energy/stats?${params.toString()}`,
     {
       method: "GET",
-      credentials: "include",
-      headers: createAuthHeaders(),
+      fallbackMessage: "에너지 통계 조회에 실패했습니다.",
     },
-  );
-
-  return readApiResponse<EnergyStatsResponse>(
-    response,
-    "에너지 통계 조회에 실패했습니다.",
   );
 }
 
@@ -178,18 +124,12 @@ export async function getEnergyCompare(
     type,
   });
 
-  const response = await fetch(
-    `${API_BASE_URL}/api/energy/compare?${params.toString()}`,
+  return apiRequest<EnergyCompareResponse>(
+    `/api/energy/compare?${params.toString()}`,
     {
       method: "GET",
-      credentials: "include",
-      headers: createAuthHeaders(),
+      fallbackMessage: "지역 비교 조회에 실패했습니다.",
     },
-  );
-
-  return readApiResponse<EnergyCompareResponse>(
-    response,
-    "지역 비교 조회에 실패했습니다.",
   );
 }
 
@@ -200,49 +140,33 @@ export async function createChartSnapshot(request: {
   month?: number;
   type: "ELECTRICITY" | "GAS";
 }): Promise<CompareChartSnapshotResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/charts/snapshot`, {
+  return apiRequest<CompareChartSnapshotResponse>("/api/charts/snapshot", {
     method: "POST",
-    credentials: "include",
-    headers: createAuthHeaders(),
-    body: JSON.stringify(request),
+    body: request,
+    fallbackMessage: "차트 스냅샷 생성에 실패했습니다.",
   });
-
-  return readApiResponse<CompareChartSnapshotResponse>(
-    response,
-    "차트 스냅샷 생성에 실패했습니다.",
-  );
 }
 
 // 10.4 차트 스냅샷 조회
 export async function getChartSnapshot(
   uuid: string,
 ): Promise<EnergyStatsResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/charts/snapshot/${uuid}`, {
+  return apiRequest<EnergyStatsResponse>(`/api/charts/snapshot/${uuid}`, {
     method: "GET",
-    credentials: "include",
-    headers: createAuthHeaders(),
+    fallbackMessage: "차트 스냅샷 조회에 실패했습니다.",
   });
-
-  return readApiResponse<EnergyStatsResponse>(
-    response,
-    "차트 스냅샷 조회에 실패했습니다.",
-  );
 }
 
 // 10.5 사용자의 저장된 차트 스냅샷 목록 조회 API
 export async function fetchMyChartSnapshots(): Promise<DashboardChartSnapshotResponse[]> {
-  const token = localStorage.getItem("accessToken");
-  return await apiRequest<DashboardChartSnapshotResponse[]>("/api/charts/snapshot", {
+  return apiRequest<DashboardChartSnapshotResponse[]>("/api/charts/snapshot", {
     method: "GET",
-    token,
   });
 }
 
 // 10.6 차트 스냅샷 삭제 API
 export async function deleteChartSnapshot(id: string): Promise<void> {
-  const token = localStorage.getItem("accessToken");
-  return await apiRequest<void>(`/api/charts/snapshot/${id}`, {
+  return apiRequest<void>(`/api/charts/snapshot/${id}`, {
     method: "DELETE",
-    token,
   });
 }
