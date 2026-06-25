@@ -1,6 +1,6 @@
 // src/pages/LoginPage.tsx
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { login, signup } from "../api/authApi";
@@ -34,7 +34,9 @@ export function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
 
   // 로그인 또는 회원가입 버튼 클릭 시 실행됩니다.
-  const handleSubmit = async () => {
+  const handleSubmit = async (event?: FormEvent) => {
+    // form submit(Enter 포함)으로 들어오면 기본 새로고침을 막는다.
+    event?.preventDefault();
     setErrorMessage("");
 
     // 1. 이메일 빈칸 검사
@@ -166,54 +168,55 @@ export function LoginPage() {
               : "이메일과 비밀번호로 로그인해주세요."}
           </p>
 
-          <div className="mt-6 grid gap-4">
-            <label className="grid gap-2">
-              <span className="text-sm font-bold text-[#5F8C74]">이메일</span>
+          <form onSubmit={handleSubmit}>
+            <div className="mt-6 grid gap-4">
+              <label className="grid gap-2">
+                <span className="text-sm font-bold text-[#5F8C74]">이메일</span>
 
-              <input
-                type="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                placeholder="example@email.com"
-                className="rounded-2xl border border-[#E8F2EC] bg-[#FAF9F5] px-4 py-3 outline-none focus:border-[#5F8C74]"
-              />
-            </label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  placeholder="example@email.com"
+                  className="rounded-2xl border border-[#E8F2EC] bg-[#FAF9F5] px-4 py-3 outline-none focus:border-[#5F8C74]"
+                />
+              </label>
 
-            <label className="grid gap-2">
-              <span className="text-sm font-bold text-[#5F8C74]">비밀번호</span>
+              <label className="grid gap-2">
+                <span className="text-sm font-bold text-[#5F8C74]">비밀번호</span>
 
-              <input
-                type="password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                placeholder={
-                  isSignupMode
-                    ? "영문+숫자 포함 8자 이상"
-                    : "비밀번호를 입력하세요"
-                }
-                className="rounded-2xl border border-[#E8F2EC] bg-[#FAF9F5] px-4 py-3 outline-none focus:border-[#5F8C74]"
-              />
-            </label>
-          </div>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  placeholder={
+                    isSignupMode
+                      ? "영문+숫자 포함 8자 이상"
+                      : "비밀번호를 입력하세요"
+                  }
+                  className="rounded-2xl border border-[#E8F2EC] bg-[#FAF9F5] px-4 py-3 outline-none focus:border-[#5F8C74]"
+                />
+              </label>
+            </div>
 
-          {errorMessage && (
-            <p className="mt-4 rounded-2xl bg-[#FFF1EC] px-4 py-3 text-sm font-bold text-[#E07A5F]">
-              {errorMessage}
-            </p>
-          )}
+            {errorMessage && (
+              <p className="mt-4 rounded-2xl bg-[#FFF1EC] px-4 py-3 text-sm font-bold text-[#E07A5F]">
+                {errorMessage}
+              </p>
+            )}
 
-          <button
-            type="button"
-            className="mt-6 w-full rounded-2xl bg-[#5F8C74] py-3 font-bold text-white transition hover:bg-[#4d735f] disabled:cursor-not-allowed disabled:bg-gray-300"
-            onClick={handleSubmit}
-            disabled={isLoading}
-          >
-            {isLoading
-              ? "처리 중..."
-              : isSignupMode
-                ? "회원가입하기"
-                : "로그인하기"}
-          </button>
+            <button
+              type="submit"
+              className="mt-6 w-full rounded-2xl bg-[#5F8C74] py-3 font-bold text-white transition hover:bg-[#4d735f] disabled:cursor-not-allowed disabled:bg-gray-300"
+              disabled={isLoading}
+            >
+              {isLoading
+                ? "처리 중..."
+                : isSignupMode
+                  ? "회원가입하기"
+                  : "로그인하기"}
+            </button>
+          </form>
 
           <button
             type="button"
