@@ -168,7 +168,8 @@ export function LoginPage() {
               : "이메일과 비밀번호로 로그인해주세요."}
           </p>
 
-          <form onSubmit={handleSubmit}>
+          {/* noValidate: type=email 등 브라우저 기본 검증을 끄고, 아래 커스텀(한글) 검증만 사용 */}
+          <form onSubmit={handleSubmit} noValidate>
             <div className="mt-6 grid gap-4">
               <label className="grid gap-2">
                 <span className="text-sm font-bold text-[#5F8C74]">이메일</span>
