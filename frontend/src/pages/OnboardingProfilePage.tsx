@@ -26,6 +26,12 @@ import {
   POST /api/me/onboarding
 */
 
+// 닉네임 규칙: 2~12자의 한글/영문/숫자만 허용합니다.
+// 마이페이지 수정(MyPage 모달)과 동일한 규칙으로 통일합니다.
+const NICKNAME_REGEX = /^[가-힣A-Za-z0-9]{2,12}$/;
+const NICKNAME_RULE_MESSAGE =
+  "닉네임은 2~12자의 한글, 영문, 숫자만 사용할 수 있습니다.";
+
 // 에러 객체에서 화면에 보여줄 메시지를 안전하게 꺼내는 함수입니다.
 function getErrorMessage(error: unknown, fallbackMessage: string) {
   if (error instanceof Error && error.message) {
@@ -122,8 +128,10 @@ export function OnboardingProfilePage() {
       return;
     }
 
-    if (trimmedNickname.length < 2) {
-      setNicknameMessage("닉네임은 2자 이상 입력해주세요.");
+    // 길이/형식을 먼저 검증해, 긴 닉네임이 백엔드 400으로 떨어져
+    // "중복 확인 실패"로 잘못 표시되는 것을 막습니다.
+    if (!NICKNAME_REGEX.test(trimmedNickname)) {
+      setNicknameMessage(NICKNAME_RULE_MESSAGE);
       setIsNicknameAvailable(false);
       return;
     }
@@ -161,8 +169,8 @@ export function OnboardingProfilePage() {
       return;
     }
 
-    if (trimmedNickname.length < 2) {
-      setErrorMessage("닉네임은 2자 이상 입력해주세요.");
+    if (!NICKNAME_REGEX.test(trimmedNickname)) {
+      setErrorMessage(NICKNAME_RULE_MESSAGE);
       return;
     }
 
