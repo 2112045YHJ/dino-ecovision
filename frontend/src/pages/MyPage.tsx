@@ -441,7 +441,18 @@ export function MyPage() {
       closeEditModal();
     } catch (err: any) {
       console.error("Failed to save profile:", err);
-      setErrorMessage(err.message || "프로필 변경 중 오류가 발생했습니다.");
+
+      // 저장 시점에 백엔드가 닉네임 중복을 거부하면, 길이 검증 라벨과 같은 자리에
+      // "이미 사용 중인 닉네임입니다" 경고를 명확히 보여줍니다(별도 중복 확인 버튼 없이 차단).
+      const rawMessage = err?.message ?? "";
+      const isDuplicateNickname =
+        /중복|이미 (사용|존재)|already|exists|duplicate/i.test(rawMessage);
+
+      setErrorMessage(
+        isDuplicateNickname
+          ? "이미 사용 중인 닉네임입니다. 다른 닉네임을 입력해 주세요."
+          : rawMessage || "프로필 변경 중 오류가 발생했습니다.",
+      );
     } finally {
       setIsSaving(false);
     }
