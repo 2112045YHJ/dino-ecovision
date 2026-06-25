@@ -250,7 +250,8 @@ public class CommunityService {
         User voter = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "사용자를 찾을 수 없습니다."));
 
-        User author = post.getUser();
+        User author = userRepository.findById(post.getUser().getId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "작성자를 찾을 수 없습니다."));
         boolean isOwnPost = voter.getId().equals(author.getId());
 
         Optional<PostLike> postLikeOpt = postLikeRepository.findByUserAndPost(voter, post);
