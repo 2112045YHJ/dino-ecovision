@@ -135,7 +135,7 @@ export function CommunityDetailPage() {
   };
 
   const handleLike = async () => {
-    if (!post || isLiking) return;
+    if (!post || isLiking || post.liked) return;
     try {
       setIsLiking(true);
       const res = await likePost(post.id);

@@ -258,17 +258,8 @@ public class CommunityService {
         boolean isLiked;
 
         if (postLikeOpt.isPresent()) {
-            // 이미 좋아요를 누른 상태 -> 좋아요 취소
-            postLikeRepository.delete(postLikeOpt.get());
-            postLikeRepository.flush();
-            postRepository.updateLikeCount(postId);
-            isLiked = false;
-
-            if (!isOwnPost) {
-                // 추천 취소 시 포인트 회수 및 복구
-                rewardPoints(voter, 1, "LIKE_CANCEL");
-                rewardPoints(author, -5, "LIKE_RECEIVED_CANCEL");
-            }
+            // 이미 좋아요를 누른 상태 -> 취소 불가 (아무 동작 안 함)
+            isLiked = true;
         } else {
             // 좋아요 등록
             PostLike like = PostLike.builder()
