@@ -12,6 +12,18 @@ dist
 dist-ssr
 *.local
 
+# 테스트 코드는 로컬 전용 (원격에 올리지 않음)
+e2e/
+playwright.config.ts
+*.test.ts
+*.test.tsx
+
+# Playwright (생성물)
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
