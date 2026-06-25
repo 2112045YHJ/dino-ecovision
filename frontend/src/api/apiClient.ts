@@ -21,6 +21,27 @@ export interface ApiResponse<T> {
   error: ApiError | null;
 }
 
+// 백엔드 에러 응답을 그대로 담는 에러입니다.
+// 기존 호출부의 `err.message` / `error instanceof Error` 사용을 깨지 않으면서,
+// `code`(예: "DUPLICATE_NICKNAME")로 정확히 분기할 수 있게 합니다.
+export class ApiRequestError extends Error {
+  code: string | null;
+  details: ApiErrorDetail[];
+
+  constructor(
+    message: string,
+    code: string | null = null,
+    details: ApiErrorDetail[] = [],
+  ) {
+    super(message);
+    this.name = "ApiRequestError";
+    this.code = code;
+    this.details = details;
+    // ES5로 다운레벨될 때도 instanceof가 동작하도록 프로토타입을 복원합니다.
+    Object.setPrototypeOf(this, ApiRequestError.prototype);
+  }
+}
+
 interface ApiRequestOptions {
   method?: "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
   body?: unknown;
@@ -138,7 +159,11 @@ export async function apiRequest<T>(
   const result = await parseResult<T>(response);
 
   if (!response.ok || result.success === false) {
-    throw new Error(result.error?.message ?? fallbackMessage);
+    throw new ApiRequestError(
+      result.error?.message ?? fallbackMessage,
+      result.error?.code ?? null,
+      result.error?.details ?? [],
+    );
   }
 
   return result.data as T;
