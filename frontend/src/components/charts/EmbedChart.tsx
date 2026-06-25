@@ -205,7 +205,7 @@ export const EmbedChart: React.FC<EmbedChartProps> = ({ snapshotId }) => {
           </div>
           
           <div className="h-64 w-full pr-2">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
               {compareChartType === "LINE" ? (
                 <LineChart data={compareChartData} margin={{ top: 5, right: 5, left: 0, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#FAF9F5" />

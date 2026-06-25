@@ -45,6 +45,8 @@ services:
       SPRING_FLYWAY_BASELINE_VERSION: "1"
     ports:
       - "8080:8080"
+    volumes:
+      - ./backend/uploads:/app/uploads
 
   # 4. 프론트엔드 Nginx 서비스
   frontend:
