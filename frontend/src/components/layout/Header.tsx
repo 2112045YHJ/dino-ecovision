@@ -25,7 +25,7 @@ export function Header() {
     } finally {
       localStorage.removeItem("accessToken");
       localStorage.removeItem("role");
-      navigate("/login");
+      navigate("/login", { replace: true });
     }
   };
 

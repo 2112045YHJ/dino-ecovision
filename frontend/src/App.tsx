@@ -1,6 +1,7 @@
 // src/App.tsx
 
 import { Navigate, Route, Routes } from "react-router-dom";
+import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 
 import { LoginPage } from "./pages/LoginPage";
 import { OnboardingProfilePage } from "./pages/OnboardingProfilePage";
@@ -49,55 +50,56 @@ function App() {
       {/* 로그인 */}
       <Route path="/login" element={<LoginPage />} />
 
-      {/* 온보딩 1단계: 닉네임 / 지역 설정 */}
-      <Route path="/onboarding/profile" element={<OnboardingProfilePage />} />
-
-      {/* 온보딩 2단계: 공룡 선택 */}
-      <Route path="/onboarding/dino" element={<DinoSelectionPage />} />
-
-      {/* 혹시 기존 코드에서 /dino-selection으로 이동해도 깨지지 않도록 임시 연결 */}
-      <Route
-        path="/dino-selection"
-        element={<Navigate to="/onboarding/dino" replace />}
-      />
-
-      {/* 서비스 핵심 화면 라우트 */}
-      <Route path="/home" element={<HomePage />} />
-      <Route path="/missions" element={<TodayMissionPage />} />
-      <Route path="/dino-room" element={<DinoRoomPage />} />
-      <Route path="/dino-collection" element={<DinoCollectionPage />} />
-      <Route path="/dino-growth" element={<DinoGrowthComparePage />} />
-      
-      {/* 마이페이지 */}
-      <Route path="/mypage" element={<MyPage />} />
-      <Route path="/mypage/:userId" element={<MyPage />} />
-      <Route path="/mypage/edit" element={<MyPage />} />
-      <Route path="/mypage/bills" element={<MyPageBillInputPage />} />
-      <Route path="/mypage/trend" element={<MyPageTrendChartPage />} />
-
-      {/* 리더보드, 길드, 던전 */}
-      <Route path="/leaderboard" element={<LeaderboardPage />} />
-      <Route path="/region-ranking" element={<RegionMapLeaderboardPage />} />
-      <Route path="/guild" element={<GuildManagementPage />} />
-      <Route path="/world-dungeon" element={<WorldDungeonPage />} />
-
-      {/* 대시보드 */}
-      <Route path="/dashboard" element={<Dashboard />} />
+      {/* 비로그인 공유 가능 임베드 랜딩 */}
       <Route path="/embed/:id" element={<EmbedLandingPage />} />
-      <Route path="/dashboard/compare" element={<RegionEnergyComparePage />} />
 
-      {/* 커뮤니티 */}
-      <Route path="/community" element={<CommunityPage />} />
-      <Route path="/community/:id" element={<CommunityDetailPage />} />
-      <Route path="/community/write" element={<CommunityWritePage />} />
-      <Route path="/community/edit/:id" element={<CommunityWritePage />} />
+      {/* 로그인 필수 전용 라우트 */}
+      <Route element={<ProtectedRoute />}>
+        {/* 온보딩 */}
+        <Route path="/onboarding/profile" element={<OnboardingProfilePage />} />
+        <Route path="/onboarding/dino" element={<DinoSelectionPage />} />
+        <Route
+          path="/dino-selection"
+          element={<Navigate to="/onboarding/dino" replace />}
+        />
 
-      {/* 관리자 페이지 */}
-      <Route path="/admin/csv-upload" element={<AdminCsvUploadPage />} />
-      <Route path="/admin/dungeon" element={<AdminDungeonPage />} />
+        {/* 서비스 핵심 화면 라우트 */}
+        <Route path="/home" element={<HomePage />} />
+        <Route path="/missions" element={<TodayMissionPage />} />
+        <Route path="/dino-room" element={<DinoRoomPage />} />
+        <Route path="/dino-collection" element={<DinoCollectionPage />} />
+        <Route path="/dino-growth" element={<DinoGrowthComparePage />} />
+        
+        {/* 마이페이지 */}
+        <Route path="/mypage" element={<MyPage />} />
+        <Route path="/mypage/:userId" element={<MyPage />} />
+        <Route path="/mypage/edit" element={<MyPage />} />
+        <Route path="/mypage/bills" element={<MyPageBillInputPage />} />
+        <Route path="/mypage/trend" element={<MyPageTrendChartPage />} />
 
-      {/* 퀴즈 테스트 */}
-      <Route path="/quiz" element={<QuizTestPage />} />
+        {/* 리더보드, 길드, 던전 */}
+        <Route path="/leaderboard" element={<LeaderboardPage />} />
+        <Route path="/region-ranking" element={<RegionMapLeaderboardPage />} />
+        <Route path="/guild" element={<GuildManagementPage />} />
+        <Route path="/world-dungeon" element={<WorldDungeonPage />} />
+
+        {/* 대시보드 */}
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/dashboard/compare" element={<RegionEnergyComparePage />} />
+
+        {/* 커뮤니티 */}
+        <Route path="/community" element={<CommunityPage />} />
+        <Route path="/community/:id" element={<CommunityDetailPage />} />
+        <Route path="/community/write" element={<CommunityWritePage />} />
+        <Route path="/community/edit/:id" element={<CommunityWritePage />} />
+
+        {/* 관리자 페이지 */}
+        <Route path="/admin/csv-upload" element={<AdminCsvUploadPage />} />
+        <Route path="/admin/dungeon" element={<AdminDungeonPage />} />
+
+        {/* 퀴즈 테스트 */}
+        <Route path="/quiz" element={<QuizTestPage />} />
+      </Route>
 
       {/* 없는 주소로 들어오면 로그인으로 보냅니다. */}
       <Route path="*" element={<Navigate to="/login" replace />} />
