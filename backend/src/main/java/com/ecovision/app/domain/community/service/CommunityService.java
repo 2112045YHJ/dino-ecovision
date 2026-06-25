@@ -260,7 +260,8 @@ public class CommunityService {
         if (postLikeOpt.isPresent()) {
             // 이미 좋아요를 누른 상태 -> 좋아요 취소
             postLikeRepository.delete(postLikeOpt.get());
-            postRepository.decreaseLikeCount(postId);
+            postLikeRepository.flush();
+            postRepository.updateLikeCount(postId);
             isLiked = false;
 
             if (!isOwnPost) {
@@ -275,7 +276,8 @@ public class CommunityService {
                     .post(post)
                     .build();
             postLikeRepository.save(like);
-            postRepository.increaseLikeCount(postId);
+            postLikeRepository.flush();
+            postRepository.updateLikeCount(postId);
             isLiked = true;
 
             if (!isOwnPost) {

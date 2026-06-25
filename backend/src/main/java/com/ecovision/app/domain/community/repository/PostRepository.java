@@ -30,10 +30,6 @@ public interface PostRepository extends JpaRepository<Post, Long>, JpaSpecificat
     void increaseViewCount(@Param("id") Long id);
 
     @org.springframework.data.jpa.repository.Modifying(clearAutomatically = true)
-    @Query("UPDATE Post p SET p.likeCount = p.likeCount + 1 WHERE p.id = :id")
-    void increaseLikeCount(@Param("id") Long id);
-
-    @org.springframework.data.jpa.repository.Modifying(clearAutomatically = true)
-    @Query("UPDATE Post p SET p.likeCount = CASE WHEN p.likeCount > 0 THEN p.likeCount - 1 ELSE 0 END WHERE p.id = :id")
-    void decreaseLikeCount(@Param("id") Long id);
+    @Query("UPDATE Post p SET p.likeCount = (SELECT COUNT(pl) FROM PostLike pl WHERE pl.post.id = :id) WHERE p.id = :id")
+    void updateLikeCount(@Param("id") Long id);
 }

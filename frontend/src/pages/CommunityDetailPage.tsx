@@ -54,6 +54,7 @@ export function CommunityDetailPage() {
   const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
   const [editingCommentContent, setEditingCommentContent] = useState("");
   const [portals, setPortals] = useState<{ el: Element; uuid: string }[]>([]);
+  const [isLiking, setIsLiking] = useState(false);
 
   useEffect(() => {
     let rId1: number;
@@ -134,8 +135,9 @@ export function CommunityDetailPage() {
   };
 
   const handleLike = async () => {
-    if (!post) return;
+    if (!post || isLiking) return;
     try {
+      setIsLiking(true);
       const res = await likePost(post.id);
       // 로컬 화면 갱신
       setPost((prev) =>
@@ -149,6 +151,8 @@ export function CommunityDetailPage() {
       );
     } catch (err) {
       console.error("Failed to like post:", err);
+    } finally {
+      setIsLiking(false);
     }
   };
 
