@@ -1,6 +1,6 @@
 // src/pages/LoginPage.tsx
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { login, signup } from "../api/authApi";
@@ -9,6 +9,12 @@ export function LoginPage() {
   // 페이지 이동 함수입니다.
   // navigate('/home') → 홈 화면으로 이동합니다.
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (localStorage.getItem("accessToken")) {
+      navigate("/home");
+    }
+  }, [navigate]);
 
   // false = 로그인 모드
   // true = 회원가입 모드

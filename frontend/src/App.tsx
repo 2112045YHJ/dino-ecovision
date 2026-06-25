@@ -34,8 +34,17 @@ import { EmbedLandingPage } from "./pages/EmbedLandingPage";
 function App() {
   return (
     <Routes>
-      {/* 처음 접속하면 로그인 화면으로 보냅니다. */}
-      <Route path="/" element={<Navigate to="/login" replace />} />
+      {/* 처음 접속하면 로그인 여부에 따라 보냅니다. */}
+      <Route
+        path="/"
+        element={
+          localStorage.getItem("accessToken") ? (
+            <Navigate to="/home" replace />
+          ) : (
+            <Navigate to="/login" replace />
+          )
+        }
+      />
 
       {/* 로그인 */}
       <Route path="/login" element={<LoginPage />} />
