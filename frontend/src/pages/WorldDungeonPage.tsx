@@ -52,6 +52,11 @@ export function WorldDungeonPage() {
   const [isDungeonLoading, setIsDungeonLoading] = useState(true);
   const [dungeonErrorMessage, setDungeonErrorMessage] = useState("");
 
+  // 던전 타이머용: 현재 시각(ms)을 매초 갱신하고, 종료 시각은 클라이언트 시계 기준 ms로 보관.
+  // 서버 remainingSeconds(타임존 무관)를 받은 순간 Date.now()에 더해 변환한다.
+  const [now, setNow] = useState(() => Date.now());
+  const [dungeonEndsAtMs, setDungeonEndsAtMs] = useState<number | null>(null);
+
   // 월드 상태 가져오기 (5초 폴링)
   useEffect(() => {
     const fetchWorld = async () => {
@@ -81,6 +86,9 @@ export function WorldDungeonPage() {
       try {
         const data = await getActiveDungeon();
         setDungeon(data);
+        setDungeonEndsAtMs(
+          data ? Date.now() + data.remainingSeconds * 1000 : null,
+        );
         setDungeonErrorMessage("");
       } catch (error) {
         console.error(error);
@@ -96,6 +104,19 @@ export function WorldDungeonPage() {
 
     return () => clearInterval(intervalId);
   }, []);
+
+  // 던전 블록 타이머: 종료 시각 기준으로 매초 로컬 카운트다운(네트워크 0).
+  useEffect(() => {
+    if (!dungeon) return;
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [dungeon]);
+
+  // 던전 종료까지 남은 시간(초). 클라이언트 시계 기준 종료 시각에서 매초 파생.
+  const dungeonRemainingSeconds =
+    dungeonEndsAtMs != null
+      ? Math.max(0, Math.round((dungeonEndsAtMs - now) / 1000))
+      : 0;
 
   return (
     <main className="min-h-screen bg-[#FAF9F5] p-6 text-[#2C3531]">
@@ -246,7 +267,7 @@ export function WorldDungeonPage() {
                   <div className="rounded-2xl bg-[#FAF9F5] p-4">
                     <p className="text-sm text-gray-600">남은 시간</p>
                     <p className="mt-1 text-lg font-bold text-[#E07A5F]">
-                      {formatRemainingTime(dungeon.remainingSeconds)}
+                      {formatRemainingTime(dungeonRemainingSeconds)}
                     </p>
                   </div>
                 </div>

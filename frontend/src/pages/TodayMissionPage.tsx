@@ -64,6 +64,11 @@ export function TodayMissionPage() {
   // 던전 타이머를 매초 갱신하기 위한 현재 시각(ms)입니다.
   const [now, setNow] = useState(() => Date.now());
 
+  // 던전 종료 시각을 "클라이언트 시계 기준 ms"로 보관합니다.
+  // 서버의 remainingSeconds(타임존 무관한 순수 잔여 초)를 받은 순간 Date.now()에 더해 변환하므로,
+  // endsAt(타임존 정보 없는 LocalDateTime) 파싱에 의존하지 않습니다.
+  const [dungeonEndsAtMs, setDungeonEndsAtMs] = useState<number | null>(null);
+
   // 사용자가 "완료 인증하기" 버튼을 누른 미션을 저장합니다.
   const [selectedMission, setSelectedMission] = useState<SelectedMission | null>(
     null,
@@ -93,6 +98,9 @@ export function TodayMissionPage() {
 
         setMissions(dailyData);
         setDungeon(dungeonData);
+        setDungeonEndsAtMs(
+          dungeonData ? Date.now() + dungeonData.remainingSeconds * 1000 : null,
+        );
       } catch (error) {
         console.error(error);
 
@@ -124,6 +132,9 @@ export function TodayMissionPage() {
     const id = setInterval(async () => {
       const fresh = await getActiveDungeon().catch(() => null);
       setDungeon(fresh);
+      setDungeonEndsAtMs(
+        fresh ? Date.now() + fresh.remainingSeconds * 1000 : null,
+      );
     }, 30000);
     return () => clearInterval(id);
   }, [dungeon]);
@@ -131,10 +142,11 @@ export function TodayMissionPage() {
   // 던전 미션 목록(활성 던전이 있을 때만)입니다.
   const dungeonMissions: DungeonMission[] = dungeon?.missions ?? [];
 
-  // 던전 종료까지 남은 시간(초). endsAt(절대 시각)에서 매초 파생.
-  const dungeonRemainingSeconds = dungeon
-    ? Math.max(0, Math.floor((new Date(dungeon.endsAt).getTime() - now) / 1000))
-    : 0;
+  // 던전 종료까지 남은 시간(초). 클라이언트 시계 기준 종료 시각에서 매초 파생.
+  const dungeonRemainingSeconds =
+    dungeonEndsAtMs != null
+      ? Math.max(0, Math.round((dungeonEndsAtMs - now) / 1000))
+      : 0;
 
   // 오늘 전체 일일 미션 개수입니다.
   const totalMissionCount = missions.length;
