@@ -9,6 +9,7 @@ import {
   type ActiveDungeonResponse,
   type DungeonMission,
 } from "../api/dungeonApi";
+import { getCurrentWorld, type WorldCurrentResponse } from "../api/worldApi";
 
 import { MissionCard } from "../components/mission/MissionCard";
 import { MissionCompleteConfirmModal } from "../components/mission/MissionCompleteConfirmModal";
@@ -22,11 +23,15 @@ function getSlotLabel(slot: MissionSlot) {
   return "언제든";
 }
 
-// estimatedCo2Kg 기반으로 carbon weight 계산
-function getCarbonWeight(co2Kg: number): { weight: number; label: string } {
-  if (co2Kg >= 3) return { weight: 1.5, label: "높음" };
-  if (co2Kg >= 1) return { weight: 1.2, label: "보통" };
-  return { weight: 1.0, label: "낮음" };
+// 실시간 전력망 등급(gradeStatus)을 사람이 읽는 라벨로 변환합니다.
+// 보상 가중치는 이 등급(=백엔드 carbon_intensity_logs 최신값)을 기준으로 결정됩니다.
+function getGradeLabel(status: string): string {
+  const labels: Record<string, string> = {
+    PURIFIED: "정화됨",
+    NORMAL: "보통",
+    POLLUTED: "오염됨",
+  };
+  return labels[status] ?? "보통";
 }
 
 // 남은 시간 포맷 (초 → "42분 30초")
@@ -61,6 +66,10 @@ export function TodayMissionPage() {
   // 활성 던전(있으면 상단 블록으로 표시)입니다.
   const [dungeon, setDungeon] = useState<ActiveDungeonResponse>(null);
 
+  // 실시간 세계(전력망) 상태입니다.
+  // 백엔드가 미션 보상 계산에 쓰는 carbonWeight와 동일한 값을 모달 미리보기에 사용합니다.
+  const [world, setWorld] = useState<WorldCurrentResponse | null>(null);
+
   // 던전 타이머를 매초 갱신하기 위한 현재 시각(ms)입니다.
   const [now, setNow] = useState(() => Date.now());
 
@@ -91,13 +100,15 @@ export function TodayMissionPage() {
         setIsLoading(true);
         setErrorMessage("");
 
-        const [dailyData, dungeonData] = await Promise.all([
+        const [dailyData, dungeonData, worldData] = await Promise.all([
           getTodayMissions(),
           getActiveDungeon().catch(() => null),
+          getCurrentWorld().catch(() => null),
         ]);
 
         setMissions(dailyData);
         setDungeon(dungeonData);
+        setWorld(worldData);
         setDungeonEndsAtMs(
           dungeonData ? Date.now() + dungeonData.remainingSeconds * 1000 : null,
         );
@@ -162,8 +173,17 @@ export function TodayMissionPage() {
       ? 0
       : Math.round((completedMissionCount / totalMissionCount) * 100);
 
+  // 모달을 열기 직전 세계 상태를 한 번 더 받아옵니다.
+  // 백엔드는 완료 시점의 최신 carbon_intensity_logs로 보상을 계산하므로,
+  // 모달 미리보기의 가중치를 그 값과 최대한 맞추기 위함입니다(best-effort, 실패 시 직전 값 유지).
+  const refreshWorld = async () => {
+    const fresh = await getCurrentWorld().catch(() => null);
+    if (fresh) setWorld(fresh);
+  };
+
   // 일일 미션 카드를 눌렀을 때 선택 항목으로 변환합니다.
-  const selectDaily = (mission: Mission) =>
+  const selectDaily = (mission: Mission) => {
+    void refreshWorld();
     setSelectedMission({
       type: "DAILY",
       assignmentId: mission.assignmentId,
@@ -175,9 +195,11 @@ export function TodayMissionPage() {
       completed: mission.completed,
       dungeonMultiplier: 1,
     });
+  };
 
   // 던전 미션 카드를 눌렀을 때 선택 항목으로 변환합니다.
-  const selectDungeon = (mission: DungeonMission) =>
+  const selectDungeon = (mission: DungeonMission) => {
+    void refreshWorld();
     setSelectedMission({
       type: "DUNGEON",
       assignmentId: mission.assignmentId,
@@ -189,6 +211,7 @@ export function TodayMissionPage() {
       completed: mission.completed,
       dungeonMultiplier: dungeon ? Number(dungeon.dungeonMultiplier) : 2,
     });
+  };
 
   // 미션 완료 모달에서 "완료하기" 버튼을 눌렀을 때 실행됩니다.
   // 일일/던전을 type으로 구분해 동일한 엔드포인트로 완료 처리합니다(API 명세 5.2/6.2).
@@ -265,10 +288,12 @@ export function TodayMissionPage() {
     );
   }
 
-  // 선택된 미션의 carbon weight 계산
-  const carbonInfo = selectedMission
-    ? getCarbonWeight(selectedMission.estimatedCo2Kg)
-    : { weight: 1.0, label: "낮음" };
+  // 모달에 표시할 탄소 가중치입니다.
+  // 백엔드와 동일하게 실시간 전력망 상태(world.carbonWeight)를 사용합니다.
+  // 세계 상태를 못 받아온 경우엔 가중치를 단정하지 않고 "확인 중"으로 둡니다.
+  const carbonInfo = world
+    ? { weight: world.carbonWeight, label: getGradeLabel(world.gradeStatus) }
+    : { weight: 1.0, label: "확인 중" };
 
   return (
     <main className="min-h-screen bg-[#FAF9F5] p-6 text-[#2C3531]">
