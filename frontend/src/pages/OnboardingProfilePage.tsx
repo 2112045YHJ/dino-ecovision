@@ -9,6 +9,7 @@ import {
   saveOnboardingProfile,
   type Region,
 } from "../api/meApi";
+import { isValidNickname, NICKNAME_RULE_MESSAGE } from "../utils/nickname";
 
 /*
   이 페이지에서 하는 일
@@ -122,8 +123,10 @@ export function OnboardingProfilePage() {
       return;
     }
 
-    if (trimmedNickname.length < 2) {
-      setNicknameMessage("닉네임은 2자 이상 입력해주세요.");
+    // 길이/형식을 먼저 검증해, 긴 닉네임이 백엔드 400으로 떨어져
+    // "중복 확인 실패"로 잘못 표시되는 것을 막습니다.
+    if (!isValidNickname(trimmedNickname)) {
+      setNicknameMessage(NICKNAME_RULE_MESSAGE);
       setIsNicknameAvailable(false);
       return;
     }
@@ -161,8 +164,8 @@ export function OnboardingProfilePage() {
       return;
     }
 
-    if (trimmedNickname.length < 2) {
-      setErrorMessage("닉네임은 2자 이상 입력해주세요.");
+    if (!isValidNickname(trimmedNickname)) {
+      setErrorMessage(NICKNAME_RULE_MESSAGE);
       return;
     }
 

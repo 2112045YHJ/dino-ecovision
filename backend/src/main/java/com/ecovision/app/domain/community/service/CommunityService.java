@@ -3,6 +3,7 @@ package com.ecovision.app.domain.community.service;
 import com.ecovision.app.domain.community.dto.CommunityDto;
 import com.ecovision.app.domain.community.entity.*;
 import com.ecovision.app.domain.community.repository.*;
+import com.ecovision.app.domain.dino.service.DinoUnlockService;
 import com.ecovision.app.domain.user.entity.PointHistory;
 import com.ecovision.app.domain.user.entity.Role;
 import com.ecovision.app.domain.user.entity.User;
@@ -11,6 +12,7 @@ import com.ecovision.app.domain.user.repository.UserRepository;
 import com.ecovision.app.global.exception.BusinessException;
 import com.ecovision.app.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -34,6 +36,7 @@ import org.jsoup.select.Elements;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class CommunityService {
 
     private final PostRepository postRepository;
@@ -43,6 +46,7 @@ public class CommunityService {
     private final UserRepository userRepository;
     private final PointHistoryRepository pointHistoryRepository;
     private final PostImageRepository postImageRepository;
+    private final DinoUnlockService dinoUnlockService;
 
     @Transactional
     public Long createPost(CommunityDto.PostRequest request, Long userId) {
@@ -362,6 +366,16 @@ public class CommunityService {
                 .build();
 
         ChartSnapshot saved = chartSnapshotRepository.save(snapshot);
+
+        // 도감 자동 해금 판정 (부가 보상): user 에 연결된(저장된) 스냅샷에 한해.
+        // REQUIRES_NEW 독립 트랜잭션 + best-effort → 해금 판정 실패가 스냅샷 생성을 롤백시키지 않는다.
+        if (user != null) {
+            try {
+                dinoUnlockService.checkSnapshotUnlock(userId);
+            } catch (Exception e) {
+                log.warn("[COMMUNITY] 도감 해금 판정 실패 (스냅샷 생성은 정상). userId={}", userId, e);
+            }
+        }
 
         return convertToChartSnapshotResponse(saved);
     }

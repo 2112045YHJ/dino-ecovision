@@ -72,7 +72,7 @@ export function MissionCompleteConfirmModal({
           <div className="my-2 border-t border-[#E8F2EC]" />
 
           <div className="flex justify-between text-sm font-bold">
-            <span>최종 보상</span>
+            <span>예상 보상</span>
             <span className="text-[#E07A5F]">+{finalReward}</span>
           </div>
         </div>
@@ -80,6 +80,10 @@ export function MissionCompleteConfirmModal({
         {/* 안내 */}
         <p className="mt-3 text-xs text-gray-500">
           자가 신고 미션입니다. 정직하게 체크해주세요.
+        </p>
+        <p className="mt-1 text-xs text-gray-400">
+          실제 적립 포인트는 완료 시점의 실시간 전력망 탄소 가중치를 기준으로
+          계산되며, 일일 적립 한도에 따라 달라질 수 있습니다.
         </p>
 
         {/* 버튼 */}

@@ -4,8 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Header } from "../components/layout/Header";
 import { fetchPosts, type PostResponse } from "../api/communityApi";
-import { apiRequest } from "../api/apiClient";
+import { apiRequest, ApiRequestError } from "../api/apiClient";
 import { getRegions, type Region } from "../api/meApi";
+import { isValidNickname, NICKNAME_RULE_MESSAGE } from "../utils/nickname";
 
 interface PointHistoryItem {
   id: number;
@@ -383,10 +384,8 @@ export function MyPage() {
       return;
     }
 
-    const nicknameRegex = /^[가-힣A-Za-z0-9]{2,12}$/;
-
-    if (!nicknameRegex.test(editNickname)) {
-      setErrorMessage("닉네임은 2~12자리의 한글, 영문, 숫자만 가능합니다.");
+    if (!isValidNickname(editNickname)) {
+      setErrorMessage(NICKNAME_RULE_MESSAGE);
       return;
     }
 
@@ -441,7 +440,17 @@ export function MyPage() {
       closeEditModal();
     } catch (err: any) {
       console.error("Failed to save profile:", err);
-      setErrorMessage(err.message || "프로필 변경 중 오류가 발생했습니다.");
+
+      // 저장 시점에 백엔드가 닉네임 중복(409, code=DUPLICATE_NICKNAME)을 거부하면,
+      // 길이 검증 라벨과 같은 자리에 명확한 경고를 보여줍니다(별도 중복 확인 버튼 없이 차단).
+      const isDuplicateNickname =
+        err instanceof ApiRequestError && err.code === "DUPLICATE_NICKNAME";
+
+      setErrorMessage(
+        isDuplicateNickname
+          ? "이미 사용 중인 닉네임입니다. 다른 닉네임을 입력해 주세요."
+          : err?.message || "프로필 변경 중 오류가 발생했습니다.",
+      );
     } finally {
       setIsSaving(false);
     }

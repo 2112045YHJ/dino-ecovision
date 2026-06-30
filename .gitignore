@@ -28,6 +28,9 @@ backend/src/main/resources/application-local.properties
 backend/src/main/resources/application-prod.properties
 backend/uploads/
 
+# 테스트 코드는 로컬 전용 (원격에 올리지 않음)
+backend/src/test/
+
 # ==========================================
 # Frontend (React / Node / Vite)
 # ==========================================

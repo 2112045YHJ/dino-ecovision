@@ -110,12 +110,12 @@ public class User {
     // ===== 변경 동작 =====
 
     // 온보딩 등록
-    // 닉네임, 지역 설정 + 쿨다운 기준 시점 시작
-    public void completeOnboarding(String nickname, Long regionId, LocalDateTime now) {
+    // 닉네임, 지역 설정 (최초 등록은 '변경'이 아니므로 쿨다운 시계를 시작하지 않음)
+    // -> lastNicknameChangedAt / lastRegionChangedAt 를 null로 유지해야
+    //    첫 실제 변경 시 checkCooldown 의 null 통과 로직을 타고 그 시점부터 쿨다운이 시작됨
+    public void completeOnboarding(String nickname, Long regionId) {
         this.nickname = nickname;
         this.regionId = regionId;
-        this.lastNicknameChangedAt = now;
-        this.lastRegionChangedAt = now;
     }
 
     public void changeNickname(String nickname, LocalDateTime now) {
